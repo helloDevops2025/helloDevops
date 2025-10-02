@@ -1,93 +1,76 @@
-:root {
+/* ===== AdminProductListPage.css (scoped to AdminProductListPage) ===== */
+
+/* Root scope: ใช้เฉพาะหน้านี้ */
+.app[data-page="AdminProductListPage"] {
   --bg: #ebeff7;
   --card: #ffffff;
   --text: #111827;
   --muted: #6b7280;
   --line: #e5e7eb;
-}
 
-* {
-  box-sizing: border-box
-}
-
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  color: var(--text);
-  background: var(--bg)
-}
-
-.app {
   display: flex;
-  min-height: 100vh
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--bg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-
-/* Main */
-.main {
+/* Main area */
+.app[data-page="AdminProductListPage"] .main {
   flex: 1;
   display: flex;
-  flex-direction: column
+  flex-direction: column;
 }
 
-.topbar {
+.app[data-page="AdminProductListPage"] .content {
+  padding: 0 28px 32px;
+}
+
+.app[data-page="AdminProductListPage"] .content-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  padding: 22px 28px
-}
-
-.account {
-  font-size: 18px;
-  color: #6b7280
-}
-.content-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* title ซ้าย, action-bar ขวา */
   gap: 16px;
-  margin-bottom: 12px;
-} 
-
-.content {
-  padding: 0 28px 32px
+  margin: 24px 0 12px;
 }
 
-.title {
-  margin: 0 0 12px;
+.app[data-page="AdminProductListPage"] .title {
+  margin: 0;
   font-size: 28px;
-  font-weight: 800
+  font-weight: 800;
 }
 
 /* Action bar */
-.action-bar {
+.app[data-page="AdminProductListPage"] .action-bar {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 12px
 }
 
-.search {
-  background: #fff;
-  border-radius: 100px;
-  padding: 10px 14px;
+.app[data-page="AdminProductListPage"] .search {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
+  background: #fff;
   border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 14px;
+  max-width: 440px;
+  width: 100%;
 }
 
-.search input {
+.app[data-page="AdminProductListPage"] .search input {
   border: none;
   outline: none;
   width: 100%;
-  font: inherit
+  font: inherit;
+  color: inherit;
+  background: transparent;
 }
 
-.btn-add {
+.app[data-page="AdminProductListPage"] .btn-add {
   text-decoration: none;
-  color: #111827;
+  color: var(--text);
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -98,10 +81,10 @@ body {
   font-weight: 600;
 }
 
-.btn-add .box {
+.app[data-page="AdminProductListPage"] .btn-add .box {
   width: 22px;
   height: 22px;
-  border: 2px solid #111827;
+  border: 2px solid var(--text);
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
@@ -109,54 +92,54 @@ body {
 }
 
 /* Table card */
-.table-card {
+.app[data-page="AdminProductListPage"] .table-card {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 16px;
   overflow: hidden;
 }
 
-/* .table-header,
-.table-row {
+/* กำหนด 8 คอลัมน์: Product | Product ID | Price | Category | Brand | Quantity | Stock | Action */
+.app[data-page="AdminProductListPage"] .table-header,
+.app[data-page="AdminProductListPage"] .table-row {
   display: grid;
-  grid-template-columns: 170px 140px 120px 140px 120px 120px 120px 120px;
+  grid-template-columns: 2fr 1.2fr 1fr 1.2fr 1fr 1fr 1fr 0.9fr;
   gap: 0;
   align-items: center;
-  padding: 20px 20px;
-} */
-.table-header,
-.table-row {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr); /* 8 คอลัมน์ กว้างเท่ากัน */
-  gap: 0;
-  align-items: center;
-  padding: 20px 20px;
+  padding: 18px 20px;
 }
 
+/* กันคอนเทนต์ดันคอลัมน์ล้น */
+.app[data-page="AdminProductListPage"] .table-header>*,
+.app[data-page="AdminProductListPage"] .table-row>* {
+  min-width: 0;
+}
 
-.table-header {
+.app[data-page="AdminProductListPage"] .table-header {
   background: #f8fafc;
   color: #374151;
   font-weight: 700;
   border-bottom: 1px solid var(--line);
 }
 
-.table-row {
+.app[data-page="AdminProductListPage"] .table-row {
   background: #fff;
-  border-bottom: 1px solid var(--line)
+  border-bottom: 1px solid var(--line);
 }
 
-.table-row:nth-child(even) {
-  background: #fbfcff
+.app[data-page="AdminProductListPage"] .table-row:nth-child(even) {
+  background: #fbfcff;
 }
 
-.prod {
-  display: flex;
+/* Product cell */
+.app[data-page="AdminProductListPage"] .prod {
+  display: inline-flex;
   align-items: center;
-  gap: 10px
+  gap: 10px;
+  white-space: nowrap;
 }
 
-.cube {
+.app[data-page="AdminProductListPage"] .cube {
   width: 24px;
   height: 24px;
   border-radius: 6px;
@@ -166,78 +149,119 @@ body {
   justify-content: center;
 }
 
-.act i {
-  margin-right: 10px;
-  cursor: pointer
+/* สีเน้น Category */
+.app[data-page="AdminProductListPage"] .table-row> :nth-child(4) {
+  color: #16a34a;
+  font-weight: 600;
 }
 
-/* Footer */
-.table-footer {
+/* Stock กันหักบรรทัด */
+.app[data-page="AdminProductListPage"] .table-row> :nth-child(7) {
+  white-space: nowrap;
+}
+
+/* Action */
+.app[data-page="AdminProductListPage"] .table-header> :nth-child(8),
+.app[data-page="AdminProductListPage"] .table-row> :nth-child(8) {
+  text-align: center;
+}
+
+.app[data-page="AdminProductListPage"] .act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.app[data-page="AdminProductListPage"] .act i {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .06);
+  cursor: pointer;
+}
+
+/* Footer / Pager */
+.app[data-page="AdminProductListPage"] .table-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 25px 25px;
+  padding: 20px 20px;
   background: #fff;
 }
 
-.hint {
+.app[data-page="AdminProductListPage"] .hint {
   color: var(--muted);
-  font-size: 16px
+  font-size: 16px;
 }
 
-.pager {
+.app[data-page="AdminProductListPage"] .pager {
   display: flex;
   align-items: center;
-  gap: 8px
+  gap: 8px;
 }
 
-.circle {
+.app[data-page="AdminProductListPage"] .circle,
+.app[data-page="AdminProductListPage"] .pill {
+  height: 34px;
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+}
+
+.app[data-page="AdminProductListPage"] .circle {
   width: 34px;
-  height: 34px;
-  border: 1px solid var(--line);
-  background: #fff;
   border-radius: 50%;
-  cursor: pointer;
 }
 
-.pill {
+.app[data-page="AdminProductListPage"] .pill {
   min-width: 34px;
-  height: 34px;
-  border: 1px solid var(--line);
-  background: #fff;
+  padding: 0 10px;
   border-radius: 999px;
-  cursor: pointer;
 }
 
-.pill.active {
-  background: #111827;
+.app[data-page="AdminProductListPage"] .pill.active {
+  background: var(--text);
   color: #fff;
-  border-color: #111827
+  border-color: var(--text);
 }
 
-/* เล็กลงนิดหน่อยสำหรับจอเล็ก */
+/* Responsive */
 @media (max-width: 1100px) {
-  .sidebar {
-    width: 220px
-  }
 
-  .table-header,
-  .table-row {
-    grid-template-columns: 160px 120px 110px 120px 110px 100px 100px 100px;
+  .app[data-page="AdminProductListPage"] .table-header,
+  .app[data-page="AdminProductListPage"] .table-row {
+    grid-template-columns: 1.6fr 1.1fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.7fr;
+    padding: 16px 16px;
   }
 }
 
 @media (max-width: 900px) {
-  .sidebar {
-    display: none
+  .app[data-page="AdminProductListPage"] .content {
+    padding: 0 16px 24px;
   }
 
-  .content {
-    padding: 0 16px 24px
-  }
-
-  .action-bar {
+  .app[data-page="AdminProductListPage"] .content-header {
     flex-direction: column;
-    align-items: stretch
+    align-items: stretch;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+
+  .app[data-page="AdminProductListPage"] .table-header,
+  .app[data-page="AdminProductListPage"] .table-row {
+    grid-template-columns: repeat(8, minmax(90px, 1fr));
+    padding: 14px;
+  }
+
+  .app[data-page="AdminProductListPage"] .prod {
+    white-space: normal;
   }
 }
