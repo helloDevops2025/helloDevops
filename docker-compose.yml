@@ -65,6 +65,12 @@ services:
     volumes:
       - db:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command:
+      - --max_allowed_packet=32M
+      - --innodb_log_file_size=128M
+      - --innodb_file_per_table=1
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: ["CMD","mysqladmin","ping","-h","localhost","-p1234"]
       interval: 10s
