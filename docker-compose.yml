@@ -1,3 +1,55 @@
+# services:
+#   mysql:
+#     image: mysql:8.0
+#     container_name: mysql
+#     restart: unless-stopped
+#     environment:
+#       MYSQL_ROOT_PASSWORD: 1234
+#       MYSQL_DATABASE: hellodevops
+#       MYSQL_USER: user_devops
+#       MYSQL_PASSWORD: user1234
+#     ports:
+#       - "3306:3306"   # ถ้าเครื่องคุณมี MySQL ชนพอร์ต ให้เปลี่ยนเป็น "3307:3306"
+#     volumes:
+#       - db:/var/lib/mysql
+#       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+#     healthcheck:
+#       test: ["CMD","mysqladmin","ping","-h","localhost","-p1234"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 10
+
+#   backend:
+#     build:
+#       context: ./backend
+#       dockerfile: Dockerfile
+#     container_name: backend
+#     restart: unless-stopped
+#     environment:
+#       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/hellodevops?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+#       SPRING_DATASOURCE_USERNAME: user_devops
+#       SPRING_DATASOURCE_PASSWORD: user1234
+#     ports:
+#       - "8080:8080"
+#     depends_on:
+#       mysql:
+#         condition: service_healthy
+
+#   frontend:
+#     build:
+#       context: ./frontend
+#     container_name: frontend
+#     restart: unless-stopped
+#     environment:
+#       # VITE_API_URL: http://backend:8080   # สำคัญ! ให้ React ยิง API ใน network เดียวกัน
+#       VITE_API_URL: http://localhost:8080
+#     ports:
+#       - "5173:5173"
+#     depends_on:
+#       - backend
+
+# volumes:
+#   db:
 services:
   mysql:
     image: mysql:8.0
@@ -13,6 +65,12 @@ services:
     volumes:
       - db:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command:
+      - --max_allowed_packet=32M
+      - --innodb_log_file_size=128M
+      - --innodb_file_per_table=1
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: ["CMD","mysqladmin","ping","-h","localhost","-p1234"]
       interval: 10s
@@ -58,4 +116,5 @@ services:
 # ประกาศ named volume "db" เป็น mapping (ห้ามมี '-')
 volumes:
   db: {}
+
 
