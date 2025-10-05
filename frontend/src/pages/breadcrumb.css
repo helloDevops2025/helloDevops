@@ -1,0 +1,40 @@
+/* base */
+.pm-breadcrumb {
+  font-size: 14px;
+  color: #666;
+  margin: 12px 0 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px; /* ระยะห่างแต่ละ item */
+}
+
+/* item */
+.pm-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px; /* ระหว่างข้อความกับ divider */
+}
+
+/* link */
+.pm-breadcrumb a {
+  color: #4f46e5;
+  text-decoration: none;
+}
+.pm-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+/* current page */
+.pm-breadcrumb .current {
+  color: #111;
+  font-weight: 600;
+}
+
+/* divider (›) */
+.pm-breadcrumb .divider {
+  color: #9ca3af;
+  margin: 0 6px;   /* <<< ปรับจาก 10px → 6px ให้นิ่งพอดี */
+  font-size: 13px;
+  line-height: 1;
+}

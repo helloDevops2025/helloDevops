@@ -69,6 +69,7 @@ import SignUpPage from "./pages/SignUpPage.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import ShopPage from "./pages/ShopPage.jsx";
 import ProductPage from "./pages/ProductPage.jsx";
+import CartPage from "./pages/CartPage.jsx";
 import PlaceOrderPage from "./pages/PlaceOrderPage.jsx";
 import DetailPage from "./pages/DetailPage.jsx";
 import TrackingUserPage from "./pages/TrackingUserPage.jsx";
@@ -107,6 +108,7 @@ export default function App() {
             <Route path="/tracking" element={<TrackingUserPage />} />
             <Route path="/wishlist" element={<WishListPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/cart" element={<CartPage />} />
           </Route>
 
           {/* ฝั่ง admin (เฉพาะ ADMIN) */}

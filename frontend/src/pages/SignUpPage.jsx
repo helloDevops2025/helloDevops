@@ -1,5 +1,6 @@
 // src/pages/SignUpPage.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import "./SignUpPage.css";
 
 export default function SignUpPage() {
@@ -12,13 +13,19 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
+  // ใส่คลาสลง body เฉพาะหน้านี้ เพื่อซ่อน header/topbar และตัด padding-top
+  useEffect(() => {
+    document.body.classList.add("signup-page");
+    return () => document.body.classList.remove("signup-page");
+  }, []);
+
   const onSubmit = async (e) => {
     e.preventDefault();
-    // HTML5 validation
+
+    // HTML5 validity
     const form = e.currentTarget;
     if (!form.reportValidity()) return;
 
-    // ตรวจรหัสผ่านตรงกัน
     if (password !== confirm) {
       alert("Passwords do not match.");
       return;
@@ -30,28 +37,27 @@ export default function SignUpPage() {
     alert("Signed up (demo)");
   };
 
-  // ไอคอนตาปิด/ตาเปิด (เหมือน HTML เดิม)
   const EyeClosed = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3E40AE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3E40AE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.71 21.71 0 0 1 5.06-6.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.74 21.74 0 0 1-2.45 3.94"/>
-      <line x1="1" y1="1" x2="23" y2="23"/>
+      <line x1="1" y1="1" x2="23" y2="23" />
     </svg>
   );
   const EyeOpen = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3E40AE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3E40AE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/>
       <circle cx="12" cy="12" r="3"/>
     </svg>
   );
 
   return (
-    <main className="shell reverse">
+    <main className="shell reverse signup-page">
       {/* ซ้าย: ภาพ/พื้นม่วงสำหรับ Sign Up */}
       <aside className="art-side" aria-label="Pure Mart artwork">
         <div className="illustration">
           <div className="phone" aria-hidden="true">
             <div style={{ display: "grid", placeItems: "center", gap: 10 }}>
-              <img src="/assets/user/useraccess.png" style={{ width: 686, height: 383 }} />
+              <img src="/assets/user/useraccess.png" style={{ width: 686, height: 383 }} alt="Illustration of shopping with a smartphone" />
               <h2 style={{ color: "white", fontWeight: 600, fontSize: 24, margin: 0 }}>
                 Pure Mart
               </h2>
@@ -66,8 +72,7 @@ export default function SignUpPage() {
       {/* ขวา: ฟอร์ม Sign Up */}
       <section className="form-side_signup">
         <div className="logo_signup">
-          {/* หากโลโก้ของคุณชื่อ /assets/logo.png ให้เปลี่ยน path ตามโปรเจกต์ */}
-          <img src="/assets/logo.png" alt="Logo" />
+          <img src="/assets/logo.png" alt="Pure Mart" />
         </div>
 
         <div className="welcome-text_signup">
@@ -117,7 +122,7 @@ export default function SignUpPage() {
             <button
               className="toggle-eye"
               type="button"
-              aria-label="Show/Hide password"
+              aria-label={pwdVisible ? "Hide password" : "Show password"}
               onClick={() => setPwdVisible((v) => !v)}
             >
               {pwdVisible ? <EyeOpen /> : <EyeClosed />}
@@ -140,19 +145,19 @@ export default function SignUpPage() {
             <button
               className="toggle-eye"
               type="button"
-              aria-label="Show/Hide confirm password"
+              aria-label={confirmVisible ? "Hide confirm password" : "Show confirm password"}
               onClick={() => setConfirmVisible((v) => !v)}
             >
               {confirmVisible ? <EyeOpen /> : <EyeClosed />}
             </button>
           </div>
 
-          <button id="submitBtn" className="btn_signup" type="submit" disabled={submitting}>
+          <button id="submitBtn" className="btn_signup" type="submit" disabled={submitting} aria-busy={submitting}>
             {submitting ? "Signing up..." : "SIGN UP"}
           </button>
 
           <p className="note_signup">
-            Already have an account? <a href="/login">Login</a>
+            Already have an account? <Link to="/login">Login</Link>
           </p>
         </form>
       </section>
