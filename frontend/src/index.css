@@ -1,0 +1,11 @@
+/* src/index.css */
+html, body, #root {
+  min-height: 100%;
+  height: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+}
+
+/* แนะนำให้มี base นิดหน่อย */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, "Inter", "Poppins", sans-serif; }

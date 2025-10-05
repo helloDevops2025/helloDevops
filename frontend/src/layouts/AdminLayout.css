@@ -1,0 +1,46 @@
+/* src/layouts/AdminLayout.css */
+:root {
+  --bg: #ebeff7;
+  --text: #111827;
+  --line: #e5e7eb;
+}
+
+* { box-sizing: border-box; }
+
+.app {
+  display: flex;            /* ทำ 2 คอลัมน์: sidebar | main */
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* พื้นที่ขวา */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;             /* กันเนื้อหาดัน layout */
+}
+
+/* แถบด้านบน (ถ้าจะใช้) */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+  background: transparent;  /* กลืนกับพื้นหลังได้ */
+}
+
+.account {
+  font-size: 16px;
+  opacity: 0.85;
+}
+
+/* หน้าลูกทุกหน้าควรมี .content ของตัวเอง (เช่นใน AdminProductListPage) */
+.content {
+  padding: 20px 24px;
+}
+
+/* ทำงานกับ sidebar แบบยุบ/ขยาย (class .sidebar และ .collapsed อยู่ใน AdminSidebar.css) */
+/* ไม่ต้องทำอะไรเพิ่มใน layout เพราะใช้ flex รับความกว้างที่เปลี่ยนเอง */
