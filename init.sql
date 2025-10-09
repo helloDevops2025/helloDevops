@@ -132,7 +132,7 @@ VALUES
   (SELECT id FROM categories WHERE name='Meats'),
   (SELECT id FROM brands    WHERE name='U FARM')
 ),
-('#00009','Q FRESH เทร้าซาซิมิสไลซ์ 120 กรัม','',90.00,30,TRUE,
+('#00009','แซลมอน โคโฮหั่นชิ้น แช่แข็ง 100 กรัม','',99.00,30,TRUE,
   (SELECT id FROM categories WHERE name='Meats'),
   (SELECT id FROM brands    WHERE name='Q FRESH')
 ),
@@ -154,7 +154,7 @@ VALUES
   (SELECT id FROM categories WHERE name='Frozen Foods'),
   (SELECT id FROM brands    WHERE name='Q FRESH')
 ),
-('#00014','โออิชิ อีทโตะเกี๊ยวซ่าไส้หมูแช่แข็ง 660 กรัม','',150.00,25,TRUE,
+('#00014','โออิชิ เกี๊ยวซ่าแช่แข็ง ไส้หมู 240 ก. 12 ชิ้น','',150.00,25,TRUE,
   (SELECT id FROM categories WHERE name='Frozen Foods'),
   (SELECT id FROM brands    WHERE name='OISHI EATO')
 ),
@@ -238,3 +238,15 @@ INSERT IGNORE INTO product_images (product_id_fk, image_url, filename, content_t
 SELECT p.id, '/products/019.jpg', '019.jpg', 'image/jpeg', TRUE, 0 FROM products p WHERE p.product_id='#00019';
 INSERT IGNORE INTO product_images (product_id_fk, image_url, filename, content_type, is_cover, sort_order)
 SELECT p.id, '/products/020.jpg', '020.jpg', 'image/jpeg', TRUE, 0 FROM products p WHERE p.product_id='#00020';
+
+-- USERS table
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  phone VARCHAR(50),
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('USER','ADMIN') DEFAULT 'USER',
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
