@@ -1,14 +1,11 @@
-import { Outlet, Link } from "react-router-dom";
+import { Outlet } from "react-router-dom";
+import Header from "../components/header"; // h เล็กให้ตรงชื่อไฟล์
 
 export default function UserLayout() {
-    return (
-        <div>
-            <header>
-                <nav>
-                    <Link to="/">Home</Link> | <Link to="/shop">Shop</Link> | <Link to="/wishlist">Wishlist</Link>
-                </nav>
-            </header>
-            <main><Outlet /></main>
-        </div>
-    );
+  return (
+    <>
+      <Header />
+      <Outlet />
+    </>
+  );
 }

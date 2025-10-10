@@ -1,56 +1,63 @@
-// App.jsx
-import { Routes, Route } from "react-router-dom";
-
-// Auth
-import Login from "./pages/auth/Login.jsx";
-import SignUp from "./pages/auth/SignUp.jsx";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Layouts
 import UserLayout from "./layouts/UserLayout.jsx";
 import AdminLayout from "./layouts/AdminLayout.jsx";
 
-// User site
-import Home from "./pages/user/Home.jsx";
-import Shop from "./pages/user/Shop.jsx";
-import ProductDetail from "./pages/user/ProductDetail.jsx";
-import PlaceOrder from "./pages/user/PlaceOrder.jsx";
-import Tracking from "./pages/user/Tracking.jsx";
-import WishList from "./pages/user/WishList.jsx";
+// User pages
+import LoginPage from "./pages/LoginPage.jsx";
+import SignUpPage from "./pages/SignUpPage.jsx";
+import HomePage from "./pages/HomePage.jsx";
+import ShopPage from "./pages/ShopPage.jsx";
+import ProductPage from "./pages/ProductPage.jsx";
+import PlaceOrderPage from "./pages/PlaceOrderPage.jsx";
+import DetailPage from "./pages/DetailPage.jsx";
+import TrackingUserPage from "./pages/TrackingUserPage.jsx";
+import WishListPage from "./pages/WishListPage.jsx";
+import HistoryPage from "./pages/HistoryPage.jsx";
 
-// Admin site
-import ProductsList from "./pages/admin/ProductsList.jsx";
-import ProductCreate from "./pages/admin/ProductCreate.jsx";
-import ProductEdit from "./pages/admin/ProductEdit.jsx";
-import OrderList from "./pages/admin/OrderList.jsx";      // <- ไม่มี s
-import OrderDetail from "./pages/admin/OrderDetail.jsx";
+// Admin pages
+import AdminProductListPage from "./pages_admin/AdminProductListPage.jsx";
+import AdminAddProductPage from "./pages_admin/AdminAddProductPage.jsx";
+import AdminOrderListPage from "./pages_admin/AdminOrderListPage.jsx";
+import AdminOrderDetailPage from "./pages_admin/AdminOrderDetailPage.jsx";
+import AdminOrderTrackingPage from "./pages_admin/AdminOrderTrackingPage.jsx";
+import AdminEditProductPage from "./pages_admin/AdminEditProductPage.jsx";
 
-function App() {
-    return (
-        <Routes>
-            {/* Auth */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* ✅ Default route: redirect ไป login  ถ้าใครอยากให้หน้าไหนรันครั้งแรก ให้เปลี่ยนตรงนี้ */}
+        <Route path="/" element={<Navigate to="/home" replace />} />
 
-            {/* User site */}
-            <Route element={<UserLayout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/shop" element={<Shop />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/place-order" element={<PlaceOrder />} />
-                <Route path="/tracking" element={<Tracking />} />
-                <Route path="/wishlist" element={<WishList />} />
-            </Route>
+        {/* ✅ User side with header */}
+        <Route element={<UserLayout />}>
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/products" element={<ProductPage />} />
+          <Route path="/place-order" element={<PlaceOrderPage />} />
+          <Route path="/detail" element={<DetailPage />} />
+          <Route path="/detail/:id" element={<DetailPage />} />
+          <Route path="/tracking" element={<TrackingUserPage />} />
+          <Route path="/wishlist" element={<WishListPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+        </Route>
 
-            {/* Admin site */}
-            <Route path="/admin" element={<AdminLayout />}>
-                <Route path="products" element={<ProductsList />} />
-                <Route path="products/new" element={<ProductCreate />} />
-                <Route path="products/:id/edit" element={<ProductEdit />} />
-                <Route path="orders" element={<OrderList />} />          {/* <- เปลี่ยนชื่อให้ตรงไฟล์ */}
-                <Route path="orders/:id" element={<OrderDetail />} />
-            </Route>
-        </Routes>
-    );
+        {/* ❌ No header */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+
+        {/* ✅ Admin with sidebar */}
+        <Route element={<AdminLayout />}>
+          <Route path="/admin/products" element={<AdminProductListPage />} />
+          <Route path="/admin/products/new" element={<AdminAddProductPage />} />
+          <Route path="/admin/orders" element={<AdminOrderListPage />} />
+          <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
+          <Route path="/admin/orders/tracking" element={<AdminOrderTrackingPage />} />
+          <Route path="/admin/products/:id/edit" element={<AdminEditProductPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App;
