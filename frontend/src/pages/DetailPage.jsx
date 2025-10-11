@@ -1,7 +1,6 @@
-// src/pages/DetailPage.jsx
 import { useEffect, useState } from "react";
 import "./DetailPage.css";
-import Footer from "../components/footer.jsx"; // <— เพิ่มบรรทัดนี้
+import Footer from "../components/footer.jsx";
 
 /* Fallback รูปเป็น Data URI (ไม่มีไฟล์ภายนอก) */
 const FALLBACK_IMG = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -10,13 +9,20 @@ const FALLBACK_IMG = `data:image/svg+xml;utf8,${encodeURIComponent(
    </svg>`
 )}`;
 
+/* Breadcrumb */
 function Breadcrumb({ categorySlug, categoryName, currentTitle }) {
   return (
     <nav className="pm-breadcrumb" aria-label="Breadcrumb">
       <ol>
-        <li><a href="/">HOME</a></li>
-        <li><a href={`/category/${categorySlug}`}>{categoryName}</a></li>
-        <li aria-current="page">{currentTitle}</li>
+        <li>
+          <a href="/">HOME</a>
+        </li>
+        <li>
+          <a href={`/category/${categorySlug}`}>{(categoryName || "").toUpperCase()}</a>
+        </li>
+        <li className="current" aria-current="page">
+          <span title={currentTitle}>{currentTitle}</span>
+        </li>
       </ol>
     </nav>
   );
@@ -25,7 +31,6 @@ function Breadcrumb({ categorySlug, categoryName, currentTitle }) {
 export default function DetailPage() {
   useEffect(() => { document.title = "Details Page"; }, []);
 
-  // เดต้าใส่จาก DB จริงได้เลย
   const product = {
     title: "เบทาโกร หมูบดปรุงรสหมูผสมไก่บด แพ็คชิ้น 500 ก.",
     brand: "BETAGRO",
@@ -72,16 +77,18 @@ export default function DetailPage() {
           </div>
 
           <div className="product__info">
-            <h1 className="product__title">{product.title}</h1>
-
-            <div className="meta">
-              <span>
-                Brand:{" "}
-                <a href="#" className="link" aria-label={`Brand ${product.brand}`}>
-                  {product.brand}
-                </a>
-              </span>
-              <span>SKU: {product.sku}</span>
+            {/* Title + Brand/SKU */}
+            <div className="product__header">
+              <h1 className="product__title">{product.title}</h1>
+              <div className="meta">
+                <span>
+                  Brand:{" "}
+                  <a href="#" className="link" aria-label={`Brand ${product.brand}`}>
+                    {product.brand}
+                  </a>
+                </span>
+                <span>SKU: {product.sku}</span>
+              </div>
             </div>
 
             <div className="price">฿ {product.price.toFixed(2)}</div>
@@ -183,7 +190,7 @@ export default function DetailPage() {
           </div>
         </section>
 
-        {/* Related products (ตัวอย่าง) */}
+        {/* Related products */}
         <section className="section">
           <h2 className="section__title">RELATED PRODUCTS</h2>
           <div className="grid">
@@ -210,7 +217,6 @@ export default function DetailPage() {
         </section>
       </main>
 
-      {/* Footer เฉพาะหน้านี้ */}
       <Footer />
     </>
   );
