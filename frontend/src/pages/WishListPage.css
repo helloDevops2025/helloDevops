@@ -73,6 +73,10 @@
   margin: 0 auto 24px;
 }
 
+.wl-toolbar, .wl-toolbar *, .wl-toolbar *::before, .wl-toolbar *::after {
+  box-sizing: border-box;
+}
+
 .wl-total {
   font: 600 16px/1.2 "Poppins";
   color: #0f172a;
@@ -84,11 +88,19 @@
   gap: 12px;
 }
 
-.wl-controls>*,
-.wl-toolbar select,
-.wl-controls .btn {
+.wl-controls .btn,
+.wl-toolbar select {
   height: 44px;
-  border-radius: 14px;
+  padding-top: 0;
+  padding-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+#wl-clear { 
+  align-self: center; 
 }
 
 .wl-toolbar select {
@@ -100,6 +112,11 @@
   font: 500 14px/1 "Poppins";
   appearance: none;
   -webkit-appearance: none;
+  -moz-appearance: none;
+  border-radius: 14px;
+  overflow: hidden;             
+  background-clip: padding-box;  /* กันรั่วของพื้นหลังบน iOS */
+  /* ไอคอนลูกศร */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' stroke='%237C7C7C' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
@@ -122,7 +139,6 @@
   cursor: pointer;
 }
 
-/* FIX: อย่าให้ hover ของ .btn ไปทับ .btn-primary */
 .btn:not(.btn-primary):hover {
   background: #F9FAFB;
 }
@@ -215,19 +231,16 @@
   stroke-width: 2;
 }
 
-/* ========== CONTENT (อ่านสบาย) ========== */
+/* ========== CONTENT ========== */
 .wl-body {
   padding: 16px 18px 0;
 }
-
-/* คุมระยะด้วย .wl-actions */
 
 .wl-name {
   font-weight: 540;
   font-size: 15px;
   line-height: 1.45;
   margin: 0 0 22px;
-  /* ชื่อ → ราคา */
   color: #0f172a;
 }
 
@@ -237,7 +250,6 @@
   line-height: 1.25;
   color: #3E40AE;
   margin: 0 0 8px;
-  /* ราคา → In wishlist */
 }
 
 .wl-meta {
@@ -249,7 +261,6 @@
   color: var(--pm-muted-2);
 }
 
-/* หัวใจ: ล็อกขนาด 16px + สีแดง */
 .wl-meta svg {
   display: inline-block;
   width: 16px;
@@ -262,7 +273,7 @@
   stroke: none;
 }
 
-/* ========== ACTIONS (ปุ่มขนาดเล็ก + กันถูกทับสไตล์) ========== */
+/* ========== ACTIONS ========== */
 .wl-actions {
   display: flex;
   justify-content: center;
