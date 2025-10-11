@@ -1,5 +1,7 @@
+// ShopPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import "./ShopPage.css";
+import Footer from "../components/footer";
 
 /* ===== Placeholder (ถ้ารูปหาย) ===== */
 const PLACEHOLDER_DATA =
@@ -168,108 +170,112 @@ export default function ShopPage() {
   );
 
   return (
-    <main className="shop-page">
-      <section className="wl-hero">
-        <div className="wl-hero__inner">
-          <h1 className="wl-title">SHOP</h1>
-          <nav className="pm-breadcrumb" aria-label="Breadcrumb">
-            <ol>
-              <li><a href="/">HOME</a></li>
-              <li aria-current="page">SHOP</li>
-            </ol>
-          </nav>
-        </div>
-      </section>
-
-      <div className="container">
-        <div className="shop-toolbar v2" role="region" aria-label="Filters and sort">
-          <div className="af-bar">
-            <span className="af-label">ACTIVE FILTER</span>
-            <div className="chips" aria-live="polite">
-              {chips.map((c,i)=>(
-                <span key={i} className="chip">
-                  {c.label}
-                  <button aria-label={`Remove ${c.label}`} onClick={()=>removeChip(c)} type="button">×</button>
-                </span>
-              ))}
-            </div>
-            <button className="link" hidden={chips.length===0} onClick={clearAll} type="button">Clear All</button>
+    <div className="page-wrap">
+      <main className="shop-page">
+        <section className="wl-hero">
+          <div className="wl-hero__inner">
+            <h1 className="wl-title">SHOP</h1>
+            <nav className="pm-breadcrumb" aria-label="Breadcrumb">
+              <ol>
+                <li><a href="/">HOME</a></li>
+                <li aria-current="page">SHOP</li>
+              </ol>
+            </nav>
           </div>
-
-          <div className="toolbar-row">
-            <p className="result-count">{filtered.length} items found</p>
-            <div className="sort-area">
-              <label className="sr-only" htmlFor="sort">Sort by</label>
-              <select id="sort" value={sort} onChange={(e)=>{ setSort(e.target.value); setPage(1); }}>
-                <option value="featured">แนะนำ</option>
-                <option value="price-asc">ราคาน้อย → มาก</option>
-                <option value="price-desc">ราคามาก → น้อย</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="container shop-layout">
-        <aside className="filters" aria-label="Filter Options">
-          <h2 className="filters__title">Filter Options</h2>
-
-          <div className="filters__scroll">
-            <section className="filter-block" aria-expanded="true">
-              <div className="filter-head" onClick={(e)=>{ const blk=e.currentTarget.parentElement; const now=blk.getAttribute("aria-expanded")!=="true"; blk.setAttribute("aria-expanded", String(now)); }}>
-                <h3>Product Categories</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
-              </div>
-              <div className="filter-body"><CheckList list={CAT_LIST} setKey="cat" selected={filters.cat}/></div>
-            </section>
-
-            <section className="filter-block" aria-expanded="true">
-              <div className="filter-head" onClick={(e)=>{ const blk=e.currentTarget.parentElement; const now=blk.getAttribute("aria-expanded")!=="true"; blk.setAttribute("aria-expanded", String(now)); }}>
-                <h3>Price (฿)</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
-              </div>
-              <div className="filter-body">
-                <div className="price-row">
-                  <input type="number" inputMode="decimal" placeholder="min"
-                         value={minVal} onChange={(e)=>setMinVal(e.target.value)}
-                         onKeyUp={(e)=> e.key==="Enter" && applyPrice(minVal?Number(minVal):null, maxVal?Number(maxVal):null)} />
-                  <span>–</span>
-                  <input type="number" inputMode="decimal" placeholder="max"
-                         value={maxVal} onChange={(e)=>setMaxVal(e.target.value)}
-                         onKeyUp={(e)=> e.key==="Enter" && applyPrice(minVal?Number(minVal):null, maxVal?Number(maxVal):null)} />
-                </div>
-                <button className="btn btn--apply" type="button"
-                        onClick={()=>applyPrice(minVal?Number(minVal):null, maxVal?Number(maxVal):null)}>Apply</button>
-              </div>
-            </section>
-
-            <section className="filter-block" aria-expanded="true">
-              <div className="filter-head" onClick={(e)=>{ const blk=e.currentTarget.parentElement; const now=blk.getAttribute("aria-expanded")!=="true"; blk.setAttribute("aria-expanded", String(now)); }}>
-                <h3>Brands</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
-              </div>
-              <div className="filter-body"><CheckList list={BRANDS} setKey="brand" selected={filters.brand}/></div>
-            </section>
-
-            <section className="filter-block" aria-expanded="true">
-              <div className="filter-head" onClick={(e)=>{ const blk=e.currentTarget.parentElement; const now=blk.getAttribute("aria-expanded")!=="true"; blk.setAttribute("aria-expanded", String(now)); }}>
-                <h3>Promotions</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
-              </div>
-              <div className="filter-body"><CheckList list={PROMOS} setKey="promo" selected={filters.promo}/></div>
-            </section>
-          </div>
-        </aside>
-
-        <section className="products" aria-label="Products">
-          <div className="grid" aria-live="polite">
-            {pageItems.map((p)=> <ProductCard key={p.id} p={p} />)}
-            {pageItems.length===0 && <p className="no-result">No products found.</p>}
-          </div>
-
-          <nav className="pagination" aria-label="Pagination">
-            <button className="page-btn" disabled={page<=1} onClick={()=>setPage(Math.max(1,page-1))} type="button">Prev</button>
-            <span className="page-info">Page {page} / {totalPages}</span>
-            <button className="page-btn" disabled={page>=totalPages} onClick={()=>setPage(page+1)} type="button">Next</button>
-          </nav>
         </section>
-      </div>
-    </main>
+
+        <div className="container">
+          <div className="shop-toolbar v2" role="region" aria-label="Filters and sort">
+            <div className="af-bar">
+              <span className="af-label">ACTIVE FILTER</span>
+              <div className="chips" aria-live="polite">
+                {chips.map((c,i)=>(
+                  <span key={i} className="chip">
+                    {c.label}
+                    <button aria-label={`Remove ${c.label}`} onClick={()=>removeChip(c)} type="button">×</button>
+                  </span>
+                ))}
+              </div>
+              <button className="link" hidden={chips.length===0} onClick={clearAll} type="button">Clear All</button>
+            </div>
+
+            <div className="toolbar-row">
+              <p className="result-count">{filtered.length} items found</p>
+              <div className="sort-area">
+                <label className="sr-only" htmlFor="sort">Sort by</label>
+                <select id="sort" value={sort} onChange={(e)=>{ setSort(e.target.value); setPage(1); }}>
+                  <option value="featured">แนะนำ</option>
+                  <option value="price-asc">ราคาน้อย → มาก</option>
+                  <option value="price-desc">ราคามาก → น้อย</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="container shop-layout">
+          <aside className="filters" aria-label="Filter Options">
+            <h2 className="filters__title">Filter Options</h2>
+
+            <div className="filters__scroll">
+              <section className="filter-block" aria-expanded="true">
+                <div className="filter-head" onClick={(e)=>{ const blk=e.currentTarget.parentElement; const now=blk.getAttribute("aria-expanded")!=="true"; blk.setAttribute("aria-expanded", String(now)); }}>
+                  <h3>Product Categories</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
+                </div>
+                <div className="filter-body"><CheckList list={CAT_LIST} setKey="cat" selected={filters.cat}/></div>
+              </section>
+
+              <section className="filter-block" aria-expanded="true">
+                <div className="filter-head" onClick={(e)=>{ const blk=e.currentTarget.parentElement; const now=blk.getAttribute("aria-expanded")!=="true"; blk.setAttribute("aria-expanded", String(now)); }}>
+                  <h3>Price (฿)</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
+                </div>
+                <div className="filter-body">
+                  <div className="price-row">
+                    <input type="number" inputMode="decimal" placeholder="min"
+                           value={minVal} onChange={(e)=>setMinVal(e.target.value)}
+                           onKeyUp={(e)=> e.key==="Enter" && applyPrice(minVal?Number(minVal):null, maxVal?Number(maxVal):null)} />
+                    <span>–</span>
+                    <input type="number" inputMode="decimal" placeholder="max"
+                           value={maxVal} onChange={(e)=>setMaxVal(e.target.value)}
+                           onKeyUp={(e)=> e.key==="Enter" && applyPrice(minVal?Number(minVal):null, maxVal?Number(maxVal):null)} />
+                  </div>
+                  <button className="btn btn--apply" type="button"
+                          onClick={()=>applyPrice(minVal?Number(minVal):null, maxVal?Number(maxVal):null)}>Apply</button>
+                </div>
+              </section>
+
+              <section className="filter-block" aria-expanded="true">
+                <div className="filter-head" onClick={(e)=>{ const blk=e.currentTarget.parentElement; const now=blk.getAttribute("aria-expanded")!=="true"; blk.setAttribute("aria-expanded", String(now)); }}>
+                  <h3>Brands</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
+                </div>
+                <div className="filter-body"><CheckList list={BRANDS} setKey="brand" selected={filters.brand}/></div>
+              </section>
+
+              <section className="filter-block" aria-expanded="true">
+                <div className="filter-head" onClick={(e)=>{ const blk=e.currentTarget.parentElement; const now=blk.getAttribute("aria-expanded")!=="true"; blk.setAttribute("aria-expanded", String(now)); }}>
+                  <h3>Promotions</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
+                </div>
+                <div className="filter-body"><CheckList list={PROMOS} setKey="promo" selected={filters.promo}/></div>
+              </section>
+            </div>
+          </aside>
+
+          <section className="products" aria-label="Products">
+            <div className="grid" aria-live="polite">
+              {pageItems.map((p)=> <ProductCard key={p.id} p={p} />)}
+              {pageItems.length===0 && <p className="no-result">No products found.</p>}
+            </div>
+
+            <nav className="pagination" aria-label="Pagination">
+              <button className="page-btn" disabled={page<=1} onClick={()=>setPage(Math.max(1,page-1))} type="button">Prev</button>
+              <span className="page-info">Page {page} / {totalPages}</span>
+              <button className="page-btn" disabled={page>=totalPages} onClick={()=>setPage(page+1)} type="button">Next</button>
+            </nav>
+          </section>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
   );
 }

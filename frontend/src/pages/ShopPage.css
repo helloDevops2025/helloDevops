@@ -1,3 +1,4 @@
+/* ShopPage.css */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 
 /* ================= Vars ================= */
@@ -19,12 +20,20 @@
     --max: 1280px;
 }
 
+/* ====== Layout wrapper (ให้ Footer ชิดล่างเสมอ) ====== */
+.page-wrap{
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+}
+
 /* ================= Base ================= */
 .shop-page {
     background: var(--bg);
     color: var(--text);
     font-family: "Poppins", sans-serif;
     padding-bottom: 40px;
+    flex: 1; /* ดันให้ main กินพื้นที่ที่เหลือ เพื่อให้ Footer ลงก้น */
 }
 
 .container {
