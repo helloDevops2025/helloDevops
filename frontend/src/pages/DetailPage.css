@@ -76,7 +76,7 @@
 .detail-page.container,
 .detail-page.page {
   max-width: 1200px;
-  margin: 70px auto 48px;
+  margin: 5px auto 48px;
   padding: 0 16px;
 }
 
@@ -86,6 +86,7 @@
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(10, 20, 60, .06);
   padding: 22px;
+  margin-top: 24px;
 }
 
 /* Product hero */
@@ -474,6 +475,7 @@
   height: auto;
   object-fit: contain;
   display: block;
+  border-radius: 12px;
 }
 
 .detail-page .product-card__title {

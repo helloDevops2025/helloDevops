@@ -20,11 +20,11 @@
     --max: 1280px;
 }
 
-/* ====== Layout wrapper (ให้ Footer ชิดล่างเสมอ) ====== */
-.page-wrap{
-    min-height:100dvh;
-    display:flex;
-    flex-direction:column;
+/* ====== Layout wrapper  ====== */
+.page-wrap {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* ================= Base ================= */
@@ -33,7 +33,7 @@
     color: var(--text);
     font-family: "Poppins", sans-serif;
     padding-bottom: 40px;
-    flex: 1; /* ดันให้ main กินพื้นที่ที่เหลือ เพื่อให้ Footer ลงก้น */
+    flex: 1;
 }
 
 .container {
@@ -46,12 +46,13 @@
 .wl-hero {
     background: #3E40AE;
     border-bottom: 1px solid rgba(255, 255, 255, .08);
+    margin-bottom: 0 !important;
 }
 
 .wl-hero__inner {
     max-width: var(--max);
     margin: 0 auto;
-    padding: 28px 20px;
+    padding-bottom: 10px !important;
 }
 
 .wl-title {
@@ -87,9 +88,18 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 16px 0 10px;
+    padding-top: 6px !important;
 }
 
+.container .shop-toolbar.v2 {
+    margin-bottom: 0 !important;
+}
+
+.container+.container.shop-layout {
+    margin-top: -35px !important;
+}
+
+/* Active filter bar */
 .af-bar {
     display: flex;
     align-items: center;
@@ -590,7 +600,7 @@
     font: 800 16px/1 "Poppins", sans-serif;
 }
 
-/* ===== Wishlist line + HEART (ไม่เบี้ยว, กดแล้วถมเต็ม) ===== */
+/* ===== Wishlist line + HEART  ===== */
 .p-wishline {
     display: inline-flex;
     align-items: center;
