@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
+import Footer from "../components/Footer"; 
 import "./PlaceOrderPage.css";
 import "./breadcrumb.css";
 
@@ -478,6 +479,8 @@ export default function PlaceOrderPage() {
           />
         </div>
       </main>
+
+      <Footer />
 
       {/* Sticky bottom action (mobile-first) */}
       <div className="sticky-checkout-bar">
