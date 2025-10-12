@@ -1,15 +1,42 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
-:root { --max: 1280px;}
 
-/* global base (คงไว้ได้) */
+/* === Layout vars (ปรับได้ตามความสูง Header จริง) === */
+:root{
+  --max: 1280px;
+  --header-h: 40px;         /* ถ้าเฮดเดอร์สูงกว่านี้ เปลี่ยนเลขได้เลย */
+}
+
 html, body { height: auto; overflow: auto; }
 body { background: #f7f8fc; margin: 0; font-family: "Poppins", system-ui, sans-serif; }
 
-/* ===== เฉพาะหน้า Cart: ใช้ .cart-page เป็น scope ===== */
-
-/* ถ้าหน้านี้ต้องการปรับ header ค่อยปรับใน scope */
+/* ===== เฉพาะหน้า Cart ===== */
 .cart-page .pm-topbar { display: block; height: 28px; }
 .cart-page .pm-logo img { height: 80px; }
+
+/* ให้ทั้งหน้าเว้นที่เฮดเดอร์ + กันซ้อนทับ */
+.cart-page.container {
+  max-width: var(--max);
+  margin: 0 auto;
+  position: relative;
+  z-index: 0;
+}
+
+/* breadcrumb ให้ชัวร์ว่าอยู่เหนือพื้นหลังของคอนเทนต์ */
+.cart-page .pm-breadcrumb{
+  font-family: "Poppins", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+
+  color: #6b7280;
+  margin: 12px 0 18px;
+
+  position: relative;
+  z-index: 1;
+}
+.cart-page .pm-breadcrumb a:hover { color: #3E40AE; text-decoration: underline; text-underline-offset: 2px; }
+.cart-page .pm-breadcrumb .divider { color: #9ca3af; margin: 0 6px; font-size: 13px; line-height: 1; }
 
 /* ---- สไตล์ของหน้า Cart ---- */
 .cart-page .title { margin: 6px 0 18px; }
@@ -22,16 +49,13 @@ body { background: #f7f8fc; margin: 0; font-family: "Poppins", system-ui, sans-s
 }
 .cart-page .back-top-link:hover { background:#eef2ff; }
 
-/* container ของหน้านี้เท่านั้น */
-.cart-page.container { max-width: var(--max); margin: 0 auto; padding: 20px; }
-
 .cart-page .cart-grid {
   display:grid; grid-template-columns:1fr 380px; gap:24px; margin-top:18px;
 }
 @media (max-width:1024px){ .cart-page .cart-grid{ grid-template-columns:1fr; } }
 
 .cart-page .card {
-  background:#fff; border-radius:20px; box-shadow:0 10px 24px rgba(0,0,0,.08); padding:24px;
+  background:#fff; border-radius:20px; box-shadow:0 10px 24px rgba(0,0,0,.08); padding:24px; margin-bottom: 20px;
 }
 .cart-page .section-title { margin:0 0 14px; font:600 18px/1.2 "Poppins"; }
 
@@ -70,43 +94,30 @@ body { background: #f7f8fc; margin: 0; font-family: "Poppins", system-ui, sans-s
   display:flex; justify-content:center; align-items:center;
   margin-top:20px; flex-wrap:wrap; gap:10px;
 }
-
 .cart-page .btn { padding:12px 16px; border-radius:14px; border:1px solid transparent; cursor:pointer; font-weight:600; }
-.cart-page .btn-primary { background:#4f46e5; color:#fff; }
+.cart-page .btn-primary {
+  background: #4f46e5;
+  color: #fff;
+  display: flex;                 /* ใช้ flex ภายในปุ่ม */
+  justify-content: center;       /* จัดข้อความให้อยู่กลางแนวนอน */
+  align-items: center;           /* จัดกลางแนวตั้ง */
+  text-align: center;            /* เผื่อกรณีหลายบรรทัด */
+  font-weight: 600;
+}
+
 
 .cart-page .empty {
   text-align:center; padding:36px; border:1px dashed #e5e7eb; border-radius:16px; background:#fff;
 }
 
-/* ระยะห่างจาก header */
-.cart-page.cart-container{
-  margin-top: 30px;  /* ปรับเลขตามที่ต้องการให้ต่ำลง */
+/* ปุ่มให้ยืดพอดี */
+.cart-page #goCheckout { flex:1 1 300px; text-align:center; }
+
+/* mobile: เฮดเดอร์มักสูงขึ้นเล็กน้อย */
+@media (max-width: 640px){
+  :root{ --header-h: 108px; }
 }
 
-
-/* ปรับปุ่มใน actions ให้อยู่กลางและกว้างพอดี */
-.cart-page #goCheckout {
-  flex:1 1 300px;
-  text-align:center;
+.title {
+  margin-top: 8px !important;
 }
-
-/* ==== Force breadcrumb font on Cart only ==== */
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
-
-.cart-page .pm-breadcrumb,
-.cart-page .pm-breadcrumb a,
-.cart-page .pm-breadcrumb .current {
-  font-family: "Poppins", system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
-
-/* น้ำหนักตัวอักษรให้เหมือนหน้า Place */
-
-
-/* สี/ตัวคั่นให้ตรงกัน (เผื่อมี override จากที่อื่น) */
-.cart-page .pm-breadcrumb { color: #6b7280; margin: 12px 0 18px; }
-.cart-page .pm-breadcrumb a:hover { color: #3E40AE; text-decoration: underline; text-underline-offset: 2px; }
-.cart-page .pm-breadcrumb .divider { color: #9ca3af; margin: 0 6px; font-size: 13px; line-height: 1; }

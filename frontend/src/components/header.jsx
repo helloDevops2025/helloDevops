@@ -85,7 +85,7 @@ const Header = () => {
         path.startsWith("/register") ||
         path.startsWith("/profile") ||
         path.startsWith("/account") ||
-        path.startsWith("/orders");
+        path.startsWith("/history");
       if (isAccountRelated) markActive(accountBtn);
     }
   }, []);
@@ -147,7 +147,7 @@ const Header = () => {
                 role="menu"
               >
                 <a
-                  href="/orders"
+                  href="/history"
                   role="menuitem"
                   tabIndex={accOpen ? 0 : -1}
                   onClick={() => setAccOpen(false)}

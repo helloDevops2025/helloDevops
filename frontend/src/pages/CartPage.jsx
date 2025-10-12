@@ -5,6 +5,9 @@ import Header from "../components/Header";
 import "../components/header.css";              // สไตล์ของ Header
 import "./CartPage.css";
 import "./breadcrumb.css";
+import Footer from "../components/footer";
+
+// Remove this incomplete CartPage component and keep only the main one below
 
 const LS_KEY = "pm_cart";
 // ใช้ locale ให้ถูกต้อง
@@ -168,6 +171,7 @@ export default function CartPage() {
           </div>
         )}
       </main>
+      <Footer />
     </>
   );
 }

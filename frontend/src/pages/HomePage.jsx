@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import "./HomePage.css";
 import Header from "../components/Header";
+import Footer from "../components/footer";
 
 const HomePage = () => {
   const allProductsRef = useRef(null);
@@ -145,8 +146,6 @@ const HomePage = () => {
           <section className="all-products" aria-labelledby="all-title">
             <div className="ap-head">
               <h3 id="all-title">All Products</h3>
-
-              
             </div>
 
             <span className="ap-underline" aria-hidden="true"></span>
@@ -204,13 +203,17 @@ const HomePage = () => {
                 </div>
               </a>
             </div>
+
             {/* 🔥 ปุ่มดำกลมลูกศรขาว อยู่ข้างหัวข้อ */}
-              <button className="arrow-btn" onClick={handleScrollNext} aria-label="เลื่อนไปขวา">
-                →
-              </button>
+            <button className="arrow-btn" onClick={handleScrollNext} aria-label="เลื่อนไปขวา">
+              →
+            </button>
           </section>
         </div>
       </main>
+
+      {/* ===== Footer ===== */}
+      <Footer />
     </>
   );
 };

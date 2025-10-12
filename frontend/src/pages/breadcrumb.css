@@ -1,7 +1,91 @@
+
+/* ===========================
+   BREADCRUMB GLOBAL STYLE
+   ใช้ได้ทุกหน้า (Cart / Place Order)
+   =========================== */
+.pm-breadcrumb,
+nav[aria-label="breadcrumb"],
+.breadcrumb {
+  position: relative !important;
+  z-index: 100 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+
+  /* ✅ ระยะห่างจาก Header เท่ากันทุกหน้า */
+  margin-top: calc(var(--header-h) + 8px) !important;
+  margin-bottom: 16px !important;
+
+  /* ✅ ฟอนต์ขนาดเดียวกันทุกหน้า */
+  font-family: "Poppins", system-ui, sans-serif;
+  font-size: 14px !important;
+  line-height: 1.6;
+  color: #6b7280 !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px; /* ระยะห่างแต่ละ item */
+}
+
+/* ===== Link style ===== */
+.pm-breadcrumb a,
+nav[aria-label="breadcrumb"] a,
+.breadcrumb a {
+  color: #6b7280 !important;
+  text-decoration: none;
+}
+
+.pm-breadcrumb a:hover,
+nav[aria-label="breadcrumb"] a:hover,
+.breadcrumb a:hover {
+  color: #3E40AE !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ===== Item style ===== */
+.pm-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px; /* ระหว่างข้อความกับ divider */
+}
+
+/* ===== Current page ===== */
+.pm-breadcrumb .current {
+  color: #111 !important;
+  font-weight: 600;
+  font-size: 14px !important; /* ✅ บังคับ current ให้เท่ากันด้วย */
+}
+
+/* ===== Divider (›) ===== */
+.pm-breadcrumb .divider {
+  color: #9ca3af;
+  font-size: 13px;
+  margin: 0 6px;
+  line-height: 1;
+}
+
+/* ===== Responsive tweak ===== */
+@media (max-width: 640px) {
+  :root {
+    --header-h: 108px;
+  }
+  .pm-breadcrumb,
+  nav[aria-label="breadcrumb"],
+  .breadcrumb {
+    margin-top: calc(var(--header-h) + 4px) !important;
+    font-size: 13px !important; /* ขนาดย่อเล็กลงเฉพาะมือถือ */
+  }
+}
+
+
 /* base */
-.pm-breadcrumb {
+.custom-breadcrumb {
   font-size: 14px;
-  color: #666;
+  color: #ffffff; /* สีขาว */
   margin: 12px 0 18px;
   display: flex;
   flex-wrap: wrap;
@@ -10,31 +94,31 @@
 }
 
 /* item */
-.pm-breadcrumb__item {
+.custom-breadcrumb__item {
   display: inline-flex;
   align-items: center;
   gap: 4px; /* ระหว่างข้อความกับ divider */
 }
 
 /* link */
-.pm-breadcrumb a {
-  color: #4f46e5;
+.custom-breadcrumb a {
+  color: #ffffff !important; /* สีขาว */
   text-decoration: none;
 }
-.pm-breadcrumb a:hover {
+.custom-breadcrumb a:hover {
   text-decoration: underline;
 }
 
 /* current page */
-.pm-breadcrumb .current {
-  color: #111;
+.custom-breadcrumb .current {
+  color: #ffffff ;
   font-weight: 600;
 }
 
 /* divider (›) */
-.pm-breadcrumb .divider {
-  color: #9ca3af;
-  margin: 0 6px;   /* <<< ปรับจาก 10px → 6px ให้นิ่งพอดี */
+.custom-breadcrumb .divider {
+  color: #9ca3af !important;
+  margin: 0 6px;
   font-size: 13px;
   line-height: 1;
 }

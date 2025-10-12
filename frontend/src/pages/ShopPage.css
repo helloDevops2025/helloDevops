@@ -1,3 +1,873 @@
-/* ShopPage */
-body { font-family: system-ui, Arial, sans-serif; }
-h1 { margin: 24px; text-align: center; font-size: 28px; }
+/* ShopPage.css */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+/* ================= Vars ================= */
+:root {
+    --primary: #3E40AE;
+    --cta: #3662F4;
+    --cta-dark: #2b4fcb;
+    --text: #111;
+    --muted: #6b7280;
+    --bg: #f1f4fb;
+    --card: #fff;
+    --line: #e5e7eb;
+    --line-strong: #d8dbea;
+    --chip: #eef2ff;
+    --chip-border: #d9ddff;
+    --sidebar-bg: #eef2ff;
+    --radius: 16px;
+    --shadow: 0 10px 24px rgba(0, 0, 0, .08);
+    --max: 1280px;
+}
+
+/* ====== Layout wrapper (ให้ Footer ชิดล่างเสมอ) ====== */
+.page-wrap{
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+}
+
+/* ================= Base ================= */
+.shop-page {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Poppins", sans-serif;
+    padding-bottom: 40px;
+    flex: 1; /* ดันให้ main กินพื้นที่ที่เหลือ เพื่อให้ Footer ลงก้น */
+}
+
+.container {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ================= Hero ================= */
+.wl-hero {
+    background: #3E40AE;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.wl-hero__inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 28px 20px;
+}
+
+.wl-title {
+    margin: 0 0 6px;
+    font: 700 28px/1.15 "Poppins", sans-serif;
+    letter-spacing: .5px;
+    color: #fff;
+}
+
+.pm-breadcrumb ol {
+    list-style: none;
+    display: flex;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    color: #e5e7eb;
+    font: 600 12px/1 "Poppins", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+}
+
+.pm-breadcrumb a {
+    color: #eef2ff;
+    text-decoration: none;
+}
+
+.pm-breadcrumb li[aria-current="page"] {
+    color: #fff;
+}
+
+/* ================= Toolbar ============== */
+.shop-toolbar.v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 0 10px;
+}
+
+.af-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.af-label {
+    font: 700 12px/1 "Poppins", sans-serif;
+    color: #9aa1b1;
+    letter-spacing: .12em;
+}
+
+.chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.chip {
+    background: var(--chip);
+    border: 1px solid var(--chip-border);
+    color: #3E40AE;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font: 600 12px/1 "Poppins", sans-serif;
+}
+
+.chip button {
+    all: unset;
+    cursor: pointer;
+    padding-left: 6px;
+}
+
+.link {
+    background: none;
+    border: none;
+    color: #3E40AE;
+    font: 700 12px/1 "Poppins", sans-serif;
+    cursor: pointer;
+}
+
+.toolbar-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.result-count {
+    margin: 0;
+    color: #6b7280;
+    font: 500 14px/1.2 "Poppins", sans-serif;
+}
+
+/* Sort select + caret */
+.sort-area select {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font: 500 14px/1 "Poppins", sans-serif;
+}
+
+.shop-toolbar .sort-area {
+    position: relative;
+}
+
+.shop-toolbar .sort-area select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: 1px solid var(--line);
+    background-color: #fff;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239aa3b2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px 16px;
+    border-radius: 10px;
+    padding: 8px 40px 8px 12px;
+    color: #0f172a;
+    cursor: pointer;
+}
+
+.shop-toolbar .sort-area select::-ms-expand {
+    display: none;
+}
+
+.shop-toolbar .sort-area select:focus {
+    outline: none;
+    border-color: #c7cdfa;
+    box-shadow: 0 0 0 3px rgba(62, 64, 174, .18);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%233E40AE' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+}
+
+/* ================= Layout =============== */
+.shop-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    align-items: start;
+    gap: 24px;
+    width: 100%;
+}
+
+@media (max-width:992px) {
+    .shop-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ================= Sidebar ============== */
+.filters {
+    background: var(--sidebar-bg);
+    border: 1px solid var(--line-strong);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 18px;
+    position: sticky;
+    top: 12px;
+    align-self: start;
+    max-height: calc(100vh - 24px);
+    overflow: hidden;
+}
+
+.filters__title {
+    font: 800 16px/1.2 "Poppins", sans-serif;
+    margin: 2px 0 14px;
+    color: #0f172a;
+}
+
+.filters__scroll {
+    overflow: auto;
+    padding: 0 2px 2px 0;
+    max-height: calc(100vh - 90px);
+}
+
+.filter-block {
+    margin: 0 0 16px;
+    border: none;
+    padding: 0;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 1px 0 #eef0f7 inset;
+    overflow: hidden;
+}
+
+.filter-block:last-child {
+    margin-bottom: 0;
+}
+
+.filter-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: #fff;
+    border-bottom: 1px solid #eef0f7;
+    cursor: pointer;
+    user-select: none;
+}
+
+.filter-head h3 {
+    margin: 0;
+    font: 700 13px/1.2 "Poppins", sans-serif;
+    color: #0f172a;
+    letter-spacing: .2px;
+}
+
+.acc-btn {
+    all: unset;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+}
+
+.acc-btn::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid #95a1b3;
+    border-bottom: 2px solid #95a1b3;
+    transform: rotate(45deg);
+}
+
+.filter-block[aria-expanded="false"] .acc-btn::before {
+    transform: rotate(-45deg);
+}
+
+.filter-block[aria-expanded="false"] .filter-body {
+    display: none;
+}
+
+.filter-body {
+    padding: 12px 12px 14px;
+    background: #f7f8ff;
+}
+
+/* ================= Price (min–max) ============== */
+.price-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-bottom: 8px !important;
+}
+
+.price-row span {
+    text-align: center;
+    color: #98a2b3;
+    font-weight: 600;
+    letter-spacing: .02em;
+}
+
+.price-row input {
+    height: 32px !important;
+    border: 1px solid #e3e6f3 !important;
+    background: #fff !important;
+    border-radius: 8px !important;
+    padding: 0 10px !important;
+    font: 500 13px/1 "Poppins", sans-serif !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.price-row input[type="number"]::-webkit-outer-spin-button,
+.price-row input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.price-row input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+.btn.btn--apply {
+    display: block !important;
+    width: 100% !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+    font-size: 13.5px !important;
+    line-height: 1 !important;
+    margin-top: 6px !important;
+    border: 1px solid #d7dcfb !important;
+    background: #fff !important;
+    color: #3646b1 !important;
+}
+
+.btn.btn--apply:hover {
+    border-color: #c7cdfa;
+}
+
+/* ================= Checklist ============== */
+.checklist {
+    display: grid;
+    gap: 0;
+}
+
+.checklist label {
+    display: grid;
+    grid-template-columns: 16px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px;
+    margin: 0;
+    line-height: 1.2;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color .15s, box-shadow .15s;
+}
+
+.checklist label+label {
+    margin-top: 4px;
+}
+
+.checklist label:hover {
+    background: #f2f4ff;
+    box-shadow: inset 0 0 0 1px #e7e9fe;
+}
+
+.checklist input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #cfd3ea;
+    border-radius: 5px;
+    background: #fff;
+    position: relative;
+    transition: background-color .15s, border-color .15s, box-shadow .15s, transform .05s;
+}
+
+.checklist input[type="checkbox"]:hover {
+    border-color: #bfc6ea;
+    box-shadow: 0 0 0 3px rgba(62, 64, 174, .08);
+}
+
+.checklist input[type="checkbox"]:active {
+    transform: scale(.96);
+}
+
+.checklist input[type="checkbox"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(62, 64, 174, .22);
+    border-color: #8e96df;
+}
+
+.checklist input[type="checkbox"]:checked {
+    background: #3E40AE;
+    border-color: #3E40AE;
+    box-shadow: 0 0 0 3px rgba(62, 64, 174, .18);
+}
+
+.checklist input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 6px;
+    height: 10px;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: translateY(-1px) rotate(45deg);
+}
+
+.checklist input[type="checkbox"]:checked+span {
+    color: #3E40AE;
+    font-weight: 600;
+}
+
+.checklist input[type="checkbox"]:disabled {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    cursor: not-allowed;
+}
+
+.checklist input[type="checkbox"]:disabled+span {
+    color: #9ca3af;
+}
+
+.checklist label span {
+    color: #0f172a;
+    font: 500 13.5px/1.35 "Poppins", sans-serif;
+}
+
+.checklist.scroll {
+    max-height: 172px;
+    overflow: auto;
+    padding-right: 6px;
+    border-radius: 10px;
+}
+
+.filters__scroll::-webkit-scrollbar,
+.checklist.scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filters__scroll::-webkit-scrollbar-track,
+.checklist.scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.filters__scroll::-webkit-scrollbar-thumb,
+.checklist.scroll::-webkit-scrollbar-thumb {
+    background: #cfd6ff;
+    border-radius: 6px;
+}
+
+.filters__scroll::-webkit-scrollbar-button,
+.checklist.scroll::-webkit-scrollbar-button {
+    display: none;
+}
+
+.checklist.scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #cfd6ff transparent;
+}
+
+/* ================= Buttons ============== */
+.btn {
+    border: none;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font: 700 14px/1 "Poppins", sans-serif;
+    cursor: pointer;
+}
+
+.btn--sm {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.btn--outline {
+    background: #fff;
+    border: 1px solid #c7cdfa;
+    color: #3E40AE;
+}
+
+.btn--cta {
+    background: var(--cta);
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(54, 98, 244, .25);
+}
+
+.btn--cta:hover {
+    background: var(--cta-dark);
+}
+
+/* ================= Products/Grid ========= */
+.products .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+@media (max-width:992px) {
+    .products .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width:560px) {
+    .products .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.card:hover,
+.card:focus {
+    outline: none;
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, .25), var(--shadow);
+}
+
+.p-thumb {
+    position: relative;
+    background: #fff;
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.p-thumb img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+}
+
+.p-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #5b21b6;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font: 700 12px/1 "Poppins", sans-serif;
+}
+
+.p-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.p-title {
+    margin: 0;
+    font: 700 14px/1.35 "Poppins", sans-serif;
+    color: #0f172a;
+}
+
+.p-price-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.p-price {
+    font: 800 16px/1 "Poppins", sans-serif;
+}
+
+/* ===== Wishlist line + HEART (ไม่เบี้ยว, กดแล้วถมเต็ม) ===== */
+.p-wishline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: #98a2b3;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font: 700 12px/1 "Poppins", sans-serif;
+    cursor: pointer;
+    width: max-content;
+}
+
+.p-wishline:hover {
+    color: #7c3aed;
+}
+
+.p-wishline.on {
+    color: #ef4444;
+    background: #ffe8e8;
+    border-color: #fecaca;
+}
+
+.p-wishline .heart {
+    width: 18px;
+    height: 18px;
+    display: inline-block;
+}
+
+.p-wishline .heart path {
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 1.8 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    vector-effect: non-scaling-stroke !important;
+}
+
+.p-wishline.on .heart path {
+    fill: currentColor !important;
+    stroke: currentColor !important;
+    stroke-width: 1 !important;
+}
+
+/* ================= Pagination ============ */
+.pagination {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.page-btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font: 700 14px/1 "Poppins", sans-serif;
+}
+
+.page-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.page-info {
+    font: 700 13px/1 "Poppins", sans-serif;
+}
+
+/* ================= A11y ================= */
+.sr-only {
+    position: absolute !important;
+    height: 1px;
+    width: 1px;
+    overflow: hidden;
+    clip: rect(1px, 1px, 1px, 1px);
+    white-space: nowrap;
+}
+
+/* ================= Hard Fix ============== */
+.shop-page,
+.shop-page * {
+    box-sizing: border-box;
+    writing-mode: horizontal-tb !important;
+    white-space: normal !important;
+}
+
+.container.shop-layout,
+.shop-layout {
+    display: grid !important;
+    grid-template-columns: 320px minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 24px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.shop-layout .products {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    overflow: visible !important;
+}
+
+.shop-page .products .grid {
+    all: revert;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+    grid-auto-rows: auto !important;
+    gap: 20px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.shop-page .products .grid>* {
+    min-width: 0 !important;
+    max-width: none !important;
+}
+
+.shop-page .card {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+}
+
+.shop-page .p-thumb img {
+    display: block !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+.shop-page .products,
+.shop-page .products .grid {
+    float: none !important;
+    flex: initial !important;
+}
+
+@media (max-width:992px) {
+    .shop-page .products .grid {
+        grid-template-columns: repeat(2, minmax(260px, 1fr)) !important;
+    }
+}
+
+@media (max-width:560px) {
+    .shop-page .products .grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width:560px) {
+    .checklist label {
+        padding: 4px 6px;
+        gap: 8px;
+    }
+
+    .checklist label+label {
+        margin-top: 3px;
+    }
+
+    .checklist label span {
+        font-size: 13px;
+    }
+}
+
+/* ===== RELATED PRODUCTS style (การ์ด) ===== */
+.shop-page .card {
+    border: 1px solid #e6e9f6 !important;
+    border-radius: 20px !important;
+    box-shadow: 0 6px 20px rgba(24, 39, 75, .06) !important;
+    transition: transform .18s, box-shadow .18s, border-color .18s !important;
+}
+
+.shop-page .card:hover {
+    transform: translateY(-3px) !important;
+    border-color: #cfd6ff !important;
+    box-shadow: 0 14px 30px rgba(24, 39, 75, .10) !important;
+}
+
+.shop-page .card .p-thumb {
+    aspect-ratio: 1/1 !important;
+    background: #f3f5fb !important;
+    border: 1px solid #e6e9f6 !important;
+    border-radius: 14px !important;
+    margin: 18px 18px 0 !important;
+    padding: 14px !important;
+}
+
+.shop-page .card .p-thumb img {
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    transition: transform .25s ease !important;
+}
+
+.shop-page .card:hover .p-thumb img {
+    transform: scale(1.03) !important;
+}
+
+.shop-page .card .p-body {
+    text-align: left !important;
+    padding: 16px 18px 18px !important;
+    gap: 10px !important;
+}
+
+.shop-page .card .p-title {
+    margin: 0 !important;
+    font-weight: 680 !important;
+    font-size: 15px !important;
+    line-height: 1.35 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    overflow: hidden !important;
+    min-height: calc(1.35em * 2) !important;
+}
+
+.shop-page .card .p-price-row {
+    justify-content: flex-start !important;
+    margin-top: 1px !important;
+}
+
+.shop-page .card .p-price {
+    font-size: 17px !important;
+    font-weight: 650 !important;
+    color: #3E40AE !important;
+}
+
+.shop-page .card .p-wishline {
+    width: auto !important;
+    margin-top: 5px;
+    min-height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    font-weight: 500 !important;
+    gap: 8px !important;
+}
+
+.shop-page .card .btn.btn--cta {
+    width: 100% !important;
+    height: 48px !important;
+    padding: 0 16px !important;
+    border-radius: 14px !important;
+    font-size: 14px !important;
+    letter-spacing: .3px !important;
+    background: #3E40AE !important;
+    border: 1px solid #3E40AE !important;
+    color: #fff !important;
+    box-shadow: 0 6px 18px rgba(62, 64, 174, .28) !important;
+}
+
+.shop-page .card .btn.btn--cta:hover {
+    background: #2b2f8f !important;
+    border-color: #2b2f8f !important;
+}
+
+.shop-page .card .p-badge {
+    top: 16px !important;
+    left: 16px !important;
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    border-radius: 999px !important;
+}
+
+@media (max-width:560px) {
+    .shop-page .card .p-thumb {
+        margin: 14px 14px 0 !important;
+    }
+
+    .shop-page .card .p-body {
+        padding: 14px !important;
+    }
+}

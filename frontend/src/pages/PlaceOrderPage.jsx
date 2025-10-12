@@ -1,5 +1,6 @@
 // src/pages/PlaceOrderPage.jsx
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import "./PlaceOrderPage.css";
 import "./breadcrumb.css";
@@ -233,7 +234,6 @@ function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
             <p className="addr-text">{addr.text}</p>
             <div className="addr-actions">
               <button type="button" className="icon-btn" onClick={() => onEdit(addr)} aria-label="Edit address">
-                {/* Pencil icon */}
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M12 20h9"/>
@@ -243,7 +243,6 @@ function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
               </button>
 
               <button type="button" className="icon-btn danger" onClick={() => onDelete(addr.id)} aria-label="Delete address">
-                {/* Trash icon */}
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <polyline points="3 6 5 6 21 6"/>
@@ -270,19 +269,17 @@ function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
 }
 
 /* ===== Order Summary ===== */
-function OrderSummary({ cart }) {
+function OrderSummary({ cart, canConfirm, onConfirm }) {
   const { subtotal, itemsCount } = useMemo(() => {
-    let subtotal = 0,
-      itemsCount = 0;
+    let subtotal = 0, itemsCount = 0;
     for (const it of cart) {
       subtotal += it.price * it.qty;
       itemsCount += it.qty;
     }
     return { subtotal, itemsCount };
   }, [cart]);
-  const shipping = 0,
-    discount = 0,
-    total = subtotal - discount + shipping;
+  const shipping = 0, discount = 0, total = subtotal - discount + shipping;
+
   return (
     <aside className="card summary-card">
       <h2 className="section-title">Your order</h2>
@@ -308,6 +305,7 @@ function OrderSummary({ cart }) {
           );
         })}
       </div>
+
       <div className="totals">
         <div className="line">
           <span>Item(s) total</span>
@@ -326,11 +324,21 @@ function OrderSummary({ cart }) {
           <span>{currencyTHB(shipping)}</span>
         </div>
         <div className="line total">
-          <span>
-            Total ({itemsCount} item{itemsCount > 1 ? "s" : ""})
-          </span>
+          <span> Total ({itemsCount} item{itemsCount > 1 ? "s" : ""}) </span>
           <span className="price">{currencyTHB(total)}</span>
         </div>
+      </div>
+
+      {/* Primary action inside the summary card (desktop-first) */}
+      <div className="summary-actions">
+        <button
+          className="btn-primary"
+          disabled={!canConfirm}
+          onClick={onConfirm}
+          title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
+        >
+          ยืนยันคำสั่งซื้อ
+        </button>
       </div>
     </aside>
   );
@@ -338,6 +346,8 @@ function OrderSummary({ cart }) {
 
 /* ===== Main Page ===== */
 export default function PlaceOrderPage() {
+  const navigate = useNavigate();
+
   useEffect(() => {
     document.body.classList.add("po-page");
     return () => document.body.classList.remove("po-page");
@@ -411,6 +421,14 @@ export default function PlaceOrderPage() {
     // eslint-disable-next-line
   }, [addresses.length]);
 
+  const canConfirm = addresses.some(a => a.isDefault);
+
+  const handleConfirm = () => {
+    if (!canConfirm) return;
+    const orderId = Date.now(); // mock id
+    navigate(`/tracking/${orderId}`);
+  };
+
   return (
     <div className="place-order-page">
       <Header />
@@ -418,6 +436,7 @@ export default function PlaceOrderPage() {
       <main className="container">
         <Breadcrumb items={breadcrumbItems} />
         <h1 className="title">Checkout Page</h1>
+
         <div className="checkout-grid">
           <section className="card form-card">
             <h2 className="section-title">Shipping Address</h2>
@@ -452,9 +471,25 @@ export default function PlaceOrderPage() {
             )}
           </section>
 
-          <OrderSummary cart={cart} />
+          <OrderSummary
+            cart={cart}
+            canConfirm={canConfirm}
+            onConfirm={handleConfirm}
+          />
         </div>
       </main>
+
+      {/* Sticky bottom action (mobile-first) */}
+      <div className="sticky-checkout-bar">
+        <button
+          className="btn-primary"
+          disabled={!canConfirm}
+          onClick={handleConfirm}
+          title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
+        >
+          ยืนยันคำสั่งซื้อ
+        </button>
+      </div>
     </div>
   );
 }
