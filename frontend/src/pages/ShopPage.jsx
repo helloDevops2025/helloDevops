@@ -1,7 +1,8 @@
 // ShopPage.jsx
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom"; 
 import "./ShopPage.css";
-import Footer from "../components/footer";
+import Footer from "../components/Footer";
 
 /* ===== Placeholder (ถ้ารูปหาย) ===== */
 const PLACEHOLDER_DATA =
@@ -16,96 +17,16 @@ const PLACEHOLDER_DATA =
 
 /* ===== Demo Data ===== */
 const PRODUCTS = [
-  {
-    id: 1,
-    name: "มะพร้าวน้ำหอมปอกเปลือก ลูกละ",
-    price: 25.0,
-    brand: "CP",
-    cat: "Fruits & Vegetables",
-    promo: "-",
-    img: "/assets/products/p1.png",
-  },
-  {
-    id: 2,
-    name: "ซุปแห้งสำเร็จรูป (หมูเด้ง)",
-    price: 35.0,
-    brand: "MK2",
-    cat: "Dried Foods",
-    promo: "1แถม1",
-    img: "/assets/products/p2.png",
-  },
-  {
-    id: 3,
-    name: "ถั่วแระ แช่แข็ง 500g",
-    price: 88.0,
-    brand: "Betagro",
-    cat: "Frozen Foods",
-    promo: "-",
-    img: "/assets/products/p3.png",
-  },
-  {
-    id: 4,
-    name: "ขนมปังฝอยทอง 4 ชิ้น",
-    price: 19.0,
-    brand: "CP",
-    cat: "Dried Foods",
-    promo: "Flash Sale",
-    img: "/assets/products/p4.png",
-  },
-  {
-    id: 5,
-    name: "หมูบดแช่แข็ง 250g",
-    price: 78.0,
-    brand: "Betagro",
-    cat: "Frozen Foods",
-    promo: "-",
-    img: "/assets/products/p5.png",
-  },
-  {
-    id: 6,
-    name: "อกไก่ 2 กก.",
-    price: 564.0,
-    brand: "CP",
-    cat: "Meats",
-    promo: "-",
-    img: "/assets/products/p6.png",
-  },
-  {
-    id: 7,
-    name: "ซอสมะเขือเทศ 260 ก.",
-    price: 33.0,
-    brand: "Roza",
-    cat: "Dried Foods",
-    promo: "Best Seller",
-    img: "/assets/products/p7.png",
-  },
-  {
-    id: 8,
-    name: "โฮลวีทแซนด์วิช 170 กรัม",
-    price: 20.0,
-    brand: "Farmhouse",
-    cat: "Dried Foods",
-    promo: "-",
-    img: "/assets/products/p8.png",
-  },
-  {
-    id: 9,
-    name: "อกไก่สไลซ์ 100g",
-    price: 39.0,
-    brand: "CP",
-    cat: "Meats",
-    promo: "Flash Sale",
-    img: "/assets/products/p9.png",
-  },
-  {
-    id: 10,
-    name: "นม UHT 1 ลิตร",
-    price: 32.0,
-    brand: "Dutchie",
-    cat: "Frozen Foods",
-    promo: "On Sale",
-    img: "/assets/products/p10.png",
-  },
+  { id: 1,  name: "มะพร้าวน้ำหอมปอกเปลือก ลูกละ", price: 25.0, brand: "CP",      cat: "Fruits & Vegetables", promo: "-",          img: "/assets/products/p1.png" },
+  { id: 2,  name: "ซุปแห้งสำเร็จรูป (หมูเด้ง)",     price: 35.0, brand: "MK2",     cat: "Dried Foods",          promo: "1แถม1",     img: "/assets/products/p2.png" },
+  { id: 3,  name: "ถั่วแระ แช่แข็ง 500g",            price: 88.0, brand: "Betagro", cat: "Frozen Foods",         promo: "-",          img: "/assets/products/p3.png" },
+  { id: 4,  name: "ขนมปังฝอยทอง 4 ชิ้น",             price: 19.0, brand: "CP",      cat: "Dried Foods",          promo: "Flash Sale", img: "/assets/products/p4.png" },
+  { id: 5,  name: "หมูบดแช่แข็ง 250g",               price: 78.0, brand: "Betagro", cat: "Frozen Foods",         promo: "-",          img: "/assets/products/p5.png" },
+  { id: 6,  name: "อกไก่ 2 กก.",                      price: 564.0,brand: "CP",      cat: "Meats",                promo: "-",          img: "/assets/products/p6.png" },
+  { id: 7,  name: "ซอสมะเขือเทศ 260 ก.",              price: 33.0, brand: "Roza",    cat: "Dried Foods",          promo: "Best Seller",img: "/assets/products/p7.png" },
+  { id: 8,  name: "โฮลวีทแซนด์วิช 170 กรัม",          price: 20.0, brand: "Farmhouse",cat: "Dried Foods",         promo: "-",          img: "/assets/products/p8.png" },
+  { id: 9,  name: "อกไก่สไลซ์ 100g",                  price: 39.0, brand: "CP",      cat: "Meats",                promo: "Flash Sale", img: "/assets/products/p9.png" },
+  { id: 10, name: "นม UHT 1 ลิตร",                    price: 32.0, brand: "Dutchie", cat: "Frozen Foods",         promo: "On Sale",    img: "/assets/products/p10.png" },
 ];
 
 const PAGE_SIZE = 9;
@@ -113,19 +34,13 @@ const LS_WISH = "pm_wishlist";
 
 /* ===== ใช้ไอคอนหัวใจ “ตัวเดียว” แล้วสลับถม/เส้นด้วย CSS ===== */
 const HeartIcon = (props) => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-    className="heart"
-    {...props}
-  >
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="heart" {...props}>
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
   </svg>
 );
 
 export default function ShopPage() {
+  const [searchParams] = useSearchParams();             
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("featured");
   const [filters, setFilters] = useState({
@@ -136,30 +51,22 @@ export default function ShopPage() {
     priceMax: null,
   });
 
-  const [wish, setWish] = useState(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem(LS_WISH) || "[]"));
-    } catch {
-      return new Set();
-    }
-  });
-  useEffect(() => {
-    localStorage.setItem(LS_WISH, JSON.stringify([...wish]));
-  }, [wish]);
-
+  // filter.cat จาก ?cat= ใน URL 
   const CAT_LIST = useMemo(
     () => ["Meats", "Fruits & Vegetables", "Frozen Foods", "Dried Foods"],
     []
   );
-  const BRANDS = useMemo(
-    () => [...new Set(PRODUCTS.map((p) => p.brand))].sort(),
-    []
-  );
+  useEffect(() => {
+    const catParam = searchParams.get("cat");
+    if (catParam && CAT_LIST.includes(catParam)) {
+      setFilters((prev) => ({ ...prev, cat: new Set([catParam]) }));
+      setPage(1);
+    }
+  }, [searchParams, CAT_LIST]);
+
+  const BRANDS = useMemo(() => [...new Set(PRODUCTS.map((p) => p.brand))].sort(), []);
   const PROMOS = useMemo(
-    () =>
-      [...new Set(PRODUCTS.map((p) => p.promo))]
-        .filter((x) => x !== "-")
-        .sort(),
+    () => [...new Set(PRODUCTS.map((p) => p.promo))].filter((x) => x !== "-").sort(),
     []
   );
 
@@ -220,10 +127,7 @@ export default function ShopPage() {
     filters.brand.forEach((v) => out.push({ key: "brand", label: v }));
     filters.promo.forEach((v) => out.push({ key: "promo", label: v }));
     if (filters.priceMin != null || filters.priceMax != null)
-      out.push({
-        key: "price",
-        label: `฿${filters.priceMin ?? 0}–${filters.priceMax ?? "∞"}`,
-      });
+      out.push({ key: "price", label: `฿${filters.priceMin ?? 0}–${filters.priceMax ?? "∞"}` });
     return out;
   }, [filters]);
   const removeChip = (c) => {
@@ -246,6 +150,14 @@ export default function ShopPage() {
   }, [filters.priceMin, filters.priceMax]);
 
   const ProductCard = ({ p }) => {
+    const [wish, setWish] = useState(() => {
+      try { return new Set(JSON.parse(localStorage.getItem(LS_WISH) || "[]")); }
+      catch { return new Set(); }
+    });
+    useEffect(() => {
+      localStorage.setItem(LS_WISH, JSON.stringify([...wish]));
+    }, [wish]);
+
     const liked = wish.has(p.id);
     const [src, setSrc] = useState(p.img);
     const [loaded, setLoaded] = useState(false);
@@ -253,9 +165,7 @@ export default function ShopPage() {
     return (
       <article className="card" tabIndex={0}>
         <div className="p-thumb">
-          {p.promo && p.promo !== "-" ? (
-            <span className="p-badge">{p.promo}</span>
-          ) : null}
+          {p.promo && p.promo !== "-" ? <span className="p-badge">{p.promo}</span> : null}
           <img
             src={src}
             alt={p.name}
@@ -267,9 +177,7 @@ export default function ShopPage() {
         </div>
 
         <div className="p-body">
-          <h3 className="p-title" title={p.name}>
-            {p.name}
-          </h3>
+          <h3 className="p-title" title={p.name}>{p.name}</h3>
           <div className="p-price-row">
             <div className="p-price">฿ {p.price.toFixed(2)}</div>
           </div>
@@ -338,33 +246,18 @@ export default function ShopPage() {
         </section>
 
         <div className="container">
-          <div
-            className="shop-toolbar v2"
-            role="region"
-            aria-label="Filters and sort"
-          >
+          <div className="shop-toolbar v2" role="region" aria-label="Filters and sort">
             <div className="af-bar">
               <span className="af-label">ACTIVE FILTER</span>
               <div className="chips" aria-live="polite">
                 {chips.map((c, i) => (
                   <span key={i} className="chip">
                     {c.label}
-                    <button
-                      aria-label={`Remove ${c.label}`}
-                      onClick={() => removeChip(c)}
-                      type="button"
-                    >
-                      ×
-                    </button>
+                    <button aria-label={`Remove ${c.label}`} onClick={() => removeChip(c)} type="button">×</button>
                   </span>
                 ))}
               </div>
-              <button
-                className="link"
-                hidden={chips.length === 0}
-                onClick={clearAll}
-                type="button"
-              >
+              <button className="link" hidden={chips.length === 0} onClick={clearAll} type="button">
                 Clear All
               </button>
             </div>
@@ -372,16 +265,11 @@ export default function ShopPage() {
             <div className="toolbar-row">
               <p className="result-count">{filtered.length} items found</p>
               <div className="sort-area">
-                <label className="sr-only" htmlFor="sort">
-                  Sort by
-                </label>
+                <label className="sr-only" htmlFor="sort">Sort by</label>
                 <select
                   id="sort"
                   value={sort}
-                  onChange={(e) => {
-                    setSort(e.target.value);
-                    setPage(1);
-                  }}
+                  onChange={(e) => { setSort(e.target.value); setPage(1); }}
                 >
                   <option value="featured">แนะนำ</option>
                   <option value="price-asc">ราคาน้อย → มาก</option>
@@ -407,18 +295,10 @@ export default function ShopPage() {
                   }}
                 >
                   <h3>Product Categories</h3>
-                  <button
-                    className="acc-btn"
-                    type="button"
-                    aria-label="Toggle"
-                  ></button>
+                  <button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
                 <div className="filter-body">
-                  <CheckList
-                    list={CAT_LIST}
-                    setKey="cat"
-                    selected={filters.cat}
-                  />
+                  <CheckList list={CAT_LIST} setKey="cat" selected={filters.cat} />
                 </div>
               </section>
 
@@ -432,11 +312,7 @@ export default function ShopPage() {
                   }}
                 >
                   <h3>Price (฿)</h3>
-                  <button
-                    className="acc-btn"
-                    type="button"
-                    aria-label="Toggle"
-                  ></button>
+                  <button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
                 <div className="filter-body">
                   <div className="price-row">
@@ -448,10 +324,7 @@ export default function ShopPage() {
                       onChange={(e) => setMinVal(e.target.value)}
                       onKeyUp={(e) =>
                         e.key === "Enter" &&
-                        applyPrice(
-                          minVal ? Number(minVal) : null,
-                          maxVal ? Number(maxVal) : null
-                        )
+                        applyPrice(minVal ? Number(minVal) : null, maxVal ? Number(maxVal) : null)
                       }
                     />
                     <span>–</span>
@@ -463,22 +336,14 @@ export default function ShopPage() {
                       onChange={(e) => setMaxVal(e.target.value)}
                       onKeyUp={(e) =>
                         e.key === "Enter" &&
-                        applyPrice(
-                          minVal ? Number(minVal) : null,
-                          maxVal ? Number(maxVal) : null
-                        )
+                        applyPrice(minVal ? Number(minVal) : null, maxVal ? Number(maxVal) : null)
                       }
                     />
                   </div>
                   <button
                     className="btn btn--apply"
                     type="button"
-                    onClick={() =>
-                      applyPrice(
-                        minVal ? Number(minVal) : null,
-                        maxVal ? Number(maxVal) : null
-                      )
-                    }
+                    onClick={() => applyPrice(minVal ? Number(minVal) : null, maxVal ? Number(maxVal) : null)}
                   >
                     Apply
                   </button>
@@ -495,18 +360,10 @@ export default function ShopPage() {
                   }}
                 >
                   <h3>Brands</h3>
-                  <button
-                    className="acc-btn"
-                    type="button"
-                    aria-label="Toggle"
-                  ></button>
+                  <button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
                 <div className="filter-body">
-                  <CheckList
-                    list={BRANDS}
-                    setKey="brand"
-                    selected={filters.brand}
-                  />
+                  <CheckList list={BRANDS} setKey="brand" selected={filters.brand} />
                 </div>
               </section>
 
@@ -520,18 +377,10 @@ export default function ShopPage() {
                   }}
                 >
                   <h3>Promotions</h3>
-                  <button
-                    className="acc-btn"
-                    type="button"
-                    aria-label="Toggle"
-                  ></button>
+                  <button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
                 <div className="filter-body">
-                  <CheckList
-                    list={PROMOS}
-                    setKey="promo"
-                    selected={filters.promo}
-                  />
+                  <CheckList list={PROMOS} setKey="promo" selected={filters.promo} />
                 </div>
               </section>
             </div>
@@ -539,34 +388,14 @@ export default function ShopPage() {
 
           <section className="products" aria-label="Products">
             <div className="grid" aria-live="polite">
-              {pageItems.map((p) => (
-                <ProductCard key={p.id} p={p} />
-              ))}
-              {pageItems.length === 0 && (
-                <p className="no-result">No products found.</p>
-              )}
+              {pageItems.map((p) => (<ProductCard key={p.id} p={p} />))}
+              {pageItems.length === 0 && (<p className="no-result">No products found.</p>)}
             </div>
 
             <nav className="pagination" aria-label="Pagination">
-              <button
-                className="page-btn"
-                disabled={page <= 1}
-                onClick={() => setPage(Math.max(1, page - 1))}
-                type="button"
-              >
-                Prev
-              </button>
-              <span className="page-info">
-                Page {page} / {totalPages}
-              </span>
-              <button
-                className="page-btn"
-                disabled={page >= totalPages}
-                onClick={() => setPage(page + 1)}
-                type="button"
-              >
-                Next
-              </button>
+              <button className="page-btn" disabled={page <= 1} onClick={() => setPage(Math.max(1, page - 1))} type="button">Prev</button>
+              <span className="page-info">Page {page} / {totalPages}</span>
+              <button className="page-btn" disabled={page >= totalPages} onClick={() => setPage(page + 1)} type="button">Next</button>
             </nav>
           </section>
         </div>

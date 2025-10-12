@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import "./HomePage.css";
 import Header from "../components/Header";
-import Footer from "../components/footer";
+import Footer from "../components/Footer";
 
 const HomePage = () => {
   const allProductsRef = useRef(null);
@@ -126,16 +126,17 @@ const HomePage = () => {
                 <span className="category__underline" aria-hidden="true"></span>
               </div>
               <div className="category__grid">
-                <a href="/category/dried-food" className="category-card" aria-label="Dried Food">
-                  <img src="/images/cat-dried-food.jpg" alt="Dried Food" loading="lazy" />
+                {/* ส่งชื่อหมวดให้ตรงกับ CAT_LIST/PRODUCTS ของหน้า Shop */}
+                <a href={`/shop?cat=${encodeURIComponent("Dried Foods")}`} className="category-card" aria-label="Dried Foods">
+                  <img src="/images/cat-dried-food.jpg" alt="Dried Foods" loading="lazy" />
                 </a>
-                <a href="/category/meat" className="category-card" aria-label="Meat">
-                  <img src="/images/cat-meat.jpg" alt="Meat" loading="lazy" />
+                <a href={`/shop?cat=${encodeURIComponent("Meats")}`} className="category-card" aria-label="Meats">
+                  <img src="/images/cat-meat.jpg" alt="Meats" loading="lazy" />
                 </a>
-                <a href="/category/frozen-food" className="category-card" aria-label="Frozen Food">
-                  <img src="/images/cat-frozen.jpg" alt="Frozen Food" loading="lazy" />
+                <a href={`/shop?cat=${encodeURIComponent("Frozen Foods")}`} className="category-card" aria-label="Frozen Foods">
+                  <img src="/images/cat-frozen.jpg" alt="Frozen Foods" loading="lazy" />
                 </a>
-                <a href="/category/fruits-vegetables" className="category-card" aria-label="Fruits and Vegetables">
+                <a href={`/shop?cat=${encodeURIComponent("Fruits & Vegetables")}`} className="category-card" aria-label="Fruits & Vegetables">
                   <img src="/images/cat-fruits-veg.jpg" alt="Fruits & Vegetables" loading="lazy" />
                 </a>
               </div>
@@ -211,8 +212,6 @@ const HomePage = () => {
           </section>
         </div>
       </main>
-
-      {/* ===== Footer ===== */}
       <Footer />
     </>
   );

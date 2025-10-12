@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "./DetailPage.css";
-import Footer from "../components/footer.jsx";
+import Footer from "../components/Footer.jsx";
 
 /* Fallback รูปเป็น Data URI (ไม่มีไฟล์ภายนอก) */
 const FALLBACK_IMG = `data:image/svg+xml;utf8,${encodeURIComponent(
