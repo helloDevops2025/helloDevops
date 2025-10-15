@@ -55,7 +55,7 @@ export default function AdminOrderDetailPage() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-logo">
-            <img src="/asset/logo with BG.png" alt="Admin Logo" style={{ width: "120px", height: "auto" }} />
+            <img src="frontend/public/assets/logo.png" alt="Admin Logo" style={{ width: "120px", height: "auto" }} />
           </div>
           <i className="fa-solid fa-bars menu-btn" aria-label="Toggle sidebar" role="button" tabIndex="0"></i>
         </div>

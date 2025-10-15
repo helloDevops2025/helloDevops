@@ -250,3 +250,73 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
+-- ===========================
+-- 4) Orders (ตารางคำสั่งซื้อ)
+-- ===========================
+CREATE TABLE IF NOT EXISTS orders (
+                                      id            BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                      order_code    VARCHAR(50) NOT NULL UNIQUE,        -- เช่น #ORD0001
+    customer_name VARCHAR(255) NOT NULL,
+    customer_phone VARCHAR(50),
+    shipping_address TEXT NOT NULL,
+    payment_method ENUM('COD','BANK_TRANSFER','CREDIT_CARD') DEFAULT 'COD',
+    shipping_method ENUM('STANDARD','EXPRESS') DEFAULT 'STANDARD',
+    order_status ENUM('PENDING','PREPARING','READY_TO_SHIP','SHIPPING','DELIVERED','CANCELLED') DEFAULT 'PENDING',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===========================
+-- 5) Order Items (สินค้าที่อยู่ในแต่ละออเดอร์)
+-- ===========================
+CREATE TABLE IF NOT EXISTS order_items (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    order_id_fk BIGINT NOT NULL,
+    product_id_fk BIGINT NULL,
+
+
+    quantity      INT NOT NULL DEFAULT 1,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_order_items_order
+    FOREIGN KEY (order_id_fk) REFERENCES orders(id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_order_items_product
+    FOREIGN KEY (product_id_fk) REFERENCES products(id)
+    ON DELETE SET NULL ON UPDATE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===========================
+-- SEED: Orders
+-- ===========================
+INSERT INTO orders (
+    order_code,
+    customer_name,
+    customer_phone,
+    shipping_address,
+    payment_method,
+    shipping_method,
+    order_status
+) VALUES
+    (
+        '#ORD001',
+        'Somsak Suksun',
+        '0812345678',
+        '999 Road, Bangkok, Thailand 10110',
+        'COD',
+        'STANDARD',
+        'DELIVERED'
+    );
+
+-- ===========================
+-- SEED: Order items (ของ Order #ORD001)
+-- ===========================
+INSERT INTO order_items (order_id_fk, product_id_fk, quantity)
+SELECT
+    o.id AS order_id_fk,
+    p.id AS product_id_fk,
+    2 AS quantity
+FROM orders o JOIN products p ON p.product_id = '#00001'   -- ตัวอย่างเลือกสินค้ารหัส #00001
+WHERE o.order_code = '#ORD001';
