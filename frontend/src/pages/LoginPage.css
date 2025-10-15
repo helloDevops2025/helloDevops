@@ -10,6 +10,21 @@ body{
   overflow:hidden;
 }
 
+h1 {
+  color: #000;
+  justify-self: start;
+}
+
+#submitBtn {
+  background-color: #3E40AE;
+  font-family: 'Poppins', sans-serif;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  letter-spacing: 4px;
+}
 
 /* ตัวแบ่งครึ่งเต็มจอ */
 .shell{
@@ -93,14 +108,14 @@ body{
 }
 
 label {
-  font-family: "Inter"; /* ตั้งฟอนต์ */
-  font-size: 24px;                    /* ขนาด */
+  font-family: "Poppins" !important; /* ตั้งฟอนต์ */
+  font-size: 20px !important;                    /* ขนาด */
   font-weight: 550;                   /* ความหนา */
   color: #1E1E1E;                     /* สี (เทาอ่อน) */
   opacity: 1;   
   display: block; 
-  margin-top: 40px;
-  margin-bottom: 20px;                     /* ให้ชัด ไม่จาง */
+  margin-top: 0px;
+  margin-bottom: 4px !important;                    /* ให้ชัด ไม่จาง */
 }
 
 
@@ -258,3 +273,4 @@ label {
     font-size:14px;
     font-family: 'Inter', sans-serif;
 }
+

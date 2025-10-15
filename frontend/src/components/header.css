@@ -1,110 +1,111 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 :root{
   --pm-primary:#3E40AE;
   --pm-text:#111;
   --pm-gray:#DDD;
   --pm-max:1280px;
-  --pm-icon-size: 22px;
+  --pm-icon-size:22px;
+
+  /* สูงสุดของแถบ */
+  --pm-topbar-h:28px;
+  --pm-header-h:72px;  /* กำหนดความสูง header ให้คงที่ */
 }
 
-*{box-sizing:border-box}
+/* Reset */
 html, body{
   margin:0; padding:0; width:100%;
-  font-family:"Poppins", system-ui, sans-serif; font-weight:400;
+  font-family:"Poppins",system-ui,sans-serif; font-weight:400;
 }
 
-/* Top bar + Header */
-.pm-topbar{ height:28px; background:var(--pm-primary); width:100%; display:block; }
-.pm-header{ background:#fff; box-shadow:0 4px 4px rgba(0,0,0,.25); width:100%; display:block; }
+/* ให้ padding-top เฉพาะหน้าที่มี header */
+body.has-header{
+  padding-top:calc(var(--pm-topbar-h) + var(--pm-header-h));
+}
+
+/* ให้ทุกหน้ามี scrollbar เสมอ (กัน layout shift) */
+html{ overflow-y:scroll; }
+
+*{ box-sizing:border-box }
+
+/* ===== Top bar + Header (Sticker) ===== */
+.pm-topbar{
+  height:var(--pm-topbar-h);
+  background:var(--pm-primary);
+  width:100%;
+  display:block;
+
+  position:fixed;
+  top:0;left:0;right:0;
+  z-index:1000;
+}
+
+.pm-header{
+  background:#fff;
+  box-shadow:0 4px 4px rgba(0,0,0,.25);
+  width:100%; display:block;
+
+  position:fixed;
+  top:var(--pm-topbar-h); left:0; right:0;
+  z-index:999;
+  min-height:var(--pm-header-h);
+}
+
 .pm-header__inner{
-  max-width:var(--pm-max); margin:0 auto; padding:16px 20px;
-  display:grid; grid-template-columns:auto 1fr minmax(320px,520px) auto;
-  align-items:center; gap:20px;
+  max-width:var(--pm-max);
+  margin:0 auto;
+  padding:16px 20px;
+  display:grid;
+  grid-template-columns:auto 1fr minmax(320px,520px) auto;
+  align-items:center;
+  gap:20px;
 }
 
-/* Logo */
-.pm-logo img{ height:80px; width:auto; display:block; }
+/* ===== Logo ===== */
+.pm-logo img{ height:80px;width:auto;display:block; }
 
-/* Nav */
+/* ===== Nav ===== */
 .pm-nav{ display:flex; gap:28px; }
 .pm-nav a{
   color:var(--pm-text); text-decoration:none;
-  font-size:16px; font-weight:400; line-height:1.2;
+  font-size:15px; font-weight:400; line-height:1.2;
 }
 .pm-nav a:hover{ color:var(--pm-primary); }
 
-/* Search */
+/* ===== Search ===== */
 .pm-search{
   position:relative; display:flex; align-items:center;
-  height:38px; border-radius:22px; background:var(--pm-gray); padding:0 14px;
+  height:38px; border-radius:22px;
+  background:#DDDDDD; padding:0 14px;
 }
-.pm-search svg{ width:18px; height:18px; fill:none; stroke:#333; stroke-width:2; }
+.pm-search svg{ width:18px;height:18px;fill:none;stroke:#333;stroke-width:2;display:block; }
 .pm-search input{
   flex:1; border:0; outline:0; background:transparent;
-  padding:0 8px; color:var(--pm-text); font:400 15px/1 "Poppins",system-ui,sans-serif;
+  padding:0 8px; color:var(--pm-text);
+  font:400 15px/1 "Poppins",system-ui,sans-serif; min-width:0;
 }
 .pm-search input::placeholder{ color:#9a9a9a; }
 
-/* Right area */
-.pm-right{ display:flex; align-items:center; gap:32px; }
+/* ===== Right area ===== */
+.pm-right{ display:flex;align-items:center;gap:32px; }
 
-/* ====== Account / Icons alignment ====== */
+/* ===== Account / Icons ===== */
 .pm-icon{
-  display:inline-flex;
-  align-items:center;               /* จัดกลางแนวตั้ง */
-  gap:6px;                          /* ระยะ icon–ข้อความ–caret */
-  line-height:1;
-  color:#111;
-  text-decoration:none;
-  cursor:pointer;
-  transition: color .2s ease, transform .2s ease;
+  display:inline-flex;align-items:center;gap:6px;
+  line-height:1;color:#111;text-decoration:none;cursor:pointer;
+  transition:color .2s ease,transform .2s ease;
+}
+.pm-icon svg{ width:var(--pm-icon-size);height:var(--pm-icon-size);flex:0 0 var(--pm-icon-size);display:block; }
+.pm-icon__label{ font-size:14px;font-weight:600;line-height:1;display:inline-block; }
+.pm-caret{ width:12px;height:12px;opacity:.8;margin-left:4px;display:inline-block; }
+.pm-account[aria-expanded="true"] .pm-caret{ transform:rotate(180deg); }
+
+.pm-icon.pm-account{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:16px;line-height:1;padding:0;
+  background:none;border:none;vertical-align:middle;
 }
 
-/* svg ทุกตัวให้ block (กัน baseline ดันลง) และชี้ขนาดจากตัวแปร */
-.pm-icon svg{
-  width:var(--pm-icon-size);
-  height:var(--pm-icon-size);
-  flex:0 0 var(--pm-icon-size);
-  display:block;
-}
-
-/* ข้อความ ACCOUNT ไม่ให้ดันบรรทัด */
-.pm-icon__label{
-  font-size:14px;
-  font-weight:600;
-  line-height:1;            /* ป้องกันช่องว่างแนวตั้ง */
-  display:inline-block;
-}
-
-/* caret (เครื่องหมาย "V") */
-.pm-caret {
-  width: 12px;
-  height: 12px;
-  opacity: .8;
-  margin-left: 4px;  /* ขยับให้ชิดกับคำว่า ACCOUNT */
-  display: inline-block;
-}
-
-/* หมุน caret เมื่อเปิด dropdown */
-.pm-account[aria-expanded="true"] .pm-caret {
-  transform: rotate(180deg); /* หมุน caret จาก V ลงไปเป็น V หงายขึ้น */
-}
-
-/* สำหรับการจัดตำแหน่งข้อความ ACCOUNT และไอคอน */
-.pm-icon.pm-account {
-  display: inline-flex;      /* ให้ข้อความและไอคอนอยู่ในบรรทัดเดียวกัน */
-  align-items: center;       /* จัดกลางทั้งแนวตั้งและแนวนอน */
-  gap: 6px;                  /* ระยะห่างระหว่างข้อความและไอคอน */
-  font-size: 16px;           /* ขนาดฟอนต์ที่เท่ากับไอคอนอื่น */
-  line-height: 1;            /* ป้องกันช่องว่างแนวตั้ง */
-  padding: 0;  
-   background: none;          /* ลบกรอบพื้นหลัง */
-  border: none;              /* ลบขอบ */              /* ไม่ให้มี padding ที่ทำให้สูงเกินไป */
-  vertical-align: middle; 
-}
-
-
-
-/* ====== Dropdown ====== */
+/* ===== Dropdown ===== */
 .pm-dropdown-wrapper{ position:relative; }
 .pm-dropdown{
   position:absolute; top:calc(100% + 8px); right:0;
@@ -116,37 +117,24 @@ html, body{
   display:block; padding:10px 12px; border-radius:8px;
   color:#111; text-decoration:none; font-size:14px;
 }
-.pm-dropdown a:hover, .pm-dropdown a:focus{ background:#f4f6ff; outline:none; }
+.pm-dropdown a:hover,.pm-dropdown a:focus{ background:#f4f6ff; outline:none; }
 .pm-dropdown.is-open{ display:block; }
 
-/* ====== Burger ====== */
+/* ===== Burger ===== */
 .pm-burger{ display:none; background:none; border:0; padding:6px; cursor:pointer; }
-.pm-burger span{ display:block; width:22px; height:2px; background:#111; margin:5px 0; border-radius:2px; }
+.pm-burger span{ display:block;width:22px;height:2px;background:#111;margin:5px 0;border-radius:2px; }
 
-/* เปลี่ยนสีและเด้งขึ้นนิด ๆ ตอน hover / focus-visible */
-.pm-icon:hover,
-.pm-icon:focus-visible{
-  color: var(--pm-primary);
-  transform: translateY(-2px);  /* ขยับเล็กน้อยเวลาผ่าน */
-}
+/* Hover effect */
+.pm-icon:hover,.pm-icon:focus-visible{ color:var(--pm-primary); transform:none; }
 
-/* ให้เส้น/พื้นที่ของ svg เปลี่ยนสีตาม currentColor */
+/* ใช้สีตาม currentColor */
 .pm-icon svg path,
 .pm-icon svg circle,
 .pm-icon svg polyline,
 .pm-icon svg line,
-.pm-icon svg rect {
-  stroke: currentColor;
-  fill: currentColor;
-}
+.pm-icon svg rect{ stroke:currentColor; fill:currentColor; }
 
-/* มือถือ: ปรับตำแหน่ง dropdown กันล้น */
-@media (max-width:768px){
-  .pm-dropdown{ right:0; left:auto; }
-}
-
-/* ====== Responsive rules ====== */
-/* ซ่อนเมนูหลักเข้าแฮมเบอร์เกอร์เมื่อจอแคบลง */
+/* ===== Responsive ===== */
 @media (max-width:1100px){
   .pm-header__inner{
     grid-template-columns:auto 1fr auto;
@@ -159,10 +147,53 @@ html, body{
   .pm-burger{ display:block; grid-area:burger; justify-self:start; }
   .pm-right{ grid-area:right; justify-content:flex-end; gap:20px; }
   .pm-search{ grid-area:search; height:40px; }
-  .pm-nav{ display:none; }            /* << ซ่อนเมนูหลักเข้าแฮม */
-  .pm-icon__label{ display:none; }    /* ซ่อนคำว่า ACCOUNT บนจอเล็ก */
+  .pm-nav{ display:none; }
+  .pm-icon__label{ display:none; }
 }
 
 @media (max-width:640px){
   .pm-search{ height:40px; }
+}
+
+/* ===== Breadcrumb ===== */
+.breadcrumb{
+  font-size:14px;color:#666;margin-bottom:12px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.breadcrumb ol{
+  list-style:none;padding:0;margin:0;
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+}
+.breadcrumb li{ display:inline-flex;align-items:center;gap:8px; }
+.breadcrumb a{ color:#555;text-decoration:none; }
+.breadcrumb a:hover{ text-decoration:underline; }
+.breadcrumb .current{ color:#333;font-weight:600;pointer-events:none; }
+.breadcrumb li:not(:last-child)::after{ content:"›";color:#aaa; }
+
+/* ===== Active State (เมนู + ไอคอน) ===== */
+.pm-nav a.active,
+.pm-right a.active,
+.pm-icon.active{
+  color:var(--pm-primary);
+  font-weight:600;
+}
+
+/* Nav on hamburger open */
+@media (max-width:1100px){
+  .pm-nav.is-open{
+    display:flex;position:absolute;
+    top:calc(var(--pm-topbar-h) + var(--pm-header-h));
+    left:0;right:0;background:#fff;
+    padding:16px 20px;flex-direction:column;gap:12px;
+    box-shadow:0 12px 24px rgba(0,0,0,.12);
+    z-index:998;
+  }
+}
+
+/* ===== Active State (เมนู + ไอคอน) ===== */
+.pm-nav a.active,
+.pm-right a.active,
+.pm-icon.active {
+  color: var(--pm-primary);
+  font-weight: 600;
 }

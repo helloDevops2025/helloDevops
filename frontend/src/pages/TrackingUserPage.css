@@ -1,3 +1,177 @@
-/* TrackingUserPage */
-body { font-family: system-ui, Arial, sans-serif; }
-h1 { margin: 24px; text-align: center; font-size: 28px; }
+/* =========================
+   Tracking Page (compact, with page gutters)
+========================= */
+
+/* ปรับที่เดียวจบ: ขนาดวงกลม (เดสก์ท็อป) */
+:root { --dot: 68px; }
+
+/* ---- Page gutters: ให้ทั้งหน้ามีระยะจากขอบ (ยกเว้น header) ---- */
+.container.tracking{
+  /* เพิ่มระยะซ้าย-ขวาให้เนื้อหาโล่งขึ้น */
+  padding-left: 32px;
+  padding-right: 32px;
+  /* จำกัดความกว้างสูงสุด แล้วจัดกลาง */
+  max-width: 1180px;
+  margin-inline: auto;
+}
+
+/* ===== Card: Detail ===== */
+.progress-card{
+  background:#fff;
+  border-radius:16px;
+  box-shadow:0 6px 16px rgba(0,0,0,.06);
+  padding:20px 20px 22px;
+  margin:12px auto 28px;
+}
+.progress-card .card-title{
+  font:700 20px/1.2 Poppins, Inter, system-ui;
+  margin:0 0 12px;
+}
+
+/* ===== Timeline / Progress ===== */
+.progress{ position:relative; margin-top:8px; }
+.progress-line{
+  position:absolute;
+  top: calc(var(--dot)/2);      /* เส้นผ่านกึ่งกลางวงกลมเสมอ */
+  left:0; right:0;
+  height:3px;
+  background:#d9e3f7;
+  border-radius:999px;
+  z-index:1;
+}
+.progress-line .line-fill{
+  display:block; height:100%;
+  background:#92caff;
+  border-radius:999px;
+  transition:width .3s ease;
+}
+.steps{
+  display:flex; justify-content:space-between;
+  position:relative; z-index:2;
+}
+.step{
+  display:flex; flex-direction:column; align-items:center;
+  text-align:center; flex:1;
+}
+
+/* วงกลม */
+.dot{
+  width: var(--dot); height: var(--dot);
+  border-radius:50%;
+  background:#d1e1ff; box-shadow:0 0 0 2px #d1e1ff;
+  position:relative;
+}
+.step.done .dot{
+  background:#b9cffd; box-shadow:0 0 0 2px #b9cffd;
+}
+
+/* ติ๊กถูก: ทำให้ “ใหญ่ขึ้นเมื่อเทียบกับวงกลม” */
+.step.done .dot::before{
+  content:"";
+  position:absolute; left:50%; top:50%;
+  width: calc(var(--dot) * 0.38);     /* เดิม ~0.30 ⇒ ใหญ่ขึ้น */
+  height: calc(var(--dot) * 0.22);
+  border-left: calc(var(--dot) * 0.06) solid #111;
+  border-bottom: calc(var(--dot) * 0.06) solid #111;
+  transform: translate(-50%, -55%) rotate(-45deg);
+  box-sizing:border-box;
+}
+
+/* Labels ใต้จุด (กระชับขึ้น) */
+.step-label{ margin-top:8px; }
+.step-label strong{ 
+  display:block;              /* บังคับให้ขึ้นบรรทัดของตัวเอง */
+}
+.step-label small{
+  display:block;              /* ไม่ต่อท้ายในบรรทัดเดียวกับ strong */
+  margin-top: 2px;
+}
+
+/* ===== Order Table (mock) ===== */
+.order-box{
+  background:#fff; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.05);
+  overflow:hidden; margin-top:22px; margin-bottom:40px;
+}
+.order-head{
+  background:#90b6f5; color:#0b1b3a;
+  display:grid; grid-template-columns:1fr 140px 140px 160px;
+  gap:1px; align-items:center; padding:16px 18px; font-weight:700;
+  border-bottom:4px solid #6ea0ef;
+}
+.order-head > div{ text-align: center; }
+.order-head > div:first-child{ text-align: left; }
+/* จัดหัวข้อและคอลัมน์ Price / Quantity / Subtotal ชิดซ้ายเล็กน้อย */
+.order-head > div:nth-child(2),
+.order-head > div:nth-child(3),
+.order-head > div:nth-child(4),
+.order-row .price,
+.order-row .qty,
+.order-row .subtotal {
+  text-align: left;       /* เดิมเป็น center */
+  padding-left: 12px;     /* เพิ่มระยะจากเส้นตาราง */
+}
+.order-row .subtotal {
+  text-align: left;       /* เปลี่ยนจาก left เป็น right */
+  padding-left: 18px;     /* ขยับเข้าขอบขวามากขึ้น */
+}
+.order-row{
+  display:grid; grid-template-columns:1fr 140px 140px 160px;
+  gap:1px; align-items:center; padding:16px 18px;
+  border-bottom:1px solid #e5e7eb; background:#fff;
+}
+.order-row:last-child{ border-bottom:none; }
+.product{ display:grid; grid-template-columns:72px 1fr; gap:12px; align-items:center; box-shadow: none;}
+.product img{ width:72px; height:72px; object-fit:cover; border-radius:10px; background:#f5f6f8; }
+.product .name{ font:600 16px/1.4 Poppins, Inter, system-ui; margin:0 0 4px; color:#222; }
+.product .desc{ font-size:13px; color:#6b7280; }
+.price,.qty,.subtotal{ text-align:center; }
+.price,.subtotal{ font-weight:600; }
+.qty .pill{
+  display:inline-flex; align-items:center; gap:10px;
+  border:1px solid #e5e7eb; border-radius:12px; padding:6px 10px;
+  font-weight:600; min-width:88px; justify-content:center;
+}
+
+
+
+/* ===== Responsive ===== */
+@media (max-width: 1200px){
+  .container.tracking{ padding-inline:28px; max-width:1100px; }
+}
+@media (max-width: 992px){
+  :root{ --dot: 60px; }
+  .container.tracking{ padding-inline:24px; max-width:960px; }
+  .progress-card{ padding:18px 16px 20px; }
+  .order-head,.order-row{ grid-template-columns:1fr 120px 120px 140px; }
+}
+@media (max-width: 760px){
+  :root{ --dot: 54px; }
+  .container.tracking{ padding-inline:18px; max-width:100%; }
+  .order-head{ display:none; }
+  .order-row{ grid-template-columns:1fr; gap:20px; }
+  .price,.qty,.subtotal{ text-align:left; }
+  .step-label strong{ font-size:16px; }
+  .step-label small{ font-size:12px; }
+}
+@media (max-width: 480px){
+  :root{ --dot: 48px; }
+  .container.tracking{ padding-inline:14px; }
+  .step-label strong{ font-size:15px; }
+  .step-label small{ font-size:11px; }
+}
+
+.tracking .order-row .price{
+  color: #111 !important;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.tracking .order-row .subtotal{
+  color: #3e40AE !important;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.title, .card-title {
+    color: #111 ;
+}
