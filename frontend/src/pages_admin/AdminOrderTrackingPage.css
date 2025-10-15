@@ -145,7 +145,7 @@ body {
     background: #92CAFF;
     box-shadow: 0 0 0 2px #92CAFF;
 }
-.step.done .dot::before {
+.step.done  {
     content: "✔";
     color: black;
     font-size: 44px;

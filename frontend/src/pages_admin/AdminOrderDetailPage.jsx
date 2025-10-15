@@ -51,80 +51,9 @@ export default function AdminOrderDetailPage() {
 
   return (
     <div className="admin-order-detail-page">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-logo">
-            <img src="frontend/public/assets/logo.png" alt="Admin Logo" style={{ width: "120px", height: "auto" }} />
-          </div>
-          <i className="fa-solid fa-bars menu-btn" aria-label="Toggle sidebar" role="button" tabIndex="0"></i>
-        </div>
-
-        <div className="section-title">MAIN</div>
-        <nav className="nav">
-          <a className="nav-item" href="#">
-            <span className="icon">
-              <i className="fa-solid fa-house"></i>
-            </span>
-            Home
-          </a>
-        </nav>
-
-        <div className="section-title">ALL PAGE</div>
-
-        {/* E-commerce */}
-        <div className="nav">
-          <div className="nav-item nav-toggle" data-target="#menu-ecom" aria-expanded="true" role="button" tabIndex="0">
-            <span className="icon">
-              <i className="fa-solid fa-cart-shopping"></i>
-            </span>
-            E-commerce
-            <span className="right">
-              <i className="fa-solid fa-chevron-down" style={{ transform: "rotate(180deg)" }}></i>
-            </span>
-          </div>
-          <div className="submenu" id="menu-ecom" style={{ display: "block" }}>
-            <a className="sub-item" href="#">
-              Add Product
-            </a>
-            <a className="sub-item" href="#">
-              Product List
-            </a>
-          </div>
-        </div>
-
-        {/* Order */}
-        <div className="nav">
-          <div className="nav-item nav-toggle" data-target="#menu-order" aria-expanded="true" role="button" tabIndex="0">
-            <span className="icon">
-              <i className="fa-solid fa-layer-group"></i>
-            </span>
-            Order
-            <span className="right">
-              <i className="fa-solid fa-chevron-down" style={{ transform: "rotate(180deg)" }}></i>
-            </span>
-          </div>
-          <div className="submenu" id="menu-order" style={{ display: "block" }}>
-            <a className="sub-item" href="#">
-              Order List
-            </a>
-            <a className="sub-item active" href="#">
-              Order Detail
-            </a>
-            <a className="sub-item" href="#">
-              Order Tracking
-            </a>
-          </div>
-        </div>
-      </aside>
-
       {/* Content */}
       <main className="content">
         <header className="header">
-          <div className="account">
-            <i className="fa-regular fa-circle-user"></i>
-            <span>ACCOUNT</span>
-          </div>
           <h1>ORDER DETAIL</h1>
         </header>
 
