@@ -1,11 +1,11 @@
 // CartPage.jsx
 import { useEffect, useMemo, useState } from "react";
-import Header from "../components/Header";
+import Header from "../components/header";
 
 import "../components/header.css";              // สไตล์ของ Header
 import "./CartPage.css";
 import "./breadcrumb.css";
-import Footer from "../components/footer";
+import Footer from "../components/Footer";
 
 // Remove this incomplete CartPage component and keep only the main one below
 

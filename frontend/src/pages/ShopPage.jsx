@@ -1,10 +1,15 @@
 // ShopPage.jsx
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom"; 
+import { useSearchParams } from "react-router-dom";
 import "./ShopPage.css";
 import Footer from "../components/Footer";
 
-/* ===== Placeholder (ถ้ารูปหาย) ===== */
+/* ===== Config & helpers (NEW) ===== */
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+const norm  = (s) => String(s ?? "").trim().toLowerCase(); // สำหรับเทียบค่า
+const clean = (s) => String(s ?? "").trim();                // สำหรับแสดงผล
+
+/* ===== Placeholder (เดิม) ===== */
 const PLACEHOLDER_DATA =
   "data:image/svg+xml;utf8," +
   encodeURIComponent(`
@@ -15,32 +20,116 @@ const PLACEHOLDER_DATA =
       </g>
     </svg>`);
 
-/* ===== Demo Data ===== */
-const PRODUCTS = [
-  { id: 1,  name: "มะพร้าวน้ำหอมปอกเปลือก ลูกละ", price: 25.0, brand: "CP",      cat: "Fruits & Vegetables", promo: "-",          img: "/assets/products/p1.png" },
-  { id: 2,  name: "ซุปแห้งสำเร็จรูป (หมูเด้ง)",     price: 35.0, brand: "MK2",     cat: "Dried Foods",          promo: "1แถม1",     img: "/assets/products/p2.png" },
-  { id: 3,  name: "ถั่วแระ แช่แข็ง 500g",            price: 88.0, brand: "Betagro", cat: "Frozen Foods",         promo: "-",          img: "/assets/products/p3.png" },
-  { id: 4,  name: "ขนมปังฝอยทอง 4 ชิ้น",             price: 19.0, brand: "CP",      cat: "Dried Foods",          promo: "Flash Sale", img: "/assets/products/p4.png" },
-  { id: 5,  name: "หมูบดแช่แข็ง 250g",               price: 78.0, brand: "Betagro", cat: "Frozen Foods",         promo: "-",          img: "/assets/products/p5.png" },
-  { id: 6,  name: "อกไก่ 2 กก.",                      price: 564.0,brand: "CP",      cat: "Meats",                promo: "-",          img: "/assets/products/p6.png" },
-  { id: 7,  name: "ซอสมะเขือเทศ 260 ก.",              price: 33.0, brand: "Roza",    cat: "Dried Foods",          promo: "Best Seller",img: "/assets/products/p7.png" },
-  { id: 8,  name: "โฮลวีทแซนด์วิช 170 กรัม",          price: 20.0, brand: "Farmhouse",cat: "Dried Foods",         promo: "-",          img: "/assets/products/p8.png" },
-  { id: 9,  name: "อกไก่สไลซ์ 100g",                  price: 39.0, brand: "CP",      cat: "Meats",                promo: "Flash Sale", img: "/assets/products/p9.png" },
-  { id: 10, name: "นม UHT 1 ลิตร",                    price: 32.0, brand: "Dutchie", cat: "Frozen Foods",         promo: "On Sale",    img: "/assets/products/p10.png" },
-];
-
 const PAGE_SIZE = 9;
 const LS_WISH = "pm_wishlist";
 
-/* ===== ใช้ไอคอนหัวใจ “ตัวเดียว” แล้วสลับถม/เส้นด้วย CSS ===== */
+/* ไอคอนหัวใจ (เดิม) */
 const HeartIcon = (props) => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="heart" {...props}>
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
   </svg>
 );
 
+/* สร้าง URL รูปจากข้อมูลสินค้า (NEW) */
+const resolveImageUrl = (row) => {
+  const id = row.id ?? row.productId ?? row.product_id;
+  let u =
+    row.coverImageUrl ||
+    row.imageUrl ||
+    row.image_url ||
+    (Array.isArray(row.images)
+      ? (row.images.find((i) => i.is_cover)?.image_url || row.images[0]?.image_url)
+      : null);
+
+  if (u) {
+    if (/^https?:\/\//i.test(u)) return u;     // URL เต็ม
+    if (u.startsWith("/")) return `${API_URL}${u}`;
+    return `/${u}`;                             // พาธ public ฝั่ง FE
+  }
+  return `${API_URL}/api/products/${encodeURIComponent(id)}/cover`;
+};
+
 export default function ShopPage() {
-  const [searchParams] = useSearchParams();             
+  const [searchParams] = useSearchParams();
+
+  /* ===== โหลดของจริงจาก DB (NEW) ===== */
+  const [PRODUCTS, setPRODUCTS] = useState([]);      // [{id,name,price,cat,brand,promo,img}]
+  const [CATEGORIES, setCATEGORIES] = useState([]);  // [{id,name}]
+  const [BRANDS_MASTER, setBRANDS_MASTER] = useState([]); // [{id,name}]
+  const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+
+    const safeJson = async (url) => {
+      try {
+        const r = await fetch(url, { headers: { Accept: "application/json" } });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch {
+        return null;
+      }
+    };
+
+    (async () => {
+      setLoading(true);
+      setLoadErr("");
+      try {
+        // ดึงทีเดียว 3 endpoint
+        const [rows, cats, brands] = await Promise.all([
+          safeJson(`${API_URL}/api/products`),
+          safeJson(`${API_URL}/api/categories`),
+          safeJson(`${API_URL}/api/brands`),
+        ]);
+        if (!alive) return;
+
+        // เตรียม map id -> name
+        const catById   = new Map((cats || []).map((c) => [c.id, clean(c.name)]));
+        const brandById = new Map((brands || []).map((b) => [b.id, clean(b.name)]));
+
+        // helper: คืน key ตัวแรกที่พบใน object
+        const pick = (obj, ...keys) => {
+          for (const k of keys) if (obj && obj[k] != null) return obj[k];
+          return undefined;
+        };
+
+        // map แถวสินค้า → structure ที่หน้า Shop ใช้
+        const mapped = (rows || []).map((x) => {
+          const catIdRaw   = pick(x, "categoryId", "category_id", "catId", "categoryIdFk");
+          const brandIdRaw = pick(x, "brandId",    "brand_id",    "brandIdFk");
+
+          const catId   = catIdRaw   != null ? Number(catIdRaw)   : undefined;
+          const brandId = brandIdRaw != null ? Number(brandIdRaw) : undefined;
+
+          const catName   = clean(pick(x, "categoryName", "category_name")) || (catById.get(catId) || "");
+          const brandName = clean(pick(x, "brandName", "brand_name"))       || (brandById.get(brandId) || "");
+
+          return {
+            id: x.id ?? x.productId ?? x.product_id,
+            name: clean(x.name),
+            price: Number(x.price) || 0,
+            cat: catName,
+            brand: brandName,
+            promo: "-",                // phase โปรโมชันในอนาคต
+            img: resolveImageUrl(x),
+          };
+        });
+
+        setPRODUCTS(mapped);
+        setCATEGORIES((cats || []).map((c) => ({ ...c, name: clean(c.name) })));
+        setBRANDS_MASTER((brands || []).map((b) => ({ ...b, name: clean(b.name) })));
+      } catch (e) {
+        setLoadErr(e.message || "โหลดข้อมูลไม่สำเร็จ");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => { alive = false; };
+  }, []);
+
+  /* ===== สถานะ UI เดิม ===== */
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("featured");
   const [filters, setFilters] = useState({
@@ -51,29 +140,34 @@ export default function ShopPage() {
     priceMax: null,
   });
 
-  // filter.cat จาก ?cat= ใน URL 
+  /* ===== รายการตัวเลือกจาก DB (แทนที่ของเดิมแบบฮาร์ดโค้ด) ===== */
   const CAT_LIST = useMemo(
-    () => ["Meats", "Fruits & Vegetables", "Frozen Foods", "Dried Foods"],
-    []
+    () => (CATEGORIES.length ? CATEGORIES.map((c) => c.name) : []),
+    [CATEGORIES]
   );
+
+  // รองรับ ?cat= จาก URL
   useEffect(() => {
     const catParam = searchParams.get("cat");
     if (catParam && CAT_LIST.includes(catParam)) {
-      setFilters((prev) => ({ ...prev, cat: new Set([catParam]) }));
+      setFilters((prev) => ({ ...prev, cat: new Set([clean(catParam)]) }));
       setPage(1);
     }
   }, [searchParams, CAT_LIST]);
 
-  const BRANDS = useMemo(() => [...new Set(PRODUCTS.map((p) => p.brand))].sort(), []);
-  const PROMOS = useMemo(
-    () => [...new Set(PRODUCTS.map((p) => p.promo))].filter((x) => x !== "-").sort(),
-    []
+  const BRANDS = useMemo(
+    () => BRANDS_MASTER.map((b) => b.name).filter(Boolean).sort(),
+    [BRANDS_MASTER]
   );
 
+  // Promotions: ยังไม่มีใน DB — เตรียมโครงไว้ก่อน
+  const PROMOS = useMemo(() => [], []);
+
   const toggleSet = (key, v, on) => {
+    const label = clean(v);
     setFilters((prev) => {
       const next = { ...prev, [key]: new Set(prev[key]) };
-      on ? next[key].add(v) : next[key].delete(v);
+      on ? next[key].add(label) : next[key].delete(label);
       return next;
     });
     setPage(1);
@@ -93,17 +187,27 @@ export default function ShopPage() {
     setPage(1);
   };
 
+  /* ===== กรองข้อมูลจริงแบบ normalize (NEW) ===== */
   const filtered = useMemo(() => {
     const f = filters;
+    const catSet   = new Set([...f.cat].map(norm));
+    const brandSet = new Set([...f.brand].map(norm));
+    const promoSet = new Set([...f.promo].map(norm));
+
     return PRODUCTS.filter((p) => {
-      if (f.cat.size && !f.cat.has(p.cat)) return false;
-      if (f.brand.size && !f.brand.has(p.brand)) return false;
-      if (f.promo.size && !f.promo.has(p.promo)) return false;
-      if (f.priceMin != null && p.price < f.priceMin) return false;
-      if (f.priceMax != null && p.price > f.priceMax) return false;
+      const pCat   = norm(p.cat);
+      const pBrand = norm(p.brand);
+      const pPromo = norm(p.promo);
+
+      if (catSet.size   && !catSet.has(pCat))     return false;
+      if (brandSet.size && !brandSet.has(pBrand)) return false;
+      if (promoSet.size && !promoSet.has(pPromo)) return false;
+
+      if (f.priceMin != null && Number(p.price) < Number(f.priceMin)) return false;
+      if (f.priceMax != null && Number(p.price) > Number(f.priceMax)) return false;
       return true;
     });
-  }, [filters]);
+  }, [filters, PRODUCTS]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -117,6 +221,7 @@ export default function ShopPage() {
     const start = (page - 1) * PAGE_SIZE;
     return sorted.slice(start, start + PAGE_SIZE);
   }, [sorted, page]);
+
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [totalPages, page]);
@@ -149,6 +254,7 @@ export default function ShopPage() {
     setMaxVal(filters.priceMax ?? "");
   }, [filters.priceMin, filters.priceMax]);
 
+  /* ===== Card สินค้า (เดิม) ===== */
   const ProductCard = ({ p }) => {
     const [wish, setWish] = useState(() => {
       try { return new Set(JSON.parse(localStorage.getItem(LS_WISH) || "[]")); }
@@ -206,6 +312,7 @@ export default function ShopPage() {
     );
   };
 
+  /* ===== Checklist (เดิม) ===== */
   const CheckList = ({ list, setKey, selected }) => (
     <div className={`checklist ${setKey === "brand" ? "scroll" : ""}`}>
       {list.map((val) => {
@@ -215,7 +322,7 @@ export default function ShopPage() {
             <input
               id={id}
               type="checkbox"
-              checked={selected.has(val)}
+              checked={selected.has(clean(val))}
               onChange={(e) => toggleSet(setKey, val, e.target.checked)}
             />
             <span>{val}</span>
@@ -263,7 +370,9 @@ export default function ShopPage() {
             </div>
 
             <div className="toolbar-row">
-              <p className="result-count">{filtered.length} items found</p>
+              <p className="result-count">
+                {loading ? "Loading…" : loadErr ? "0 items" : `${filtered.length} items found`}
+              </p>
               <div className="sort-area">
                 <label className="sr-only" htmlFor="sort">Sort by</label>
                 <select
@@ -380,7 +489,7 @@ export default function ShopPage() {
                   <button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
                 <div className="filter-body">
-                  <CheckList list={PROMOS} setKey="promo" selected={filters.promo} />
+                  {/* ยังไม่มีใน DB — เฟสถัดไป */}
                 </div>
               </section>
             </div>
@@ -388,8 +497,11 @@ export default function ShopPage() {
 
           <section className="products" aria-label="Products">
             <div className="grid" aria-live="polite">
-              {pageItems.map((p) => (<ProductCard key={p.id} p={p} />))}
-              {pageItems.length === 0 && (<p className="no-result">No products found.</p>)}
+              {loading || loadErr
+                ? (loading ? <p className="no-result">Loading…</p> : <p className="no-result">No products found.</p>)
+                : pageItems.map((p) => (<ProductCard key={p.id} p={p} />))
+              }
+              {!loading && !loadErr && pageItems.length === 0 && (<p className="no-result">No products found.</p>)}
             </div>
 
             <nav className="pagination" aria-label="Pagination">

@@ -197,3 +197,36 @@ html{ overflow-y:scroll; }
   color: var(--pm-primary);
   font-weight: 600;
 }
+
+/* ====== Add-on styles for account name & dropdown button (ไม่ทับของเดิม) ====== */
+.pm-icon__label .pm-name {
+  font-weight: 600;
+  letter-spacing: .2px;
+  text-transform: none;   /* คงชื่อผู้ใช้แบบเดิม ไม่เปลี่ยนเป็น CAPS */
+  margin-left: 4px;
+}
+
+/* ปุ่มใน dropdown ที่เป็น <button> (เช่น Logout) ให้หน้าตาเนียนกับ <a> เดิม */
+.pm-dropdown__btn {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 10px 14px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pm-dropdown__btn:hover,
+.pm-dropdown__btn:focus {
+  background: rgba(0,0,0,0.06);
+  outline: none;
+  border-radius: 6px;
+}
+
+/* ถ้าต้องการให้ชื่อผู้ใช้เด่นขึ้นตอน hover ที่ปุ่ม account */
+.pm-account:hover .pm-name {
+  filter: brightness(1.05);
+}
