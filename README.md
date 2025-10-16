@@ -462,7 +462,7 @@ git merge origin/develop -m "merge: update from develop → ploy"
 git push origin ploy
 ```
 
-หรือถ้าอยากให้เหมือน `ploy` เป๊ะ:
+หรือถ้าอยากให้เหมือน `develop` เป๊ะ:
 
 ```bash
 git checkout ploy
