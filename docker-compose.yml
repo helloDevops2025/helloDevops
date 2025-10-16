@@ -61,10 +61,16 @@ services:
       MYSQL_USER: user_devops
       MYSQL_PASSWORD: user1234
     ports:
-      - "3306:3306"   # ถ้าเครื่องคุณมี MySQL ชนพอร์ต ให้เปลี่ยนเป็น "3307:3306"
+      - "3307:3306"   # ถ้าเครื่องคุณมี MySQL ชนพอร์ต ให้เปลี่ยนเป็น "3307:3306"
     volumes:
       - db:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command:
+      - --max_allowed_packet=32M
+      - --innodb_log_file_size=128M
+      - --innodb_file_per_table=1
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: ["CMD","mysqladmin","ping","-h","localhost","-p1234"]
       interval: 10s
@@ -73,7 +79,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ../helloDevops-backend
       dockerfile: Dockerfile
     container_name: backend
     restart: unless-stopped

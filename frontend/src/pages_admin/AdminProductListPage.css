@@ -28,6 +28,7 @@
 
 .app[data-page="AdminProductListPage"] .content-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -133,10 +134,12 @@
 
 /* Product cell */
 .app[data-page="AdminProductListPage"] .prod {
-  display: inline-flex;
+  display: flex;               /* ใช้ flex ปกติพอ ไม่ต้อง inline-flex */
   align-items: center;
   gap: 10px;
-  white-space: nowrap;
+  white-space: normal;         /* ✅ อนุญาตให้ตัดบรรทัด */
+  word-break: break-word;      /* ✅ บังคับให้ตัดคำเมื่อยาวเกิน */
+  max-width: 200px;
 }
 
 .app[data-page="AdminProductListPage"] .cube {
@@ -223,6 +226,7 @@
   min-width: 34px;
   padding: 0 10px;
   border-radius: 999px;
+  cursor: pointer;
 }
 
 .app[data-page="AdminProductListPage"] .pill.active {
@@ -233,7 +237,6 @@
 
 /* Responsive */
 @media (max-width: 1100px) {
-
   .app[data-page="AdminProductListPage"] .table-header,
   .app[data-page="AdminProductListPage"] .table-row {
     grid-template-columns: 1.6fr 1.1fr 0.9fr 1.1fr 0.9fr 0.9fr 0.9fr 0.7fr;
@@ -254,7 +257,6 @@
 }
 
 @media (max-width: 640px) {
-
   .app[data-page="AdminProductListPage"] .table-header,
   .app[data-page="AdminProductListPage"] .table-row {
     grid-template-columns: repeat(8, minmax(90px, 1fr));
@@ -263,5 +265,69 @@
 
   .app[data-page="AdminProductListPage"] .prod {
     white-space: normal;
+  }
+}
+
+/* ------------------------------------------------------------------
+   ✅ ADD-ON: ตกแต่งช่อง Search + Dropdown (minimal, ไม่ทับดีไซน์เดิม)
+   - ใช้เฉพาะการ override/เพิ่มจากของเดิม
+-------------------------------------------------------------------*/
+
+/* ยืดความกว้างเล็กน้อย + เอฟเฟกต์โฟกัส */
+.app[data-page="AdminProductListPage"] .search {
+  gap: 10px;
+  max-width: 560px; /* เดิม 440px */
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.app[data-page="AdminProductListPage"] .search:focus-within {
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.09);
+}
+.app[data-page="AdminProductListPage"] .search:hover {
+  border-color: #d1d5db;
+}
+.app[data-page="AdminProductListPage"] .search i {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Dropdown (ชนิดการค้นหา) */
+.app[data-page="AdminProductListPage"] .search select {
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: #374151;
+  padding: 6px 24px 6px 8px;
+  min-width: 140px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  /* caret svg แบบมินิมอล */
+  background-image:
+    linear-gradient(transparent,transparent),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat, no-repeat;
+  background-position: right 4px center, right 4px center;
+  background-size: 14px 14px, 14px 14px;
+}
+
+/* เส้นกั้นบางๆ ระหว่าง select กับ input ให้ดูเป็นชิ้นเดียวกัน */
+.app[data-page="AdminProductListPage"] .search select + input {
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+}
+
+/* Placeholder สีอ่อนลงเล็กน้อย */
+.app[data-page="AdminProductListPage"] .search input::placeholder {
+  color: #9ca3af;
+}
+
+/* Responsive: ให้ช่องค้นหากว้างเต็มบรรทัดเมื่อจอแคบ */
+@media (max-width: 900px) {
+  .app[data-page="AdminProductListPage"] .search {
+    max-width: 100%;
   }
 }
