@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "name": "ข้าวกล้องหอมมะลิ ออร์แกนิค 1 กก.",
+    "price": 150.00,
+    "category": "Dried Foods",
+    "brand": "Raw Food",
+    "quantity": 25,
+    "stock": "In Stock"
+  },
+  {
+    "id": 2,
+    "name": "น้ำมันมะพร้าวสกัดเย็น 500 มล.",
+    "price": 220.00,
+    "category": "Cooking Oils",
+    "brand": "CocoLife",
+    "quantity": 15,
+    "stock": "In Stock"
+  },
+  {
+    "id": 3,
+    "name": "กล้วยตากอบน้ำผึ้ง",
+    "price": 90.00,
+    "category": "Snacks",
+    "brand": "BananaCraft",
+    "quantity": 0,
+    "stock": "Out of Stock"
+  }
+]

@@ -61,7 +61,7 @@ services:
       MYSQL_USER: user_devops
       MYSQL_PASSWORD: user1234
     ports:
-      - "3306:3306"   # ถ้าเครื่องคุณมี MySQL ชนพอร์ต ให้เปลี่ยนเป็น "3307:3306"
+      - "3307:3306"   # ถ้าเครื่องคุณมี MySQL ชนพอร์ต ให้เปลี่ยนเป็น "3307:3306"
     volumes:
       - db:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -79,7 +79,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ../helloDevops-backend
       dockerfile: Dockerfile
     container_name: backend
     restart: unless-stopped
