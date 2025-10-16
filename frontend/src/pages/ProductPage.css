@@ -1,3 +1,506 @@
-/* ProductPage */
-body { font-family: system-ui, Arial, sans-serif; }
-h1 { margin: 24px; text-align: center; font-size: 28px; }
+/* โหลดฟอนต์ Poppins */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+/* ------------------------
+   VARIABLES
+------------------------- */
+:root {
+  --primary:#3E40AE;
+  --text:#7e8595;
+  --muted:#6b7280;
+  --bg:#f7f8fc;
+  --card:#fff;
+  --line:#e5e7eb;
+  --shadow:0 10px 24px rgba(0,0,0,.08);
+  --radius:20px;
+  --max:1280px;
+}
+
+/* ------------------------
+   GLOBAL
+------------------------- */
+body {
+  margin:0;
+  font-family:"Poppins",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.container {
+  max-width:var(--max);
+  margin:0 auto;
+  padding:30px !important;
+}
+
+.title {
+  font:600 28px/1.2 "Poppins";
+  margin:0 0 20px;
+  align-self:start;
+  justify-self:start;
+  padding-top:10px;
+  padding-bottom:8px;
+}
+
+.checkout-grid {
+  display:grid;
+  gap:24px;
+  grid-template-columns:1.15fr 0.85fr;
+}
+@media(max-width:960px){
+  .checkout-grid { grid-template-columns:1fr; }
+}
+
+.card {
+  background:var(--card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:24px;
+}
+
+.section-title {
+  margin:0 0 14px;
+  font:600 18px/1.2 "Poppins";
+}
+
+/* ------------------------
+   ADDRESS FORM
+------------------------- */
+.address-form {
+  display:grid;
+  gap:8px;
+  margin-top:12px;
+}
+
+.address-form label {
+  display:grid;
+  gap:4px;                  /* ข้อความ ↔ input */
+  font-size:14px;
+  font-weight:500;
+  color:#0b1222;
+  margin-bottom:12px;
+}
+
+.address-form .label-text {
+  font:500 14px/1.25 "Poppins",system-ui,sans-serif;
+  letter-spacing:.2px;
+}
+
+.address-form input,
+.address-form select,
+.address-form textarea {
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:10px;
+  font-size:14px;
+  font-family:"Poppins",sans-serif;
+  line-height:1.25;
+  width:100%;
+}
+
+.address-form ::placeholder {
+  font-family:"Poppins",sans-serif;
+}
+
+.form-row {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+@media(max-width:600px){
+  .form-row { grid-template-columns:1fr; }
+}
+
+/* checkbox inline */
+.address-form label.inline {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:12px;
+}
+.address-form label.inline input[type="checkbox"]{
+  accent-color:var(--primary);
+  width:18px;
+  height:18px;
+  margin:0;
+}
+
+/* actions */
+.form-actions {
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:10px;
+}
+.btn-save {
+  background:var(--primary);
+  color:#fff;
+  border:0;
+  border-radius:10px;
+  padding:10px 18px;
+  cursor:pointer;
+  box-shadow:0 8px 18px rgba(62,64,174,.25);
+}
+.btn-save:hover { filter:brightness(.98); }
+
+.btn-cancel {
+  background:#eef2f7;
+  color:#0b1222;
+  border:0;
+  border-radius:10px;
+  padding:10px 16px;
+  cursor:pointer;
+}
+.btn-cancel:hover { background:#e3e8f2; }
+
+/* ------------------------
+   ADDRESS LIST
+------------------------- */
+.saved-addresses {
+  display:grid;
+  gap:16px;
+  margin-bottom:14px;
+}
+.address-option { position:relative; display:block; }
+.address-option input[type="radio"] {
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+.address-box {
+  position:relative;
+  background:#f9fafb;
+  border:1.5px solid #e5e7eb;
+  border-radius:18px;
+  padding:18px 18px 18px 64px;
+  transition:border-color .2s,background .2s,box-shadow .2s,transform .05s;
+}
+.address-box::before {
+  content:"";
+  position:absolute;
+  left:18px; top:18px;
+  width:22px; height:22px;
+  border-radius:50%;
+  border:2px solid #cbd5e1;
+  background:#fff;
+}
+.address-box::after {
+  content:"";
+  position:absolute;
+  left:25px; top:25px;
+  width:12px; height:12px;
+  border-radius:50%;
+  background:var(--primary);
+  transform:scale(0);
+  transition:transform .18s ease;
+}
+.address-option input:checked + .address-box::after {
+  transform:scale(1);
+}
+.address-option input:checked + .address-box {
+  border-color:var(--primary);
+  background:#eef2ff;
+  box-shadow:0 0 0 3px rgba(62,64,174,.12);
+}
+.address-option:hover .address-box { border-color:#d1d8e6; }
+.address-option:active .address-box { transform:translateY(1px); }
+
+.addr-name {
+  margin:0 0 6px;
+  font-weight:700;
+  font-size:16px;
+  color:#0b1222;
+}
+.addr-text {
+  margin:0;
+  font-size:14px;
+  color:#546173;
+  line-height:1.55;
+}
+.tag.default {
+  position:absolute;
+  right:16px; top:14px;
+  background:var(--primary);
+  color:#fff;
+  font-size:12px;
+  padding:4px 10px;
+  border-radius:999px;
+  box-shadow:0 2px 8px rgba(62,64,174,.25);
+}
+.set-default-link {
+  appearance:none;
+  border:1.5px dashed var(--primary);
+  background:transparent;
+  color:var(--primary);
+  font:500 12px/1 "Poppins",sans-serif;
+  padding:4px 10px;
+  border-radius:999px;
+  cursor:pointer;
+}
+.set-default-link:hover { background:#eef2ff; }
+.btn-add-inline {
+  background:transparent;
+  border:1.8px dashed var(--primary);
+  color:var(--primary);
+  padding:10px 14px;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:600;
+}
+.btn-add-inline:hover { background:#f0f3ff; }
+
+/* ------------------------
+   ORDER SUMMARY
+------------------------- */
+.order-item {
+  display:grid;
+  grid-template-columns:80px 1fr auto;
+  gap:16px;
+  background:#f9fafb;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:14px;
+  align-items:center;
+}
+.order-item img {
+  width:100%;
+  height:70px;
+  object-fit:cover;
+  border-radius:8px;
+}
+.order-item__body { display:grid; gap:4px; }
+.order-item__name {
+  margin:0;
+  font-weight:600;
+  font-size:14px;
+}
+.order-item__price {
+  font-weight:500;
+  font-size:14px;
+  color:#111;
+}
+.qty-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.unit-price {
+  display:block;
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+}
+
+.totals {
+  margin-top:12px;
+  border-top:1px dashed var(--line);
+}
+.line {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+  border-bottom:1px dashed var(--line);
+  font-size:14px;
+  color:#334155;
+}
+.line.total {
+  border-bottom:0;
+  font-weight:600;
+  padding-top:14px;
+  font-size:15px;
+}
+.price {
+  font-size:18px;
+  color:var(--primary);
+}
+
+/* ------------------------
+   PAGE WRAPPER
+------------------------- */
+.place-order-page {
+  min-height:100vh;
+            /* ระยะจาก header */
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Poppins",sans-serif;
+}
+.container {
+  max-width:var(--max);
+  margin-top:30px;
+}
+
+/* ====== ULTRA-COMPACT FORM SPACING (override) ====== */
+.place-order-page .address-form{
+  row-gap: 6px;            /* เดิม 8–14 → แน่นขึ้น */
+}
+
+/* ตัด margin ของ label ออกให้คุมด้วย gap อย่างเดียว */
+.place-order-page .address-form label{
+  margin: 0;               /* สำคัญ: กันช่องว่างด้านล่าง */
+  gap: 3px;                /* ข้อความ ↔ input ให้สั้นลงอีก */
+  line-height: 1.2;
+}
+
+/* ระยะระหว่างฟิลด์ติดกันให้เล็กลง */
+.place-order-page .address-form > label + label{
+  margin-top: 6px;         /* จากเดิม 12+ px → 6px */
+}
+
+/* แถว 2 คอลัมน์ให้กระชับ */
+.place-order-page .form-row{
+  margin: 6px 0;           /* เดิมไม่มี → ช่วยคุมระยะรวม */
+  column-gap: 10px;        /* เดิม 12–14 → ลดลง */
+  row-gap: 6px;
+}
+
+/* inline checkbox ให้ระยะเท่าช่องทั่วไป */
+.place-order-page .address-form label.inline{
+  margin: 6px 0;
+  gap: 6px;
+}
+
+/* ขนาดกล่องอินพุตคงที่และไม่กินพื้นที่เกิน */
+.place-order-page .address-form input,
+.place-order-page .address-form select,
+.place-order-page .address-form textarea{
+  padding: 10px;
+  height: 44px;            /* กำหนดสูงชัดๆ กันดึงความสูงเกิน */
+  box-sizing: border-box;
+}
+.place-order-page .address-form textarea{
+  height: auto;            /* เผื่อหน้าอื่นใช้ textarea */
+  min-height: 84px;
+}
+
+/* ===== Address: tighter spacing under section title ===== */
+.form-card .section-title{ margin-bottom: 10px; }             /* เดิม 14px */
+.form-card .saved-addresses{ margin-top: 6px; }                /* ชิดขึ้นจากหัวข้อ */
+
+/* ลด padding ของกล่อง ให้ดูแน่นขึ้นนิดหน่อย */
+.address-box{ padding: 14px 16px 14px 64px; }                  /* เดิม 18px */
+
+/* ===== Icon buttons for Edit/Delete ===== */
+.addr-actions{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+.icon-btn{
+  appearance:none;
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:10px;
+  padding:6px 8px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font:500 13px/1 "Poppins",system-ui,sans-serif;
+  color:#0b1222;
+  box-shadow:0 2px 6px rgba(0,0,0,.06);
+  cursor:pointer;
+  transition:transform .08s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.icon-btn svg{ width:16px; height:16px; display:block; }
+.icon-btn:active{ transform:translateY(1px); }
+.icon-btn:hover{ box-shadow:0 4px 10px rgba(0,0,0,.08); border-color:#d8dde6; }
+
+/* แบบสีเน้นสำหรับลบ */
+.icon-btn.danger{
+  border-color:#fecaca;
+  background:#fff5f5;
+  color:#b91c1c;
+}
+.icon-btn.danger:hover{ border-color:#fca5a5; box-shadow:0 4px 10px rgba(185,28,28,.12); }
+
+/* ปรับ pill Default ให้เหลือพื้นที่กับไอคอนด้านล่าง */
+.tag.default{ top:10px; right:14px; }
+
+/* ===== Address blocks tighter spacing ===== */
+
+/* ชิดหัวข้อขึ้นเล็กน้อย */
+.form-card .section-title{ margin-bottom:8px; }
+
+/* ลดช่องว่างระหว่างบล็อกที่อยู่แต่ละอัน */
+.saved-addresses{
+  row-gap: 10px;            /* เดิม 16px → แน่นขึ้น */
+  margin-top: 4px;          /* เดิม 14/6px → ชิดหัวข้อ */
+}
+
+/* ลด padding แนวตั้งของกล่องที่อยู่ลงนิดนึง */
+.address-box{
+  padding: 12px 16px 12px 64px;   /* เดิม 18px  → 12px แนวตั้ง */
+}
+
+/* เพราะลด padding แล้ว จูนตำแหน่ง radio ให้พอดี */
+.address-box::before{              /* วงนอก */
+  left:16px; top:14px; width:20px; height:20px;
+}
+.address-box::after{               /* จุดใน */
+  left:23px; top:21px; width:10px; height:10px;
+}
+
+/* ปุ่ม + เพิ่มที่อยู่ ให้ชิดขึ้นเล็กน้อย (ถ้าต้องการ) */
+.saved-addresses + .btn-add-inline{
+  margin-top: 10px;               /* เดิม ~12+ px */
+  padding: 9px 12px;
+}
+
+/* === Put `Set as default` at top-right like `Default` pill === */
+.address-box { position: relative; }
+
+.set-default-link{
+  position: absolute;         /* ย้ายไปมุมขวาบน */
+  right: 14px;
+  top: 10px;
+  appearance: none;
+  border: 1.5px dashed var(--primary);
+  background: #fff;
+  color: var(--primary);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font: 600 12px/1 "Poppins", system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(62,64,174,.08);
+  transition: background .15s ease, box-shadow .2s ease, transform .06s ease;
+}
+.set-default-link:hover{ background:#eef2ff; }
+.set-default-link:active{ transform: translateY(1px); }
+.set-default-link:focus-visible{
+  outline: 2px solid #94a3b8;
+  outline-offset: 2px;
+}
+
+/* ให้ระยะของ pill ทั้งสองชนิดตรงกัน */
+.tag.default{ right:14px; top:10px; }
+
+
+
+/* ===== Tighter space between address blocks ===== */
+.saved-addresses{
+  row-gap: 14px;        /* เดิม 10–16px → เหลือ 6px */
+}
+
+/* กัน margin แอบโผล่จาก element ภายใน */
+.address-option{ margin: 0; }
+.address-box{ margin: 0; }
+
+/* ลดเอฟเฟกต์เงาขอบตอน checked ที่ทำให้ดูห่าง */
+.address-option input:checked + .address-box{
+  box-shadow: 0 0 0 2px rgba(62,64,174,.10);  /* เดิม 3px → 2px */
+}
+
+/* ระยะห่างระหว่าง “รายการสุดท้าย” กับปุ่ม +Add ให้กระชับด้วย */
+.saved-addresses + .btn-add-inline{
+  margin-top: 0px;     /* เดิม 10–12px */
+}
+
+/* ===== Add a bit more space under Shipping Address heading ===== */
+.form-card .section-title {
+  margin-bottom: 18px;   /* เดิม 8–10px → เพิ่มเป็น 18px */
+}
+
+/* หรือจะขยับทั้ง block addresses ลงแทนก็ได้ */
+.form-card .saved-addresses {
+  margin-top: 6px;       /* เดิม 0–4px → เพิ่มเป็น 6px */
+}

@@ -9,3 +9,4 @@ html, body, #root {
 /* แนะนำให้มี base นิดหน่อย */
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, "Inter", "Poppins", sans-serif; }
+

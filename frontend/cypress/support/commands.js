@@ -52,5 +52,46 @@ Cypress.Commands.add('loginAsAdmin', () => {
   });
 });
 
+// เปิด dropdown มุมขวาบน แล้วกด Logout (เวอร์ชันทนทาน ไม่ใช้ :contains ของ jQuery)
+Cypress.Commands.add('logoutUI', () => {
+  cy.scrollTo('top');
+
+  // 1) หา header ก่อน (ลองได้หลาย selector)
+  cy.get('header, .header, [data-testid="app-header"]', { timeout: 10000 }).should('exist');
+
+  // 2) คลิกตัวเปิดเมนู "admin" แบบ case-insensitive โดยใช้ Cypress.contains (ไม่ใช่ jQuery)
+  //    ทำในขอบเขต header ก่อน ถ้าไม่เจอค่อย fallback ไปทั้งหน้า
+  cy.get('header, .header, [data-testid="app-header"]').then($hdr => {
+    const hasAdmin = $hdr.find('*:contains("admin"), *:contains("Admin")').length > 0;
+    if (hasAdmin) {
+      cy.wrap($hdr).contains(/^admin$/i, { matchCase: false }).click({ force: true });
+    } else {
+      // เผื่อ DOM ของปุ่มอยู่นอกแท็ก header
+      cy.contains(/^admin$/i, { matchCase: false }).click({ force: true });
+    }
+  });
+
+  // 3) คลิกปุ่ม Logout (รองรับหลายแบบ)
+  cy.contains(/^\s*Logout\s*$/i, { timeout: 5000 }).click({ force: true });
+});
 
 
+// cypress/support/commands.js
+Cypress.Commands.add('loginAs', (role = 'ADMIN', payload = {}) => {
+  cy.intercept('POST', '**/api/auth/login', (req) => {
+    req.reply({
+      statusCode: 200,
+      body: {
+        token: 'fake-jwt',
+        role,
+        email: payload.email || (role === 'ADMIN' ? 'admin@puremart.com' : 'user@puremart.com'),
+        user: { role }
+      }
+    });
+  }).as('loginApi');
+
+  cy.get('#email').clear().type(payload.email || (role === 'ADMIN' ? 'admin' : 'user'));
+  cy.get('#password').clear().type(payload.password || '123456');
+  cy.get('#submitBtn').click();
+  cy.wait('@loginApi');
+});

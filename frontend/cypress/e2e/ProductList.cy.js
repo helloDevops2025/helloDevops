@@ -435,3 +435,25 @@ describe('E2E-PROD-005: Delete product (trash icon - frontend only)', () => {
     });
   });
 });
+// ===============================================
+// E2E-AUTH-007: Logout แล้วถูกเด้งไปหน้า /login
+// ===============================================
+describe('E2E-AUTH-007: Logout → redirect to /login', () => {
+  beforeEach(() => {
+    cy.loginAsAdmin();
+    cy.visit('/admin/products');
+    cy.get('[data-page="AdminProductListPage"]', { timeout: 15000 }).should('exist');
+    cy.get('h1.title', { timeout: 10000 }).should('contain.text', 'PRODUCT LIST');
+  });
+
+  it('กด Logout แล้วไปหน้า /login + ฟอร์ม login แสดงผล', () => {
+    cy.logoutUI();           // <-- คลิกปุ่มมุมขวาบน + Logout
+    cy.location('pathname').should('match', /\/login$/);
+    cy.get('#email').should('exist');
+    cy.get('#password').should('exist');
+  });
+});
+
+
+
+
