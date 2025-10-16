@@ -1,86 +1,3 @@
-// import { useEffect, useState } from "react";
-// import "./AdminProductListPage.css";
-
-// export default function AdminProductListPage() {
-//   const [items, setItems] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [err, setErr] = useState("");
-
-//   // เหมือนเดิม: อ่านจาก ENV, มี fallback
-//   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
-//   console.log("[AdminProductList] API_URL =", API_URL);
-
-//   useEffect(() => {
-//     const url = `${API_URL}/api/products`;
-//     console.log("[AdminProductList] FETCH ->", url);
-//     setLoading(true);
-//     setErr("");
-
-//     fetch(url, { headers: { Accept: "application/json" } })
-//       .then(async (res) => {
-//         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//         return res.json();
-//       })
-//       .then((data) => {
-//         const arr = Array.isArray(data) ? data : [];
-//         console.log("[AdminProductList] items =", arr);
-//         setItems(arr);
-//       })
-//       .catch((e) => {
-//         console.error("[AdminProductList] fetch error:", e);
-//         setErr(e.message || "Fetch failed");
-//         setItems([]);
-//       })
-//       .finally(() => setLoading(false));
-//   }, [API_URL]);
-
-//   return (
-//     <div className="admin-product-list">
-//       <h1>🛒 Admin · Product List</h1>
-
-//       {/* debug line */}
-//       <p style={{fontSize:12,opacity:.8,margin:"4px 0"}}>
-//         <b>API_URL:</b> {API_URL} &nbsp;
-//         <b>Status:</b> {loading ? "loading…" : err ? `error: ${err}` : `ok (${items.length})`}
-//       </p>
-
-//       {loading && <p>Loading products...</p>}
-//       {!loading && err && <p style={{color:"#c00"}}>{err}</p>}
-//       {!loading && !err && items.length === 0 && <p>No products found.</p>}
-
-//       {!loading && !err && items.length > 0 && (
-//         <table className="product-table">
-//           <thead>
-//             <tr>
-//               <th>ID</th>
-//               <th>Product ID</th>
-//               <th>Name</th>
-//               <th>Price</th>
-//               <th>Category</th>
-//               <th>Brand</th>
-//               <th>Quantity</th>
-//               <th>In Stock</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {items.map((p) => (
-//               <tr key={p.id}>
-//                 <td>{p.id}</td>
-//                 <td>{p.productId}</td>
-//                 <td>{p.name}</td>
-//                 <td>{Number(p.price ?? 0).toFixed(2)}</td>
-//                 <td>{p.category}</td>
-//                 <td>{p.brand ?? "-"}</td>
-//                 <td>{p.quantity ?? 0}</td>
-//                 <td>{p.inStock ? "✅" : "❌"}</td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       )}
-//     </div>
-//   );
-// }
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./AdminProductListPage.css";
@@ -93,11 +10,9 @@ export default function AdminProductListPage() {
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
   console.log("[AdminProductList] API_URL =", API_URL);
 
-  // ---------- fetch แบบเดิม ----------
+  // ---------- fetch ----------
   useEffect(() => {
     const url = `${API_URL}/api/products`;
-    console.log("[AdminProductList] FETCH ->", url);
-
     setLoading(true);
     setErr("");
     fetch(url, { headers: { Accept: "application/json" } })
@@ -105,11 +20,7 @@ export default function AdminProductListPage() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
-      .then((data) => {
-        const arr = Array.isArray(data) ? data : [];
-        console.log("[AdminProductList] items =", arr);
-        setItems(arr);
-      })
+      .then((data) => setItems(Array.isArray(data) ? data : []))
       .catch((e) => {
         console.error("[AdminProductList] fetch error:", e);
         setErr(e.message || "Fetch failed");
@@ -118,7 +29,7 @@ export default function AdminProductListPage() {
       .finally(() => setLoading(false));
   }, [API_URL]);
 
-  // ---------- pager + search (เดิมทั้งหมด) ----------
+  // ---------- pager + search (Thai-friendly + dropdown) ----------
   useEffect(() => {
     function initTablePager({
       container = ".table-card",
@@ -193,53 +104,180 @@ export default function AdminProductListPage() {
 
     initTablePager({ container: ".table-card", rowsPerPage: 10, windowSize: 3 });
 
-    // Search Product ID (เดิม)
+    // ----- Search setup -----
     const input = document.querySelector(".action-bar .search input");
+    const scope = document.querySelector(".action-bar .search select"); // dropdown ใหม่
     const table = document.querySelector(".table-card");
     const rows = Array.from(table?.querySelectorAll(".table-row") ?? []);
     const hint = table?.querySelector(".hint");
+    const pager = table?.querySelector(".pager");
     const getActivePageBtn = () =>
       document.querySelector(".pager .pill.active") ||
       document.querySelector(".pager .pill");
 
+    // Thai-friendly normalization: lower, trim, collapse spaces, strip accents (latin) + thai diacritics
+    const stripThaiDiacritics = (s) =>
+      (s || "").replace(/[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/g, "");
     const norm = (s) =>
-      (s || "").toString().toLowerCase().replace(/\s+/g, "").replace(/^#/, "");
-    const productIdOf = (row) => norm(row.children[1]?.textContent || "");
+      stripThaiDiacritics(
+        (s || "")
+          .toString()
+          .toLowerCase()
+          .normalize("NFKD")
+          .replace(/[\u0300-\u036f]/g, "") // latin accents
+      )
+        .trim()
+        .replace(/\s+/g, " ");
+
+    const getCell = (row, idx) => (row?.children?.[idx]?.textContent ?? "").trim();
+
+    // ดึงค่าจาก data-* ถ้ามี; fallback index: 1=ProductID, 2=Name, 3=Category, 4=Brand, 5=Qty
+    const extractFields = (row) => {
+      const productId = row.dataset.productId ?? row.dataset.productid ?? getCell(row, 1);
+      const name = row.dataset.name ?? getCell(row, 2);
+      const category = row.dataset.category ?? getCell(row, 3);
+      const brand = row.dataset.brand ?? getCell(row, 4);
+      const qtyRaw =
+        row.dataset.quantity ??
+        row.dataset.qty ??
+        getCell(row, 5);
+      const qty = parseInt(String(qtyRaw).replace(/[^\d-]/g, ""), 10);
+      const isIn = Number.isFinite(qty) && qty > 0;
+
+      // ทำ field สำหรับค้นหา Stock (คำไทย/อังกฤษ)
+      const stockText = isIn
+        ? "in stock มีสินค้า พร้อมส่ง มีของ"
+        : "out of stock หมดสต็อก หมด ไม่มีของ ไม่มีสินค้า";
+
+      return {
+        productId: norm(productId),
+        name: norm(name),
+        category: norm(category),
+        brand: norm(brand),
+        stock: norm(stockText),
+        qty: Number.isFinite(qty) ? qty : 0,
+      };
+    };
+
+    // Pre-index
+    const record = new WeakMap();     // เก็บ fields แบบแยก
+    const hayAll = new WeakMap();     // สำหรับโหมด "ค้นหาทุกฟิลด์" ถ้าจะใช้ภายหลัง
+    rows.forEach((row) => {
+      const f = extractFields(row);
+      record.set(row, f);
+      hayAll.set(
+        row,
+        `${f.productId} ${f.name} ${f.category} ${f.brand} ${f.stock}`
+      );
+    });
+
+    // parse query สำหรับ stock
+    const normalizeStockQuery = (q) => {
+      const t = norm(q);
+      if (!t) return "";
+      const inWords = ["in", "in stock", "instock", "มี", "มีสินค้า", "พร้อมส่ง", "มีของ"];
+      const outWords = ["out", "out of stock", "outofstock", "หมด", "หมดสต็อก", "ไม่มี", "ไม่มีของ", "ไม่มีสินค้า"];
+      if (inWords.some((w) => t.includes(norm(w)))) return "in";
+      if (outWords.some((w) => t.includes(norm(w)))) return "out";
+      return t; // ถ้าไม่เข้า keyword ก็ใช้ match ปกติ
+    };
+
+    const setPlaceholder = () => {
+      if (!input || !scope) return;
+      const mode = scope.value;
+      const map = {
+        name: "ค้นหาชื่อสินค้า…",
+        productId: "ค้นหา Product ID…",
+        category: "ค้นหา Category…",
+        stock: "ค้นหา Stock (มี/หมด)…",
+      };
+      input.placeholder = map[mode] || "Search…";
+    };
+    setPlaceholder();
 
     function runSearch(q) {
-      const query = norm(q);
+      const queryRaw = q ?? "";
+      if (!scope) return;
+      const mode = scope.value; // name | productId | category | stock
+
+      const query = norm(queryRaw);
       if (!query) {
+        rows.forEach((row) => (row.style.display = ""));
+        if (pager) pager.style.visibility = "visible";
         const active = getActivePageBtn();
         if (active) active.click();
+        if (hint) hint.textContent = "";
         return;
       }
+
+      const terms =
+        mode === "stock"
+          ? [normalizeStockQuery(query)]
+          : query.split(" ").filter(Boolean);
+
       let shown = 0;
       rows.forEach((row) => {
-        const match = productIdOf(row).includes(query);
-        row.style.display = match ? "grid" : "none";
-        if (match) shown++;
+        const f = record.get(row);
+        if (!f) return;
+
+        let ok = false;
+        if (mode === "name") {
+          ok = terms.every((t) => f.name.includes(t));
+        } else if (mode === "productId") {
+          // รองรับแบบมี/ไม่มี # ด้วยการ normalize
+          ok = terms.every((t) => f.productId.replace(/^#/, "").includes(t.replace(/^#/, "")));
+        } else if (mode === "category") {
+          ok = terms.every((t) => f.category.includes(t));
+        } else if (mode === "stock") {
+          // ถ้าเป็นคีย์เวิร์ด in/out ให้ match แบบตรง
+          if (terms[0] === "in") ok = f.qty >= 1;
+          else if (terms[0] === "out") ok = f.qty <= 0;
+          else {
+            // ไม่ใช่ keyword → ให้หาในคำอธิบาย stockText
+            ok = terms.every((t) => f.stock.includes(t));
+          }
+        } else {
+          // fallback: ค้นหาทุกฟิลด์
+          const hay = hayAll.get(row) ?? "";
+          ok = terms.every((t) => hay.includes(t));
+        }
+
+        row.style.display = ok ? "grid" : "none";
+        if (ok) shown++;
       });
+
       if (hint) hint.textContent = `Found ${shown} entries`;
+      if (pager) pager.style.visibility = "hidden";
     }
-    function onInput() {
-      runSearch(input.value);
-    }
-    function onKey(e) {
-      if (e.key === "Enter") runSearch(input.value);
+
+    const onInput = () => runSearch(input?.value ?? "");
+    const onKey = (e) => {
+      if (e.key === "Enter") runSearch(input?.value ?? "");
       if (e.key === "Escape") {
-        input.value = "";
-        const active = getActivePageBtn();
-        if (active) active.click();
+        if (input) input.value = "";
+        runSearch("");
       }
-    }
+    };
+    const onScopeChange = () => {
+      setPlaceholder();
+      runSearch(input?.value ?? "");
+    };
+
     if (input && rows.length > 0) {
       input.addEventListener("input", onInput);
       input.addEventListener("keydown", onKey);
     }
+    if (scope) {
+      scope.addEventListener("change", onScopeChange);
+    }
+
     return () => {
       if (input) {
         input.removeEventListener("input", onInput);
         input.removeEventListener("keydown", onKey);
+      }
+      if (scope) {
+        scope.removeEventListener("change", onScopeChange);
       }
     };
   }, [items]);
@@ -251,8 +289,38 @@ export default function AdminProductListPage() {
     const padded = String(s).replace(/\D/g, "");
     return "#" + padded.padStart(5, "0");
   };
-  const getKey = (p) => p.id ?? p.productId;          // ใช้เป็น key/param
+  const getKey = (p) => p.id ?? p.productId;
   const getEditPath = (p) => `/admin/products/${encodeURIComponent(p.id ?? p.productId)}/edit`;
+
+  // === ป้าย stock (In/Out) ===
+  const toInt = (v) => {
+    const n = parseInt(String(v ?? "").replace(/[^\d-]/g, ""), 10);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const isInStock = (p) => toInt(p.quantity) > 0;
+  const stockLabelOf = (p) => (isInStock(p) ? "In Stock" : "Out of stock");
+  const stockStyleOf = (p) =>
+    isInStock(p)
+      ? {
+          display: "inline-block",
+          padding: "4px 10px",
+          borderRadius: "999px",
+          fontSize: 12,
+          lineHeight: 1,
+          border: "1px solid #a7f3d0",
+          background: "#ecfdf5",
+          color: "#065f46",
+        }
+      : {
+          display: "inline-block",
+          padding: "4px 10px",
+          borderRadius: "999px",
+          fontSize: 12,
+          lineHeight: 1,
+          border: "1px solid #fecaca",
+          background: "#fef2f2",
+          color: "#7f1d1d",
+        };
 
   // ---------- DELETE ----------
   async function handleDelete(p) {
@@ -263,9 +331,7 @@ export default function AdminProductListPage() {
     }
     if (!confirm(`Delete product id=${id}?`)) return;
     try {
-      const res = await fetch(`${API_URL}/api/products/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`${API_URL}/api/products/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(`DELETE failed: HTTP ${res.status}`);
       setItems((prev) => prev.filter((x) => x.id !== id));
     } catch (e) {
@@ -284,7 +350,14 @@ export default function AdminProductListPage() {
             <div className="action-bar">
               <div className="search">
                 <i className="fa-solid fa-magnifying-glass" />
-                <input type="text" placeholder="Search product…" />
+                {/* ⬇️ dropdown เลือกประเภทการค้นหา */}
+                <select defaultValue="name" aria-label="Search by">
+                  <option value="name">Product</option>
+                  <option value="productId">Product ID</option>
+                  <option value="category">Category</option>
+                  <option value="stock">Stock</option>
+                </select>
+                <input type="text" placeholder="ค้นหาชื่อสินค้า…" />
               </div>
               <Link to="/admin/products/new" className="btn-add">
                 <span className="box">
@@ -293,18 +366,6 @@ export default function AdminProductListPage() {
                 ADD NEW
               </Link>
             </div>
-
-            {/* 
-              Debug Info (ใช้ตอนต้องเช็ค backend)
-              - เอา comment ออกเพื่อโชว์ API_URL/Status ได้
-            */}
-            {/*
-            <p className="tiny-debug">
-              <b>API_URL:</b> {API_URL} &nbsp;|&nbsp;
-              <b>Status:</b>{" "}
-              {loading ? "loading…" : err ? `error: ${err}` : `ok (${items.length})`}
-            </p>
-            */}
           </div>
 
           <div className="table-card">
@@ -335,51 +396,44 @@ export default function AdminProductListPage() {
               </div>
             )}
 
-            {!loading &&
-              !err &&
-              items.length > 0 &&
-              items.map((p) => (
-                <div className="table-row" key={getKey(p)}>
-                  <div className="prod">
-                    <span className="cube">
-                      <i className="fa-solid fa-cube" />
-                    </span>{" "}
-                    {p.name}
-                  </div>
-                  <div>{showProductId(p.productId)}</div>
-                  <div>{Number(p.price ?? 0).toFixed(2)}</div>
-                  <div>{p.category}</div>
-                  <div>{p.brand ?? "-"}</div>
-                  <div>{p.quantity ?? 0}</div>
-                  <div>{p.inStock ? "In Stock" : "Out of stock"}</div>
-                  <div className="act">
-                    {/* ดินสอ = Edit (ไปหน้าแก้ไข) */}
-                    <Link
-                      to={getEditPath(p)}
-                      aria-label="Edit product"
-                      title="Edit"
-                    >
-                      <i className="fa-solid fa-pen" />
-                    </Link>
-
-                    {/* ถังขยะ = Delete (คลิกเรียก handleDelete) */}
-                    <button
-                      type="button"
-                      aria-label="Delete product"
-                      title="Delete"
-                      onClick={() => handleDelete(p)}
-                      style={{
-                        background: "transparent",
-                        border: 0,
-                        padding: 0,
-                        cursor: "pointer",
-                      }}
-                    >
-                      <i className="fa-solid fa-trash" />
-                    </button>
-                  </div>
+            {!loading && !err && items.length > 0 && items.map((p) => (
+              <div
+                className="table-row"
+                key={getKey(p)}
+                data-product-id={p.productId}
+                data-name={p.name}
+                data-category={p.category}
+                data-brand={p.brand}
+                data-quantity={p.quantity}
+              >
+                <div className="prod">
+                  <span className="cube"><i className="fa-solid fa-cube" /></span>{" "}
+                  {p.name}
                 </div>
-              ))}
+                <div>{showProductId(p.productId)}</div>
+                <div>{Number(p.price ?? 0).toFixed(2)}</div>
+                <div>{p.category}</div>
+                <div>{p.brand ?? "-"}</div>
+                <div>{p.quantity ?? 0}</div>
+                <div>
+                  <span style={stockStyleOf(p)}>{stockLabelOf(p)}</span>
+                </div>
+                <div className="act">
+                  <Link to={getEditPath(p)} aria-label="Edit product" title="Edit">
+                    <i className="fa-solid fa-pen" />
+                  </Link>
+                  <button
+                    type="button"
+                    aria-label="Delete product"
+                    title="Delete"
+                    onClick={() => handleDelete(p)}
+                    style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer" }}
+                  >
+                    <i className="fa-solid fa-trash" />
+                  </button>
+                </div>
+              </div>
+            ))}
 
             <div className="table-footer">
               <div className="hint">Showing entries</div>

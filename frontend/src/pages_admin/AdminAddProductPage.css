@@ -1,3 +1,237 @@
 /* AdminAddProductPage */
 body { font-family: system-ui, Arial, sans-serif; }
 h1 { margin: 24px; text-align: center; font-size: 28px; }
+
+.app[data-page="AdminAddProductPage"] {
+  --bg: #ebeff7;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --radius: 16px;
+  --radius-sm: 12px;
+
+  display: flex;
+  min-height: 100vh;
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.app[data-page="AdminAddProductPage"] * {
+  box-sizing: border-box;
+}
+
+/* Main */
+.app[data-page="AdminAddProductPage"] .main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.app[data-page="AdminAddProductPage"] .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 28px;
+}
+
+.app[data-page="AdminAddProductPage"] .account {
+  font-size: 18px;
+  color: #6b7280;
+}
+
+
+.app[data-page="AdminAddProductPage"] .content {
+  padding: 0 28px 32px;
+}
+.app[data-page="AdminAddProductPage"] .content-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin: 6px 0 16px;      
+}
+
+.app[data-page="AdminAddProductPage"] .title {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+/* Grid 2 คอลัมน์ */
+.app[data-page="AdminAddProductPage"] .grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 36px;
+}
+
+/* Card ขาวมีเส้นบาง */
+.app[data-page="AdminAddProductPage"] .card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 25px 20px;
+}
+
+/* Fields – โทนเทาเม็ดมนเหมือนหน้า List */
+.app[data-page="AdminAddProductPage"] .field {
+  margin-bottom: 16px;
+}
+
+.app[data-page="AdminAddProductPage"] .field label {
+  display: block;
+  margin-bottom: 10px;
+  color: #111827;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.app[data-page="AdminAddProductPage"] input,
+.app[data-page="AdminAddProductPage"] select,
+.app[data-page="AdminAddProductPage"] textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #f3f4f6;
+  border-radius: 14px;
+  padding: 26px 20px;
+  font: inherit;
+  outline: none;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .08) inset; /* เม็ดมน */
+}
+
+.app[data-page="AdminAddProductPage"] textarea {
+  resize: vertical;
+}
+
+.app[data-page="AdminAddProductPage"] .row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+/* อัปโหลดรูป */
+.app[data-page="AdminAddProductPage"] .image-drop {
+  height: 460px;
+  width: 460px;
+  background: #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .08) inset, 0 2px 6px rgba(0, 0, 0, .08);
+  /* margin-bottom: 40px; */
+  margin: 0 auto 40px;
+  position: relative;
+  border: 1px solid var(--line);
+}
+
+.app[data-page="AdminAddProductPage"] .image-drop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 76px;
+  height: 76px;
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg width='76' height='76' viewBox='0 0 24 24' fill='none' stroke='%2399A3B3' stroke-width='1.5' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='3' y='5' width='18' height='14' rx='2' ry='2'/%3E%3Cpath d='M3 15l4-4 3 3 5-5 5 5'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'/%3E%3C/svg%3E");
+  opacity: .9;
+}
+
+.app[data-page="AdminAddProductPage"] .image-drop {
+  background: #eef2f7;
+  border: 1px dashed #c7cdd8;
+  border-radius: 16px;
+  min-height: 320px;
+  position: relative;
+  overflow: hidden;            /* ให้รูปถูกตัดตามมุมโค้งของกล่อง */
+}
+
+/* เมื่อใช้โหมด cover ให้รูปพื้นหลังพอดีกล่อง */
+.app[data-page="AdminAddProductPage"] .image-drop.cover {
+  background-size: cover;      /* สำคัญ: เติมเต็มกล่อง */
+  background-position: center; /* จัดกึ่งกลาง */
+  background-repeat: no-repeat;
+}
+
+/* ปุ่มลบบนมุม */
+.app[data-page="AdminAddProductPage"] .image-drop .cover-remove {
+  position: absolute;
+  top: 10px; left: 10px;
+  width: 28px; height: 28px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  line-height: 26px;
+}
+
+/* พื้นที่ thumbnails เผื่ออนาคต (ซ่อนไว้เมื่อใช้ cover) */
+.app[data-page="AdminAddProductPage"] .thumbs { margin-top: 12px; display: none; }
+.app[data-page="AdminAddProductPage"] .image-drop.cover + .thumbs { display: none; }
+
+/* มีรูปแล้ว → ซ่อน ::before ทันที */
+.app[data-page="AdminAddProductPage"] .image-drop.has-image::before {
+  display: none !important;
+  content: none !important;   /* กันบางเบราว์เซอร์ยังจองพื้นที่ */
+}
+
+/* ปุ่ม */
+.app[data-page="AdminAddProductPage"] .actions {
+  display: flex;
+  justify-content: space-evenly;
+  gap: 22px;
+  margin-top: 4px;
+}
+
+.app[data-page="AdminAddProductPage"] .btn {
+  min-width: 140px;
+  height: auto;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #e5e7eb;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .1);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .02s ease, box-shadow .15s ease;
+}
+
+.app[data-page="AdminAddProductPage"] .btn:active {
+  transform: translateY(1px);
+}
+
+.app[data-page="AdminAddProductPage"] .btn:focus-visible {
+  outline: 2px solid #c7d2fe;
+  outline-offset: 2px;
+}
+
+.app[data-page="AdminAddProductPage"] .btn.ghost {
+  background: #eef2ff;
+  color: #111827;
+}
+
+.app[data-page="AdminAddProductPage"] .btn.primary {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+/* Responsive เหมือนหน้า List */
+@media (max-width:1100px) {
+  .app[data-page="AdminAddProductPage"] .sidebar {
+    width: 220px;
+  }
+}
+
+@media (max-width:900px) {
+  .app[data-page="AdminAddProductPage"] .sidebar {
+    display: none;
+  }
+
+  .app[data-page="AdminAddProductPage"] .content {
+    padding: 0 16px 24px;
+  }
+
+  .app[data-page="AdminAddProductPage"] .grid {
+    grid-template-columns: 1fr;
+  }
+}

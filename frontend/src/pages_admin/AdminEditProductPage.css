@@ -1,3 +1,204 @@
 /* AdminEditProductPage */
 body { font-family: system-ui, Arial, sans-serif; }
 h1 { margin: 24px; text-align: center; font-size: 28px; }
+
+/* =========================
+   AdminEditProductPage.css
+   (scoped)
+   ========================= */
+
+/* ใช้ตัวแปรกับสไตล์พื้นฐานบนคอนเทนเนอร์ของหน้านี้เท่านั้น */
+.app[data-page="AdminEditProductPage"] {
+  --bg: #ebeff7;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --radius: 16px;
+  --radius-sm: 12px;
+
+  display: flex;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.app[data-page="AdminEditProductPage"] * {
+  box-sizing: border-box;
+}
+
+/* Main */
+.app[data-page="AdminEditProductPage"] .main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.app[data-page="AdminEditProductPage"] .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 28px;
+}
+
+.app[data-page="AdminEditProductPage"] .account {
+  font-size: 18px;
+  color: #6b7280;
+}
+
+.app[data-page="AdminEditProductPage"] .content-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin: 6px 0 16px;      /* ระยะหัวข้อเหมือนหน้า list */
+}
+
+/* Content header & page title */
+.app[data-page="AdminEditProductPage"] .content {
+  padding: 0 28px 32px;
+}
+
+
+.app[data-page="AdminEditProductPage"] .title {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+/* Grid 2 คอลัมน์ */
+.app[data-page="AdminEditProductPage"] .grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 36px;
+}
+
+/* Card */
+.app[data-page="AdminEditProductPage"] .card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 25px 20px;
+}
+
+/* Fields */
+.app[data-page="AdminEditProductPage"] .field {
+  margin-bottom: 16px;
+}
+
+.app[data-page="AdminEditProductPage"] .field label {
+  display: block;
+  margin-bottom: 10px;
+  color: #111827;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.app[data-page="AdminEditProductPage"] input,
+.app[data-page="AdminEditProductPage"] select,
+.app[data-page="AdminEditProductPage"] textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #f3f4f6;
+  border-radius: 14px;
+  padding: 26px 20px;
+  font: inherit;
+  outline: none;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .08) inset; /* เม็ดมน */
+}
+
+.app[data-page="AdminEditProductPage"] textarea {
+  resize: vertical;
+}
+
+.app[data-page="AdminEditProductPage"] .row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+/* อัปโหลดรูป */
+.app[data-page="AdminEditProductPage"] .image-drop {
+  height: 460px;
+  width: 460px;
+  background: #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .08) inset, 0 2px 6px rgba(0, 0, 0, .08);
+  margin: 0 auto 40px;
+  position: relative;
+  border: 1px solid var(--line);
+}
+
+.app[data-page="AdminEditProductPage"] .image-drop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 76px;
+  height: 76px;
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg width='76' height='76' viewBox='0 0 24 24' fill='none' stroke='%2399A3B3' stroke-width='1.5' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='3' y='5' width='18' height='14' rx='2' ry='2'/%3E%3Cpath d='M3 15l4-4 3 3 5-5 5 5'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'/%3E%3C/svg%3E");
+  opacity: .9;
+}
+
+/* ปุ่ม */
+.app[data-page="AdminEditProductPage"] .actions {
+  display: flex;
+  justify-content: space-evenly;
+  gap: 22px;
+  margin-top: 4px;
+}
+
+.app[data-page="AdminEditProductPage"] .btn {
+  min-width: 140px;
+  height: auto;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #e5e7eb;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .1);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .02s ease, box-shadow .15s ease;
+}
+
+.app[data-page="AdminEditProductPage"] .btn:active {
+  transform: translateY(1px);
+}
+
+.app[data-page="AdminEditProductPage"] .btn:focus-visible {
+  outline: 2px solid #c7d2fe;
+  outline-offset: 2px;
+}
+
+.app[data-page="AdminEditProductPage"] .btn.ghost {
+  background: #eef2ff;
+  color: #111827;
+}
+
+.app[data-page="AdminEditProductPage"] .btn.primary {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+/* Responsive */
+@media (max-width:1100px) {
+  .app[data-page="AdminEditProductPage"] .sidebar {
+    width: 220px;
+  }
+}
+
+@media (max-width:900px) {
+  .app[data-page="AdminEditProductPage"] .sidebar {
+    display: none;
+  }
+
+  .app[data-page="AdminEditProductPage"] .content {
+    padding: 0 16px 24px;
+  }
+
+  .app[data-page="AdminEditProductPage"] .grid {
+    grid-template-columns: 1fr;
+  }
+}

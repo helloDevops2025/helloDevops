@@ -1,311 +1,460 @@
-// import "./AdminAddProductPage.css";
+// src/pages_admin/AdminAddProductPage.jsx
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+// import "./AdminEditProductPage.css";
+import "./AdminAddProductPage.css";
 
-// export default function AdminAddProductPage() {
-//   return <h1>➕ Admin · Add Product</h1>;
-// }
+export default function AdminAddProductPage() {
+  const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+  const navigate = useNavigate();
 
-// D:\Devop\Real-Project\helloDevops\frontend\src\pages_admin\AdminAddProductPage.jsx
-// import { useState, useEffect, useMemo } from "react";
-// import { useNavigate, useParams } from "react-router-dom";
-// import "./AdminAddProductPage.css";
+  // ── master data (fallback) ────────────────────────────────────────────────────
+  const fallbackCategories = [
+    { id: 1, name: "Jasmine Rice" },
+    { id: 2, name: "Canned Fish" },
+    { id: 3, name: "Fried Chicken (Frozen)" },
+    { id: 4, name: "Garlic & Onion" },
+    { id: 5, name: "Imported Fruit" },
+  ];
+  const fallbackBrands = [
+    { id: 1, name: "Chatra" },
+    { id: 2, name: "Sealext" },
+    { id: 3, name: "CP" },
+    { id: 4, name: "NO BRAND" },
+    { id: 5, name: "LOTUSS NO BRAND" },
+  ];
+  const [categories, setCategories] = useState(fallbackCategories);
+  const [brands, setBrands] = useState(fallbackBrands);
 
-// export default function AdminAddProductPage() {
-//   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
-//   const navigate = useNavigate();
-//   const { id } = useParams(); // ถ้าเป็น /admin/products/:id/edit จะมีค่า id
+  // ── form state ────────────────────────────────────────────────────────────────
+  const [form, setForm] = useState({
+    productId: "",
+    name: "",
+    description: "",
+    price: "",
+    quantity: "", // ว่างได้เพื่อให้เตือน
+    categoryId: "",
+    brandId: "",
+    inStock: true, // จะถูกบังคับตาม quantity
+  });
 
-//   const isEdit = useMemo(() => !!id, [id]);
+  // ── image state ───────────────────────────────────────────────────────────────
+  const [serverCoverUrl, setServerCoverUrl] = useState(""); // ควรเป็น "" เสมอในหน้า Add
+  const [coverFile, setCoverFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
 
-//   const [form, setForm] = useState({
-//     name: "",
-//     category: "Fruits",
-//     price: "",
-//     brand: "-",
-//     quantity: 0,
-//     description: "",
-//   });
+  // ── refs ─────────────────────────────────────────────────────────────────────
+  const dropzoneRef = useRef(null);
+  const filePickerRef = useRef(null);
+  const hintRef = useRef(null);
 
-//   const [coverFile, setCoverFile] = useState(null);
-//   const [coverUrl, setCoverUrl] = useState(null);
-//   const [saving, setSaving] = useState(false);
-//   const [msg, setMsg] = useState("");
-//   const [loadingItem, setLoadingItem] = useState(isEdit);
+  // ── ui state ─────────────────────────────────────────────────────────────────
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [qtyError, setQtyError] = useState("");
 
-//   // โหลดสินค้าตาม id เมื่อเข้าโหมดแก้ไข
-//   useEffect(() => {
-//     if (!isEdit) return;
-//     let ignore = false;
+  // ── โหลดหมวด/ยี่ห้อ (ถ้ามี endpoint จริง) ───────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    const safeFetch = async (url) => {
+      try {
+        const r = await fetch(url, { headers: { Accept: "application/json" } });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch {
+        return null;
+      }
+    };
+    (async () => {
+      const [cats, brs] = await Promise.all([
+        safeFetch(`${API_URL}/api/categories`),
+        safeFetch(`${API_URL}/api/brands`),
+      ]);
+      if (cancelled) return;
+      if (Array.isArray(cats) && cats.length) setCategories(cats);
+      if (Array.isArray(brs) && brs.length) setBrands(brs);
+    })();
+    return () => { cancelled = true; };
+  }, [API_URL]);
 
-//     async function loadItem() {
-//       setLoadingItem(true);
-//       setMsg("");
-//       try {
-//         const res = await fetch(`${API_URL}/api/products/${encodeURIComponent(id)}`, {
-//           headers: { Accept: "application/json" },
-//         });
-//         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//         const data = await res.json();
+  // ── พรีวิวไฟล์ใหม่ ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!coverFile) {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(coverFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [coverFile]);
 
-//         if (ignore) return;
-//         setForm({
-//           name: data.name ?? "",
-//           category: data.category ?? "Fruits",
-//           price: data.price ?? "",
-//           brand: data.brand ?? "-",
-//           quantity: data.quantity ?? 0,
-//           description: data.description ?? "",
-//         });
-//       } catch (e) {
-//         setMsg(`โหลดข้อมูลไม่สำเร็จ: ${e.message || e}`);
-//       } finally {
-//         if (!ignore) setLoadingItem(false);
-//       }
-//     }
+  const displayImageUrl = previewUrl || serverCoverUrl;
 
-//     loadItem();
-//     return () => {
-//       ignore = true;
-//     };
-//   }, [isEdit, id, API_URL]);
+  // ── sync dropzone + ปุ่มลบรูป (ยืนยันก่อนลบ) ────────────────────────────────
+  useEffect(() => {
+    const dz = dropzoneRef.current;
+    if (!dz) return;
 
-//   // พรีวิวรูป
-//   useEffect(() => {
-//     if (!coverFile) {
-//       if (coverUrl) URL.revokeObjectURL(coverUrl);
-//       setCoverUrl(null);
-//       return;
-//     }
-//     const url = URL.createObjectURL(coverFile);
-//     setCoverUrl(url);
-//     return () => URL.revokeObjectURL(url);
-//     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [coverFile]);
+    dz.style.backgroundImage = "";
+    dz.classList.remove("cover", "has-image");
+    if (displayImageUrl) {
+      dz.style.backgroundImage = `url("${displayImageUrl}")`;
+      dz.classList.add("cover", "has-image");
+      if (hintRef.current) hintRef.current.style.display = "none";
+      ensureRemoveBtn();
+    } else {
+      if (hintRef.current) hintRef.current.style.display = "";
+      removeRemoveBtn();
+    }
 
-//   function onChange(e) {
-//     const { name, value } = e.target;
-//     setForm((f) => ({ ...f, [name]: value }));
-//   }
-//   function onNumberChange(e) {
-//     const { name, value } = e.target;
-//     setForm((f) => ({ ...f, [name]: value }));
-//   }
-//   function onPickCover(e) {
-//     const file = e.target.files?.[0];
-//     if (file && file.type.startsWith("image/")) setCoverFile(file);
-//   }
-//   function onClearCover() {
-//     setCoverFile(null);
-//   }
-//   function onCancel(e) {
-//     e?.preventDefault?.();
-//     if (isEdit) {
-//       navigate("/admin/products"); // กลับไปหน้าลิสต์
-//     } else {
-//       setForm({
-//         name: "",
-//         category: "Fruits",
-//         price: "",
-//         brand: "-",
-//         quantity: 0,
-//         description: "",
-//       });
-//       setCoverFile(null);
-//       setMsg("");
-//     }
-//   }
+    function ensureRemoveBtn() {
+      if (dz.querySelector(".cover-remove")) return;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cover-remove";
+      btn.textContent = "×";
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const ok = window.confirm("ภาพจะถูกลบ ต้องการลบหรือไม่?");
+        if (!ok) return;
 
-//   async function onSave(e) {
-//     e?.preventDefault?.();
-//     setMsg("");
-//     setSaving(true);
+        // ในหน้า Add ยังไม่มีรูปบนเซิร์ฟเวอร์ → เคลียร์สถานะในฟอร์มพอ
+        setCoverFile(null);
+        setServerCoverUrl("");
 
-//     try {
-//       const payload = {
-//         name: form.name.trim(),
-//         category: form.category,
-//         brand: form.brand,
-//         description: form.description.trim(),
-//         price: form.price === "" ? null : Number(form.price),
-//         quantity: form.quantity === "" ? null : Number(form.quantity),
-//       };
+        dz.style.backgroundImage = "";
+        dz.classList.remove("cover", "has-image");
+        if (hintRef.current) hintRef.current.style.display = "";
+        removeRemoveBtn();
+      });
+      dz.appendChild(btn);
+    }
+    function removeRemoveBtn() {
+      dz.querySelectorAll(".cover-remove").forEach((b) => b.remove());
+    }
+  }, [displayImageUrl]);
 
-//       if (!payload.name) {
-//         setMsg("กรุณากรอกชื่อสินค้า");
-//         setSaving(false);
-//         return;
-//       }
+  // ── อัปโหลดรูป ───────────────────────────────────────────────────────────────
+  const onZoneClick = (e) => {
+    if (e.target.closest(".cover-remove")) return;
+    filePickerRef.current?.click();
+  };
+  const onDragEnter = (e) => { e.preventDefault(); dropzoneRef.current?.classList.add("dragover"); };
+  const onDragOver  = (e) => { e.preventDefault(); };
+  const onDragLeave = (e) => { e.preventDefault(); dropzoneRef.current?.classList.remove("dragover"); };
+  const onDrop = (e) => {
+    e.preventDefault();
+    dropzoneRef.current?.classList.remove("dragover");
+    const files = Array.from(e.dataTransfer.files || []).filter((f) => f.type.startsWith("image/"));
+    if (files[0]) setCoverFile(files[0]);
+  };
+  const onPickCover = (e) => {
+    const f = e.target.files?.[0];
+    if (f && f.type.startsWith("image/")) setCoverFile(f);
+  };
 
-//       let url = `${API_URL}/api/products`;
-//       let method = "POST";
-//       if (isEdit) {
-//         url = `${API_URL}/api/products/${encodeURIComponent(id)}`;
-//         method = "PUT";
-//       }
+  // ── validation helpers ────────────────────────────────────────────────────────
+  const toInt = (v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Math.trunc(Number(String(v).replace(/[^\d-]/g, "")));
+    return Number.isFinite(n) ? n : null;
+  };
 
-//       const res = await fetch(url, {
-//         method,
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify(payload),
-//       });
-//       if (!res.ok) {
-//         const text = await res.text().catch(() => "");
-//         throw new Error(text || `HTTP ${res.status}`);
-//       }
+  const validateQuantity = (raw) => {
+    if (raw === "" || raw === null || raw === undefined) {
+      return { ok: false, msg: "กรุณากรอกจำนวนสต็อก" };
+    }
+    const n = toInt(raw);
+    if (n === null || Number.isNaN(n)) return { ok: false, msg: "จำนวนต้องเป็นตัวเลขจำนวนเต็ม" };
+    if (n < 0) return { ok: false, msg: "ห้ามจำนวนติดลบ" };
+    if (n > 1000000) return { ok: false, msg: "ห้ามเกิน 1,000,000 ชิ้น" };
+    return { ok: true, msg: "" };
+  };
 
-//       if (isEdit) {
-//         setMsg("บันทึกการแก้ไขสำเร็จ");
-//       } else {
-//         setMsg("บันทึกสำเร็จ (POST JSON) — รูปยังไม่ได้อัปโหลด");
-//         setForm({
-//           name: "",
-//           category: "Fruits",
-//           price: "",
-//           brand: "-",
-//           quantity: 0,
-//           description: "",
-//         });
-//         setCoverFile(null);
-//       }
+  // ── form handlers ─────────────────────────────────────────────────────────────
+  const onChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm((s) => ({ ...s, [name]: type === "checkbox" ? checked : value }));
+  };
 
-//       // เสร็จแล้วพากลับหน้าลิสต์
-//       navigate("/admin/products");
-//     } catch (err) {
-//       setMsg(`บันทึกไม่สำเร็จ: ${err?.message || err}`);
-//     } finally {
-//       setSaving(false);
-//     }
-//   }
+  const onNumberChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "quantity") {
+      const cleaned = value.replace(/[^\d]/g, "");
+      const limited = cleaned === "" ? "" : String(Math.min(Number(cleaned), 1000000));
+      setForm((s) => ({ ...s, [name]: limited }));
+      const res = validateQuantity(limited);
+      setQtyError(res.ok ? "" : res.msg);
+      return;
+    }
+    setForm((s) => ({ ...s, [name]: value }));
+  };
 
-//   return (
-//     <div style={{ padding: 16, maxWidth: 720, margin: "0 auto" }}>
-//       <h1>{isEdit ? "✏️ Admin · Edit Product" : "➕ Admin · Add Product (minimal)"}</h1>
+  // กันเว้นวรรคใน Product ID
+  const onProductIdChange = (e) => {
+    const v = (e.target.value ?? "").toString().replace(/\s+/g, "");
+    setForm((s) => ({ ...s, productId: v }));
+  };
 
-//       {loadingItem ? (
-//         <p>Loading item...</p>
-//       ) : (
-//         <form onSubmit={onSave}>
-//           <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-//             <label>
-//               Product name *
-//               <input
-//                 name="name"
-//                 type="text"
-//                 value={form.name}
-//                 onChange={onChange}
-//                 placeholder="e.g., Apple Fuji"
-//                 style={{ width: "100%", padding: 6 }}
-//                 required
-//               />
-//             </label>
+  // บังคับ inStock ตามจำนวน: 0 -> false, ≥1 -> true
+  useEffect(() => {
+    const n = toInt(form.quantity);
+    if (n === null) return;
+    const forced = n >= 1;
+    if (form.inStock !== forced) {
+      setForm((s) => ({ ...s, inStock: forced }));
+    }
+  }, [form.quantity]); // eslint-disable-line react-hooks/exhaustive-deps
 
-//             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-//               <label>
-//                 Category *
-//                 <select
-//                   name="category"
-//                   value={form.category}
-//                   onChange={onChange}
-//                   style={{ width: "100%", padding: 6 }}
-//                 >
-//                   <option>Fruits</option>
-//                   <option>Vegetables</option>
-//                   <option>Beverages</option>
-//                 </select>
-//               </label>
+  const onCancel = (e) => {
+    e.preventDefault();
+    navigate("/admin/products");
+  };
 
-//               <label>
-//                 Price
-//                 <input
-//                   name="price"
-//                   type="number"
-//                   step="0.01"
-//                   value={form.price}
-//                   onChange={onNumberChange}
-//                   placeholder="0.00"
-//                   style={{ width: "100%", padding: 6 }}
-//                 />
-//               </label>
-//             </div>
+  const onSave = async (e) => {
+    e.preventDefault();
+    setMsg("");
 
-//             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-//               <label>
-//                 Brand *
-//                 <select
-//                   name="brand"
-//                   value={form.brand}
-//                   onChange={onChange}
-//                   style={{ width: "100%", padding: 6 }}
-//                 >
-//                   <option>-</option>
-//                   <option>Pure Mart</option>
-//                   <option>Local Farm</option>
-//                 </select>
-//               </label>
+    // validate ก่อน
+    const res = validateQuantity(form.quantity);
+    if (!res.ok) { setQtyError(res.msg); return; }
 
-//               <label>
-//                 Quantity
-//                 <input
-//                   name="quantity"
-//                   type="number"
-//                   min="0"
-//                   value={form.quantity}
-//                   onChange={onNumberChange}
-//                   placeholder="0"
-//                   style={{ width: "100%", padding: 6 }}
-//                 />
-//               </label>
-//             </div>
+    setSaving(true);
+    try {
+      const nQty = toInt(form.quantity) ?? 0;
+      const sanitizeNumber = (v, fallback) => {
+        if (v === "" || v === null || v === undefined) return fallback;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : fallback;
+      };
 
-//             <label>
-//               Description *
-//               <textarea
-//                 name="description"
-//                 rows={4}
-//                 value={form.description}
-//                 onChange={onChange}
-//                 placeholder="Short description..."
-//                 style={{ width: "100%", padding: 6 }}
-//                 required
-//               />
-//             </label>
-//           </div>
+      const payload = {
+        productId: (form.productId ?? "").trim(),
+        name: (form.name ?? "").trim(),
+        description: (form.description ?? "").trim(),
+        price: sanitizeNumber(form.price, 0),
+        quantity: nQty,
+        inStock: nQty >= 1,
+        categoryId: form.categoryId || null,
+        brandId: form.brandId || null,
+      };
 
-//           {/* อัปโหลดรูป (ยังไม่ส่งจริง) */}
-//           <div style={{ marginTop: 16 }}>
-//             <div>Cover image (optional)</div>
-//             {coverUrl ? (
-//               <div style={{ marginTop: 8 }}>
-//                 <img
-//                   src={coverUrl}
-//                   alt="cover preview"
-//                   style={{ maxWidth: "100%", height: "auto", display: "block", border: "1px solid #ccc" }}
-//                 />
-//                 <button type="button" onClick={onClearCover} style={{ marginTop: 8 }}>
-//                   Remove image
-//                 </button>
-//               </div>
-//             ) : (
-//               <input type="file" accept="image/*" onChange={onPickCover} style={{ marginTop: 8 }} />
-//             )}
-//           </div>
+      if (!payload.productId) throw new Error("กรุณากรอก Product ID");
+      if (!payload.name) throw new Error("กรุณากรอกชื่อสินค้า");
+      if (!Number.isFinite(payload.price) || payload.price < 0) throw new Error("ราคาไม่ถูกต้อง");
 
-//           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-//             <button type="button" onClick={onCancel}>
-//               Cancel
-//             </button>
-//             <button type="submit" disabled={saving}>
-//               {saving ? "Saving..." : "Save"}
-//             </button>
-//           </div>
-//         </form>
-//       )}
+      // 1) สร้างสินค้า
+      const resCreate = await fetch(`${API_URL}/api/products`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!resCreate.ok) {
+        const t = await resCreate.text().catch(() => "");
+        throw new Error(t || `HTTP ${resCreate.status}`);
+      }
+      const created = await resCreate.json(); // ต้องได้ { id, ... }
 
-//       {msg && <p style={{ marginTop: 12, whiteSpace: "pre-wrap" }}>{msg}</p>}
+      // 2) อัปโหลดรูป cover ถ้ามีไฟล์
+      if (coverFile && created?.id != null) {
+        const fd = new FormData();
+        fd.append("file", coverFile);
+        const upImg = await fetch(`${API_URL}/api/products/${encodeURIComponent(created.id)}/cover`, {
+          method: "POST",
+          body: fd,
+        });
+        if (!upImg.ok) {
+          const t = await upImg.text().catch(() => "");
+          setMsg(`เพิ่มสินค้าสำเร็จ แต่รูปอัปโหลดไม่สำเร็จ: ${t || upImg.status}`);
+        }
+      }
 
-//       <p style={{ marginTop: 8, fontSize: 12, color: "#666" }}>
-//         API_URL: {API_URL}
-//       </p>
-//     </div>
-//   );
-// }
+      setMsg("เพิ่มสินค้าเรียบร้อย");
+      navigate("/admin/products");
+    } catch (err) {
+      setMsg(String(err?.message || err));
+    } finally {
+      setSaving(false);
+    }
+  };
 
+  // --------- RENDER (ดีไซน์เดียวกับหน้า Edit) ---------
+  return (
+    <div className="app" data-page="AdminAddProductPage">
+      <main className="main">
+        <div className="content">
+          <div className="content-header">
+            <h1 className="title">Add PRODUCT</h1>
+            <div className="header-actions" />
+          </div>
+
+          <div className="grid">
+            {/* Left card: form */}
+            <section className="card">
+              {/* Product ID */}
+              <div className="field">
+                <label>Product ID *</label>
+                <input
+                  name="productId"
+                  type="text"
+                  placeholder="เช่น #00001 หรือ 00001"
+                  value={form.productId}
+                  onChange={onProductIdChange}
+                  required
+                />
+              </div>
+
+              <div className="field">
+                <label>Product name *</label>
+                <input
+                  name="name"
+                  type="text"
+                  placeholder="e.g., Apple Fuji"
+                  value={form.name}
+                  onChange={onChange}
+                  required
+                />
+              </div>
+
+              <div className="row">
+                <div className="field">
+                  <label>Category *</label>
+                  <select
+                    name="categoryId"
+                    value={form.categoryId || ""}
+                    autoComplete="off"
+                    onChange={onChange}
+                    required
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="field">
+                  <label>Price</label>
+                  <input
+                    name="price"
+                    type="text"
+                    placeholder="0.00"
+                    value={form.price}
+                    onChange={onNumberChange}
+                  />
+                </div>
+              </div>
+
+              <div className="row">
+                <div className="field">
+                  <label>Brand *</label>
+                  <select
+                    name="brandId"
+                    value={form.brandId}
+                    onChange={onChange}
+                    required
+                  >
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Stock + validations */}
+                <div className="field">
+                  <label>Stock (จำนวนคงเหลือ) *</label>
+                  <input
+                    name="quantity"
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    max="1000000"
+                    placeholder="0"
+                    value={form.quantity}
+                    onChange={onNumberChange}
+                  />
+                  {qtyError && (
+                    <small style={{ color: "#b91c1c", display: "block", marginTop: 4 }}>
+                      {qtyError}
+                    </small>
+                  )}
+                  {toInt(form.quantity) !== null && (
+                    <small style={{ color: "#374151", display: "block", marginTop: 4 }}>
+                      Status: {toInt(form.quantity) >= 1 ? "In stock" : "Out of stock"}
+                    </small>
+                  )}
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Description *</label>
+                <textarea
+                  name="description"
+                  rows={6}
+                  placeholder="Short description..."
+                  value={form.description}
+                  onChange={onChange}
+                  required
+                />
+              </div>
+            </section>
+
+            {/* Right card: image area + buttons */}
+            <section className="card">
+              <h3 style={{ margin: "4px 0 10px", fontSize: 16 }}>Upload images</h3>
+
+              <div
+                className="image-drop"
+                id="dropzone"
+                aria-label="Upload images area"
+                ref={dropzoneRef}
+                onClick={onZoneClick}
+                onDragEnter={onDragEnter}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onDrop={onDrop}
+              >
+                <div
+                  className="hint"
+                  id="hint"
+                  ref={hintRef}
+                  role="button"
+                  tabIndex={0}
+                  style={{ color: "#6b7280", cursor: "pointer" }}
+                />
+                <div id="thumbs" className="thumbs" />
+              </div>
+
+              <div className="actions">
+                <button className="btn ghost" type="button" onClick={onCancel}>
+                  Cancel
+                </button>
+                <button
+                  className="btn primary"
+                  type="button"
+                  onClick={onSave}
+                  disabled={saving || !!qtyError || form.quantity === ""}
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </div>
+
+              <input
+                id="filePicker"
+                ref={filePickerRef}
+                type="file"
+                accept="image/*"
+                multiple={false}
+                hidden
+                onChange={onPickCover}
+              />
+            </section>
+          </div>
+
+          {msg && <p style={{ marginTop: 12, whiteSpace: "pre-wrap" }}>{msg}</p>}
+          <p style={{ marginTop: 8, fontSize: 12, color: "#666" }}>API_URL: {API_URL}</p>
+        </div>
+      </main>
+    </div>
+  );
+}
