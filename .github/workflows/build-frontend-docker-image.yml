@@ -26,7 +26,7 @@ jobs:
           sleep 10                   # 🔹 รอ 10 วินาทีให้ server เริ่ม
           curl -I http://localhost:5173 || true  # 🔹 ตรวจสอบว่า server ตอบได้ไหม
           pkill -f "vite"            # 🔹 หยุด process dev server
-          # npm run build  => ถ้าเสร็จทั้งหมดแล้ว เปิดได้ทุกหน้าไม่มีปัญหาควรจะ run build ได้
+          npm run build  => ถ้าเสร็จทั้งหมดแล้ว เปิดได้ทุกหน้าไม่มีปัญหาควรจะ run build ได้
 
       - name: Build Docker image
         run: |
