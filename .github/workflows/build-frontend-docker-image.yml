@@ -63,7 +63,11 @@ jobs:
           mysql -h 127.0.0.1 -uroot -proot testdb -e "CREATE TABLE users(id INT PRIMARY KEY, name VARCHAR(50));"
           mysql -h 127.0.0.1 -uroot -proot testdb -e "INSERT INTO users VALUES (1, 'Ploy');"
           mysql -h 127.0.0.1 -uroot -proot testdb -e "SELECT * FROM users;"
-
+          
+      - name: Login to Docker Hub
+        run: |
+          echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
+          
       - name: Wait for backend to be ready
         run: npx wait-on http://localhost:8080/api/health
         
@@ -93,10 +97,6 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t hello-devops-frontend:latest ./frontend
-
-      - name: Login to Docker Hub
-        run: |
-          echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
           
       # Build and push image to Docker Hub
       - name: Build and push image to Docker Hub
