@@ -2,20 +2,19 @@ name: Build Frontend Docker Image
 
 on:
   push:
-    branches: [ main, develop]
+    branches: [ main, develop ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-   # ✅ เพิ่ม MySQL เป็น service ให้ใช้ใน workflow นี้
+
     services:
       mysql:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: testdb
+          MYSQL_DATABASE: sombun_db
         ports:
           - 3306:3306
         options: >-
@@ -23,63 +22,39 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-      backend:
-        image: u6687032/hello-devops-backend:latest   # 👈 ใช้ image ที่ push จาก backend repo
-        ports:
-          - 8080:8080
-        env:
-          SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/sombun_db
-          SPRING_DATASOURCE_USERNAME: root
-          SPRING_DATASOURCE_PASSWORD: root
-        options: >-
-          --health-cmd="curl -f http://localhost:8080/api/health || exit 1"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-          
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ✅ ต้อง login ก่อนจะ pull backend image
       - name: Login to Docker Hub
-        run: |
-          echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
-          
-      # ตรวจสอบว่า MySQL พร้อมใช้งานแล้ว
-      - name: Test MySQL Connection
-        run: |
-          echo "⏳ Checking MySQL readiness..."
-          for i in {1..10}; do
-            if mysql -h 127.0.0.1 -uroot -proot -e "SELECT VERSION();" >/dev/null 2>&1; then
-              echo "✅ MySQL is ready!"
-              exit 0
-            fi
-            echo "❌ MySQL not ready yet... retrying ($i/10)"
-            sleep 5
-          done
-          echo "❌ MySQL did not start in time."
-          exit 1
+        run: echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
 
-      # (ตัวอย่าง) ทดสอบ query จริงในฐานข้อมูล
-      - name: Run sample SQL query
+      # ✅ ดึง backend image จาก Docker Hub
+      - name: Pull backend image
+        run: docker pull u6687032/hello-devops-backend:latest
+
+      # ✅ รัน backend container manual แทน services
+      - name: Run backend container
         run: |
-          echo "🧪 Running test query..."
-          mysql -h 127.0.0.1 -uroot -proot testdb -e "CREATE TABLE users(id INT PRIMARY KEY, name VARCHAR(50));"
-          mysql -h 127.0.0.1 -uroot -proot testdb -e "INSERT INTO users VALUES (1, 'Ploy');"
-          mysql -h 127.0.0.1 -uroot -proot testdb -e "SELECT * FROM users;"
-          
-      - name: Login to Docker Hub
-        run: |
-          echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
-          
-      - name: Wait for backend to be ready
+          docker run -d --name backend-test \
+            -p 8080:8080 \
+            -e SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/sombun_db \
+            -e SPRING_DATASOURCE_USERNAME=root \
+            -e SPRING_DATASOURCE_PASSWORD=root \
+            u6687032/hello-devops-backend:latest
+
+      # ✅ รอ backend พร้อม
+      - name: Wait for backend
         run: npx wait-on http://localhost:8080/api/health
-        
+
+      # ✅ ติดตั้ง Node.js และเตรียม frontend
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          
+
       - name: Clean npm cache
         run: npm cache clean --force
 
@@ -87,23 +62,20 @@ jobs:
         run: |
           cd ./frontend
           npm install
-          npm run dev &              # 🔹 รัน dev server แบบ background
-          sleep 10                   # 🔹 รอ 10 วินาทีให้ server เริ่ม
-          curl -I http://localhost:5173 || true  # 🔹 ตรวจสอบว่า server ตอบได้ไหม
-          npx cypress run            # E2E run test
-          pkill -f "vite"            # 🔹 หยุด process dev server
-          
+          npm run dev &               # รัน dev server แบบ background
+          sleep 10                    # รอให้เซิร์ฟเวอร์ขึ้น
+          curl -I http://localhost:5173 || true
+          npx cypress run             # รัน E2E test
+          pkill -f "vite"             # ปิด dev server
+
       - name: Build project
         working-directory: ./frontend
-        run: 
-          npm run build 
-        
+        run: npm run build
+
       - name: Build Docker image
-        run: |
-          docker build -t hello-devops-frontend:latest ./frontend
-          
-      # Build and push image to Docker Hub
-      - name: Build and push image to Docker Hub
+        run: docker build -t hello-devops-frontend:latest ./frontend
+
+      - name: Push image to Docker Hub
         if: success()
         run: |
           echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
