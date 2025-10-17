@@ -1,7 +1,10 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ เพิ่ม useNavigate
 import "./AdminOrderTrackingPage.css";
 
 export default function AdminOrderTrackingPage() {
+    const navigate = useNavigate(); // ✅ สร้าง navigate object
+
     useEffect(() => {
         // dropdown toggle (click + keyboard)
         const toggles = document.querySelectorAll(".nav-toggle");
@@ -124,15 +127,15 @@ export default function AdminOrderTrackingPage() {
                     {/* Product Card */}
                     <section className="card product-card">
                         <div className="product-media">
-                            <img src="/asset/product.png" alt="Cookie 9" />
+                            <img src="/assets/products/p1.png" alt="Cookie 9" />
                         </div>
 
                         <div className="product-info">
-                            <h2>Cookie 9</h2>
+                            <h2>รสดีชิคเก้น ปรุงรสไก่ชุบทอด 90 กรัม</h2>
                             <div className="kv-list">
                                 <div className="kv">
                                     <span>Order ID</span>
-                                    <span>#192847</span>
+                                    <span>#10023</span>
                                 </div>
                                 <div className="kv">
                                     <span>Brand</span>
@@ -148,7 +151,13 @@ export default function AdminOrderTrackingPage() {
                                 </div>
                             </div>
                             <div>
-                                <button className="btn view-btn">View Order</button>
+                                {/* ✅ เมื่อคลิกจะไปหน้า Order Detail */}
+                                <button
+                                    className="btn view-btn"
+                                    onClick={() => navigate("/admin/orders/1")}
+                                >
+                                    View Order
+                                </button>
                             </div>
                         </div>
                     </section>

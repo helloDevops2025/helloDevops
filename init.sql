@@ -320,3 +320,10 @@ SELECT
     2 AS quantity
 FROM orders o JOIN products p ON p.product_id = '#00001'   -- ตัวอย่างเลือกสินค้ารหัส #00001
 WHERE o.order_code = '#ORD001';
+
+ALTER TABLE orders
+ADD COLUMN preparing_at DATETIME NULL,
+ADD COLUMN ready_at DATETIME NULL,
+ADD COLUMN shipping_at DATETIME NULL,
+ADD COLUMN delivered_at DATETIME NULL,
+ADD COLUMN cancelled_at DATETIME NULL;

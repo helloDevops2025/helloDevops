@@ -1,388 +1,276 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: Arial, sans-serif;
+/* AdminOrderDetailPage.css */
+body { font-family: system-ui, Arial, sans-serif; }
+
+.admin-order-detail-page {
+    --bg: #ebeff7;
+    --card: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --radius: 16px;
+    --radius-sm: 12px;
+
+    display: flex;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 28px;
+    gap: 24px;
+    box-sizing: border-box;
 }
 
-body {
-  display: flex;
-  background: #f4f7ff;
-  color: #333;
+/* Content area */
+.admin-order-detail-page .content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
 }
 
-.content {
-  flex: 1;
-  padding: 20px;
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
+/* Header */
+.admin-order-detail-page .header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0;
+    text-align: left;
+    letter-spacing: 0.02em;
 }
 
-/* แก้ header ให้เป็น 2 แถว */
-.header {
-  grid-column: 1 / span 2;
-  display: grid;
-  grid-template-columns: 1fr;     /* 1 คอลัมน์ */
-  grid-template-rows: auto auto;  /* 2 แถว: account แล้วตามด้วย title */
-  row-gap: 8px;
+/* Summary Section */
+.admin-order-detail-page .summary {
+    grid-column: 1 / -1;        /* ให้เต็มความกว้างหน้าหลัก */
+    display: flex;              /* ใช้ flex layout */
+    justify-content: center;    /* จัดให้อยู่ตรงกลาง */
+    align-items: stretch;
+    gap: 24px;                  /* ระยะห่างระหว่างการ์ด */
+    width: 100%;
+    margin-bottom: 24px;
 }
 
-/* Account แถวบน ชิดขวา + ไอคอน */
-.account {
-  justify-self: end;
-  align-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  color: #111827;
-  margin: 20px;;
-}
-.account i {
-  font-size: 18px;
-}
-
-/* Title แถวล่าง */
-.header h1 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: .02em;
-}
-
-.total-head {
-  display: grid;
-  gap: 30px;
-  font-size: large;
-  grid-template-columns: 1fr 1fr;
-  background-color: #F6F6F6;
-  border-radius: 10px;
-  padding: 15px;
-}
-
-.summary-text {
-  padding: 10px;
-}
-
-.summary {
-  grid-column: 1 / -1;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* แบ่งครึ่งหน้าจอ */
-  gap: 24px;
-  margin: 16px 0 24px;
-}
-
-.summary > div {
-  flex: 1;              /* ให้สองการ์ดกว้างเท่ากัน */
-}
-
-.info {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: auto;
-  height: 50px;
-  align-items: center;
-  gap: 40px;
-  flex-shrink: 0;
-  font-size: 18px;
-  padding: 25px;
-}
-
-.card {
-  background: #fff;
-  width: auto;
-  padding: 20px;
-  border-radius: 30px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-}
-
-.card-top {
-  background: #fff;
-  width: auto;
-  height: 248px;
-  border-radius: 30px;
-  padding: 20px;
-}
-
-/* Responsive: จอแคบให้สแต็กเป็น 1 คอลัมน์ */
-@media (max-width: 768px){
-  .top-panels{
-    grid-template-columns: 1fr; /* ซ้อนกัน */
-  }
-}
-
-.info-card {
-  height: 100px;
-}
-
-h3 {
-  font-size: 16;
-}
-
-#Address {
-  margin-top: 10px;
-  color: #000;
-  font-size: 16px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: normal;
-}
-.order {
-  background-color: white;
-  padding: 30px;
-  border-radius: 30px;
-}
-
-.order-head {
-  background-color: #EBEBEB;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25); /* เพิ่มเงา */
-}
-
-.order-items {
-  grid-column: 1 / 2;
-  border-radius: 10px;
-}
-
-table thead, tr {
-  border-radius: 10px;
-}
-
-.order-items table {
-  background-color: white;
-  width: auto;
-  height: 441px;
-  width: 100%;
-  border-collapse: separate; /* เพื่อให้ border-radius ทำงาน */
-  border-spacing: 0;         /* เอาช่องว่างออก */
-  border: none; /* ไม่ให้มีเส้นขอบ */
-  border-radius: 15px; /* กำหนดความโค้ง */
-  overflow: hidden;          /* ตัดส่วนเกินให้อยู่ในมุมโค้ง */
-  overflow-y: auto;          /* ถ้ามีข้อมูลเยอะจะ scroll แทน */
-}
-
-.order-items tr:nth-child(odd) {
-  background-color: #ffffff; /* แถวเลขคี่ → ขาว */
-}
-
-.order-items tr:nth-child(even) {
-  background-color: #F6F6F6; /* แถวเลขคู่ → เทาอ่อน */
-}
-
-.table-wrapper {
-  border-radius: 15px;
-  overflow: hidden; /* ให้มุมของ div ตัดตาราง */
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25); /* เพิ่มเงาสวย ๆ */
-  max-height: 400px;   /* ความสูงพอสำหรับ ~4 แถว (ปรับตาม td ของคุณ) */
-
-}
-
-.table-wrapper table {
-  width: 100%;
-  border-collapse: collapse; /* จะใช้ collapse ได้ */
-}
-
-.table-wrapper tbody {
-  display: block;
-  max-height: 320px;     /* scroll เฉพาะ tbody */
-  overflow-y: auto;
-}
-
-.table-wrapper thead, 
-.table-wrapper tbody tr {
-  display: table;
-  width: 100%;
-  table-layout: fixed;   /* ให้คอลัมน์ตรงกัน */
-}
-
-.order-items th,
-.order-items td {
-  border: none;
-  padding: 30px;
-  line-height: 0.75; /* ระยะบรรทัดแคบลง */
-  text-align: center;
-  font-size: 18px;
-}
-
-.order-items th {
-  background-color: #F6F6F6;
-  padding: 30px;
-}
-
-.order-items th:first-child,
-.order-items td:first-child {
-  text-align: left; /* คอลัมน์แรกชิดซ้าย */
+/* การ์ดแต่ละใบ */
+.admin-order-detail-page .card-top {
+    flex: 1;                    /* ทำให้แต่ละกล่องกว้างเท่ากัน */
+    max-width: 50%;             /* จำกัดไม่ให้กินเกินครึ่งหนึ่งของแถว */
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
 
-/*Right Panel*/
-
-.right-panel {
-  
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.admin-order-detail-page .summary-text h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
 }
 
-.right-panel > div {
-  flex: 1;  
+.admin-order-detail-page .info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 8px 0;
+    font-size: 16px;
+    color: var(--text);
 }
 
-button {
-  border: none;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 5px;
-  cursor: pointer;
+.admin-order-detail-page .total-head {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    font-weight: 600;
 }
 
-.status-text {
-  display: flex;
-  justify-content: space-between;
-  /* ดันซ้าย-ขวา */
-  align-items: center;
-  /* จัดให้อยู่ระดับเดียวกัน */
-  margin-top: 10px;
-  margin-bottom: 20px;
-
+/* Table Section */
+.admin-order-detail-page .order {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
-.status-card {
-  height: 100 px;
+.admin-order-detail-page .order-head {
+    background: #f9fafb;
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 16px;
 }
 
-/* แถว status: อยู่บรรทัดเดียวกัน, จอแคบค่อยตัดบรรทัด */
-.status{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  flex-wrap:wrap;
-  justify-content:flex-start;
+.admin-order-detail-page .table-wrapper {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--line);
 }
 
-/* ตัวห่อ select สำหรับติดลูกศร */
-.selection-wrapper{
-  position:relative;
-  flex:1 1 240px;      /* ยืด/หดได้ มีฐาน ~240px */
-  max-width:420px;     /* ปรับได้ตามดีไซน์ */
+.admin-order-detail-page table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
 }
 
-/* ตัว select */
-.selection{
-  width:100%;
-  height:40px;
-  padding:5px 22px 5px 12px; /* เผื่อด้านขวาให้ลูกศร */
-  border:none;
-  border-radius:10px;
-  background:#919191;
-  color:#fff;
-  font-size:16px;
-  text-align:center;
-  text-align-last:center;
-  appearance:none;
-  -webkit-appearance:none;
-  -moz-appearance:none;
-  outline:none;
-  cursor:pointer;
+.admin-order-detail-page thead {
+    background: #f3f4f6;
+    font-weight: 600;
 }
 
-/* ลูกศร */
-.selection-wrapper::after{
-  content:"▼";
-  position:absolute;
-  right:8px;                 /* ให้อยู่ในกรอบสวยๆ */
-  top:50%;
-  transform:translateY(-50%);
-  font-size:14px;
-  color:#fff;
-  pointer-events:none;
-  /* transition:transform .2s ease; */
+.admin-order-detail-page th,
+.admin-order-detail-page td {
+    padding: 14px;
+    font-size: 16px;
+    border-bottom: 1px solid var(--line);
 }
 
-/* ตอนเปิดเมนู → หมุนขึ้น */
-.selection-wrapper.open::after{
-  transform: translateY(-50%) rotate(180deg);
+.admin-order-detail-page tbody tr:nth-child(even) {
+    background: #f9fafb;
 }
 
-/* สไตล์รายการ option */
-.selection option{
-  background:#fff;
-  color:#333;
-  text-align:left;
+/* Right Panel */
+.admin-order-detail-page .right-panel {
+    flex: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
 }
 
-/* เอฟเฟกต์ตอน focus */
-.selection:focus{
-  box-shadow:0 4px 12px rgba(0,0,0,.25);
+.admin-order-detail-page .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow:  0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
-/* ปุ่ม Change */
-.change{
-  flex:0 0 auto;
-  height:40px;
-  padding:0 16px;
-  background:#00B62E;
-  color:#fff;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:600;
+/* Address */
+.admin-order-detail-page #Address {
+    color: var(--muted);
+    font-size: 15px;
+    margin-top: 6px;
 }
 
-.change:hover{ background:#0a9e2b; }
-
-/* จอเล็ก: ให้สองชิ้นเต็มบรรทัด คนละแถว (ยังมี gap) */
-@media (max-width:560px){
-  .selection-wrapper,
-  .change{ flex:1 1 100%; }
+/* Status Card */
+.admin-order-detail-page .status-text {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
 }
 
-/* Tracking Button*/
-
-
-.tracking {
-  background-color: white;
-  height: 140px;
-  border-radius: 30px;
-  padding: auto;
-  width: auto;
+.admin-order-detail-page .status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
-
-.tracking-text {
-  margin: 20px;
+.admin-order-detail-page .selection-wrapper {
+    position: relative;
+    flex: 1 1 220px;
 }
 
-.tracking-text h2{
-  margin-bottom: 20px;
+.admin-order-detail-page .selection {
+    width: 100%;
+    height: 42px;
+    padding: 6px 32px 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: #f3f4f6;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+    appearance: none;
+    outline: none;
 }
 
-.tracking-btn:hover {
-  background: #0056b3;
+.admin-order-detail-page .selection-wrapper::after {
+    content: "▼";
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
 }
 
-.tracking-btn {
-  padding: 0;
-  border-radius: 30px;
-  display: flex;
-  gap: 10px; 
-  width: 100%;
-  background: #3556FF;
-  justify-content: center; /* จัดข้อความให้อยู่กึ่งกลางแนวนอน */
-  align-items: center;      /* จัดข้อความให้อยู่กึ่งกลางแนวตั้ง */
-  cursor: pointer;          /* เปลี่ยนเป็นมือเวลา hover */
+.admin-order-detail-page .change {
+    height: 42px;
+    background: #00B62E;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-weight: 600;
+    padding: 0 18px;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
-.tracking-btn i {
-  font-size: 20px;   /* ขยายขนาด icon */
+.admin-order-detail-page .change:hover {
+    background: #0a9e2b;
 }
 
-.tracking-btn h2 {
-  margin-top: 15px;
-  font-size: 18px;   /* ขนาดตัวอักษร */
+/* Tracking Card */
+.admin-order-detail-page .tracking {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    text-align: center;
+    box-shadow:  0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.admin-order-detail-page .tracking-text h2 {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.admin-order-detail-page .tracking-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    background: #3556FF;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.admin-order-detail-page .tracking-btn h2{
+    text-align: center;
+    margin-top: 15px;
+}
+
+.admin-order-detail-page .tracking-btn:hover {
+    background: #0056b3;
+}
+
+.admin-order-detail-page .tracking-btn i {
+    font-size: 20px;
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+    .admin-order-detail-page {
+        flex-direction: column;
+    }
+    .admin-order-detail-page .summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Responsive */
+@media (min-width: 1000px) {
+    .admin-order-detail-page {
+        flex-direction: row;
+    }
+    .admin-order-detail-page .summary {
+        grid-template-columns: 1fr;
+    }
 }

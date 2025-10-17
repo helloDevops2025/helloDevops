@@ -1,35 +1,28 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-}
-
+/* AdminOrderTrackingPage.css */
 body {
-    display: flex;
-    background: #f4f7ff;
-    color: #333;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-html,
-body {
-    height: 100%;
-}
-
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    color: var(--text);
-    background: var(--bg);
+    font-family: system-ui, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
 }
 
-.content {
+/* Theme Variables */
+.admin-order-tracking {
+    --bg: #ebeff7;
+    --card: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --radius: 16px;
+    --radius-sm: 12px;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Content Layout */
+.admin-order-tracking .content {
     flex: 1 1 auto;
     margin-left: 0;
     padding: 26px 28px;
@@ -37,66 +30,53 @@ body {
     grid-template-columns: 1fr;
     gap: 22px;
 }
-
-/* แก้ header ให้เป็น 2 แถว */
-.header {
+.admin-order-tracking .header  {
     grid-column: 1 / span 2;
     display: grid;
     grid-template-columns: 1fr;     /* 1 คอลัมน์ */
     grid-template-rows: auto auto;  /* 2 แถว: account แล้วตามด้วย title */
     row-gap: 8px;
 }
-
-/* Account แถวบน ชิดขวา + ไอคอน */
-.account {
-    justify-self: end;
-    align-self: start;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-    color: #111827;
-    margin: 20px;;
-}
-.account i {
-    font-size: 18px;
+.admin-order-tracking .header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 0.02em;
 }
 
-/* =========================
-   Card
-========================= */
-.card {
-    background: var(--surface);
-    border-radius: var(--radius-xl);
+/* ============ Card Base ============ */
+.admin-order-tracking .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
     box-shadow: var(--shadow-sm);
-    padding: 18px 20px;
-    background-color: white;
-    border-radius: 20px;
 }
 
-.card-title {
-    font-size: 18px;
+.admin-order-tracking .card-title {
+    font-size: 20px;
     font-weight: 700;
-    margin-bottom: 14px;
+    margin-bottom: 20px;
+    text-align: left;
+
 }
 
-.detail {
+/* ============ Detail Section ============ */
+.admin-order-tracking .detail {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 32px;
 }
 
-/* =========================
-   Timeline / Progress
-========================= */
-.progress {
+/* ===== Timeline / Progress ===== */
+.admin-order-tracking .progress {
     position: relative;
-    margin-top: 20px;
+    padding-top: 20px;
 }
 
-.progress-line {
+.admin-order-tracking .progress-line {
     position: absolute;
-    top: 50px; /* จัดให้อยู่ตรงกลางจุด */
+    top: 70px; /* จัดให้อยู่ตรงกลางจุด */
     left: 0;
     right: 0;
     height: 4px;
@@ -105,7 +85,7 @@ body {
     z-index: 1;
 }
 
-.progress-line .line-fill {
+.admin-order-tracking .progress-line .line-fill {
     display: block;
     height: 100%;
     background: #92CAFF; /* สีเส้นที่ active */
@@ -113,14 +93,15 @@ body {
     transition: width 0.3s ease;
 }
 
-.steps {
+/* Steps */
+.admin-order-tracking .steps {
     display: flex;
     justify-content: space-between;
     position: relative;
-    z-index: 2; /* ให้อยู่เหนือเส้น */
+    z-index: 2;
 }
 
-.step {
+.admin-order-tracking .step {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -128,192 +109,172 @@ body {
     flex: 1;
 }
 
-.dot {
+.admin-order-tracking .dot {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    font-size: 20px;
+    color: var(--muted);
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
     width: 100px;
     height: 100px;
     border-radius: 50%;
     background: #ccc;
     box-shadow: 0 0 0 2px #ccc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 18px;
 }
 
 /* step สถานะสำเร็จ */
-.step.done .dot {
+.admin-order-tracking .step.done .dot {
+    color: #fff;
     background: #92CAFF;
     box-shadow: 0 0 0 2px #92CAFF;
 }
-.step.done  {
-    content: "✔";
-    color: black;
-    font-size: 44px;
-}
 
-/* step ที่ยกเลิก */
-.step.cancel .dot {
+/* step ยกเลิก */
+.admin-order-tracking .step.cancel .dot {
     background: #ccc;
     box-shadow: 0 0 0 2px #ccc;
 }
+
+/* เพิ่มสัญลักษณ์ ✖ ด้านใน dot */
 .step.cancel .dot::before {
     content: "✖";
     color: #333;
-    font-size: 44px;
+    font-size: 45px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* จัดให้อยู่ตรงกลาง */
 }
 
-/* label */
-.step-label {
-    margin: 15px;
+/* Label */
+.admin-order-tracking .step-label {
+    margin-top: 12px;
     font-size: 14px;
-}
-.step-label strong {
-    display: block;
-    font-size: 20px;
-    margin: 10px;
-}
-.step-label small {
-    font-size: 16px;
-    color: #666;
-}
-.step-label .cancelled {
-    color: red;
-    font-weight: 600;
-}
-
-
-/* =========================
-   Product card
-========================= */
-.product-card {
-    display: flex;
-    align-items: center;   /* จัดให้อยู่ตรงกลางแนวตั้ง */
-    gap: 60px;             /* ช่องว่างระหว่างรูปกับข้อความ */
-    grid-template-columns: 340px 1fr;
-}
-
-.product-media img {
-    width: 100%;
-    height: 340px;
-    border-radius: var(--radius-lg);
-    display: block;
-    margin-left: 20px;
-}
-
-.product-info h3 {
-    font-size: 20px;
-    margin-bottom: 8px;
-}
-
-.kv-list {
-    margin: 10px 0 16px;
-}
-
-.kv {
-    display: grid;
-    grid-template-columns: 160px 1fr;
-    gap: 24px;
-    padding: 4px 0;
-    font-size: 14px;
-}
-
-.kv span:first-child {
     color: var(--text);
+}
+
+.admin-order-tracking .step-label strong {
+    display: block;
+    font-size: 16px;
     font-weight: 700;
 }
 
-.kv span:last-child {
+.admin-order-tracking .step-label small {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.admin-order-tracking .step-label .cancelled {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* ============ Product Card ============ */
+.admin-order-tracking .product-card {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 40px;
+    align-items: center;
+}
+
+.admin-order-tracking .product-media img {
+    width: 100%;
+    height: 280px;
+    border-radius: var(--radius);
+    object-fit: cover;
+    border: 1px solid var(--line);
+}
+
+.admin-order-tracking .product-info h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.admin-order-tracking .kv-list {
+    margin: 10px 0 18px;
+}
+
+.admin-order-tracking .kv {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 16px;
+    padding: 4px 0;
+    font-size: 15px;
+}
+
+.admin-order-tracking .kv span:first-child {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.admin-order-tracking .kv span:last-child {
     color: var(--text);
 }
 
-/* ปุ่ม */
-.btn {
+/* Buttons */
+.admin-order-tracking .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 12px 18px;
-    border-radius: 999px;
+    border-radius: 10px;
     background: #e7f0ff;
     color: #1b3a7a;
-    border: 1px solid #cfe0ff;
+    font-weight: 600;
+    border: 1px solid #111827;
     cursor: pointer;
-    font-weight: 700;
-    transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+    transition: background 0.2s, transform 0.06s ease;
 }
 
-.btn:hover {
+.admin-order-tracking .btn:hover {
     background: #dcebff;
-    box-shadow: 0 4px 10px rgba(30, 136, 229, .15);
 }
 
-.btn:active {
+.admin-order-tracking .btn:active {
     transform: translateY(1px);
 }
 
-.view-btn {
+.admin-order-tracking .view-btn {
     min-width: 160px;
 }
 
-
-/* =========================
-   Responsive
-========================= */
+/* ============ Responsive ============ */
 @media (max-width: 1024px) {
-    .product-card {
+    .admin-order-tracking .product-card {
         grid-template-columns: 1fr;
+        gap: 28px;
     }
-
-    .product-media {
-        order: -1;
+    .admin-order-tracking .product-media img {
+        height: 240px;
     }
 }
 
 @media (max-width: 760px) {
-    .sidebar {
-        position: sticky;
-        /* สำหรับเดโมให้เลื่อนตาม */
-        width: 100%;
-        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    .admin-order-tracking .steps {
+        flex-direction: column;
+        gap: 24px;
     }
-
-    .content {
-        margin-left: 0;
-        padding: 18px;
-    }
-
-    .steps {
-        grid-template-columns: repeat(4, minmax(70px, 1fr));
-        padding: 0 12px;
-    }
-
-    .progress-line {
-        margin: 26px 36px;
-    }
-
-    .step .dot {
+    .admin-order-tracking .dot {
         width: 56px;
         height: 56px;
+    }
+    .admin-order-tracking .content {
+        padding: 18px;
     }
 }
 
 @media (max-width: 420px) {
-    .header h1 {
+    .admin-order-tracking .header h1 {
         font-size: 22px;
     }
-
-    .step-label strong {
+    .admin-order-tracking .step-label strong {
+        font-size: 14px;
+    }
+    .admin-order-tracking .step-label small {
         font-size: 12px;
     }
-
-    .step-label small {
-        font-size: 10px;
-    }
-
-    .kv {
-        grid-template-columns: 120px 1fr;
-    }
-}
-
-.card, .order, .tracking{
-    max-width: 100%;
 }
