@@ -322,7 +322,8 @@ export default function AdminAddProductPage() {
                   <label>Category *</label>
                   <select
                     name="categoryId"
-                    value={form.categoryId}
+                    value={form.categoryId || ""}
+                    autoComplete="off"
                     onChange={onChange}
                     required
                   >
