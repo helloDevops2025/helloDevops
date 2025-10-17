@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./HomePage.css";
 import Header from "../components/header";
-import Footer from "../components/Footer";
+import Footer from "../components/footer";
 
 /* =========================================
    1) CONSTANTS & HELPERS (ด้านบน)

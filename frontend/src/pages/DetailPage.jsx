@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./DetailPage.css";
-import Footer from "../components/Footer.jsx";
+import Footer from "../components/footer.jsx";
 
 /* === Config & helpers (ไม่กระทบดิไซน์) === */
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";

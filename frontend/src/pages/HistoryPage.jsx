@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./HistoryPage.css";
-import Footer from "../components/Footer"; 
+import Footer from "../components/footer";
 import "./breadcrumb.css";
 
 /* ===== Utils ===== */
