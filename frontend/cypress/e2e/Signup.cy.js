@@ -1,5 +1,5 @@
 // cypress/e2e/signup.cy.js
-describe('Sign Up Page', () => {
+describe('E2E-Signup-101: Sign Up Page', () => {
   beforeEach(() => {
     cy.visit('/signup');
   });
@@ -118,3 +118,4 @@ describe('Sign Up Page', () => {
     cy.get('@signupBlocked.all').should('have.length', 0);
   });
 });
+

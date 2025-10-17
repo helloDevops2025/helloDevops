@@ -40,7 +40,7 @@ Cypress.Commands.add('loginAsAdmin', () => {
     // ✅ มาถึงหน้า list แล้ว
     cy.location('pathname', { timeout: 10000 }).should('include', '/admin/products');
 
-    // ✅ บังคับ auth state ฝั่ง client (ครอบทุกชื่อ key ที่พบบ่อย)
+    //  บังคับ auth state ฝั่ง client (ครอบทุกชื่อ key ที่พบบ่อย)
     cy.window().then((w) => {
       const authPayload = JSON.stringify({ user: { name: 'admin', role: 'ADMIN' }, token: 'test-token' });
       // ใส่หลาย key ไว้ก่อน — ถ้าระบบคุณใช้ key ใด key หนึ่งก็จะจับได้

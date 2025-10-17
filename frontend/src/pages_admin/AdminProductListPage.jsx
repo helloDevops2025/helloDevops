@@ -159,6 +159,7 @@ export default function AdminProductListPage() {
       };
     };
 
+    // 
     // Pre-index
     const record = new WeakMap();     // เก็บ fields แบบแยก
     const hayAll = new WeakMap();     // สำหรับโหมด "ค้นหาทุกฟิลด์" ถ้าจะใช้ภายหลัง

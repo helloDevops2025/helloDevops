@@ -375,7 +375,7 @@ describe('E2E-PROD-106 Create success -> redirect + list shows new item', () => 
 
   });
 });
-
+// 
 describe('E2E-AUTH-107: Logout → redirect to /login', () => {
   beforeEach(() => {
     cy.loginAsAdmin();
