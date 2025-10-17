@@ -2,9 +2,7 @@ name: Build Frontend Docker Image
 
 on:
   push:
-    branches: 
-    - main
-    - develop
+    branches: [ main, develop, fluke, grace, mint, pair, ploy ]
   workflow_dispatch:
 
 jobs:
