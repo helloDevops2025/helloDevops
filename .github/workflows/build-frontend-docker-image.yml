@@ -40,7 +40,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
+      - name: Login to Docker Hub
+        run: |
+          echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
+          
       # ตรวจสอบว่า MySQL พร้อมใช้งานแล้ว
       - name: Test MySQL Connection
         run: |
