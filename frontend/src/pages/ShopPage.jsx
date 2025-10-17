@@ -4,12 +4,12 @@ import { useSearchParams } from "react-router-dom";
 import "./ShopPage.css";
 import Footer from "../components/Footer";
 
-/* ===== Config & helpers (NEW) ===== */
+/* ===== Config & helpers ===== */
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 const norm  = (s) => String(s ?? "").trim().toLowerCase(); // สำหรับเทียบค่า
 const clean = (s) => String(s ?? "").trim();                // สำหรับแสดงผล
 
-/* ===== Placeholder (เดิม) ===== */
+/* ===== Placeholder ===== */
 const PLACEHOLDER_DATA =
   "data:image/svg+xml;utf8," +
   encodeURIComponent(`
@@ -23,18 +23,18 @@ const PLACEHOLDER_DATA =
 const PAGE_SIZE = 9;
 const LS_WISH = "pm_wishlist";
 
-/* ไอคอนหัวใจ (เดิม) */
+/* ไอคอนหัวใจ */
 const HeartIcon = (props) => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="heart" {...props}>
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
   </svg>
 );
 
-/* สร้าง URL รูปจากข้อมูลสินค้า (NEW) */
+/* สร้าง URL รูปจากข้อมูลสินค้า (รองรับ coverImageUrl/nested/images) */
 const resolveImageUrl = (row) => {
   const id = row.id ?? row.productId ?? row.product_id;
   let u =
-    row.coverImageUrl ||
+    row.coverImageUrl || // จาก projection (ถ้ามี)
     row.imageUrl ||
     row.image_url ||
     (Array.isArray(row.images)
@@ -52,8 +52,8 @@ const resolveImageUrl = (row) => {
 export default function ShopPage() {
   const [searchParams] = useSearchParams();
 
-  /* ===== โหลดของจริงจาก DB (NEW) ===== */
-  const [PRODUCTS, setPRODUCTS] = useState([]);      // [{id,name,price,cat,brand,promo,img}]
+  /* ===== โหลดจาก DB ===== */
+  const [PRODUCTS, setPRODUCTS] = useState([]);      // [{id,name,price,cat,brand,promo,img,catId,brandId}]
   const [CATEGORIES, setCATEGORIES] = useState([]);  // [{id,name}]
   const [BRANDS_MASTER, setBRANDS_MASTER] = useState([]); // [{id,name}]
   const [loading, setLoading] = useState(true);
@@ -84,9 +84,9 @@ export default function ShopPage() {
         ]);
         if (!alive) return;
 
-        // เตรียม map id -> name
-        const catById   = new Map((cats || []).map((c) => [c.id, clean(c.name)]));
-        const brandById = new Map((brands || []).map((b) => [b.id, clean(b.name)]));
+        // เตรียม map id -> name (เผื่อเติมชื่อถ้าฝั่ง products ส่งมาไม่ครบ)
+        const catById   = new Map((cats || []).map((c) => [Number(c.id), clean(c.name)]));
+        const brandById = new Map((brands || []).map((b) => [Number(b.id), clean(b.name)]));
 
         // helper: คืน key ตัวแรกที่พบใน object
         const pick = (obj, ...keys) => {
@@ -96,29 +96,42 @@ export default function ShopPage() {
 
         // map แถวสินค้า → structure ที่หน้า Shop ใช้
         const mapped = (rows || []).map((x) => {
-          const catIdRaw   = pick(x, "categoryId", "category_id", "catId", "categoryIdFk");
-          const brandIdRaw = pick(x, "brandId",    "brand_id",    "brandIdFk");
+          const catIdRaw   = pick(x, "categoryId", "category_id", "catId", "categoryIdFk", "category_id_fk");
+          const brandIdRaw = pick(x, "brandId",    "brand_id",    "brandIdFk", "brand_id_fk");
 
-          const catId   = catIdRaw   != null ? Number(catIdRaw)   : undefined;
-          const brandId = brandIdRaw != null ? Number(brandIdRaw) : undefined;
+          const catId   = catIdRaw   != null && !Number.isNaN(Number(catIdRaw))   ? Number(catIdRaw)   : undefined;
+          const brandId = brandIdRaw != null && !Number.isNaN(Number(brandIdRaw)) ? Number(brandIdRaw) : undefined;
 
-          const catName   = clean(pick(x, "categoryName", "category_name")) || (catById.get(catId) || "");
-          const brandName = clean(pick(x, "brandName", "brand_name"))       || (brandById.get(brandId) || "");
+          // รองรับคีย์ที่ backend ของคุณส่ง: category / brand (สตริง)
+          // และสำรองด้วยชื่อแบบอื่น ๆ + master map จาก /api/categories /api/brands
+          const catName =
+            clean(pick(x, "category", "categoryName", "category_name")) || // << สำคัญ
+            clean(x.category?.name) ||
+            (typeof x.category === "string" ? clean(x.category) : "") ||
+            (catId != null ? (catById.get(catId) || "") : "");
+
+          const brandName =
+            clean(pick(x, "brand", "brandName", "brand_name")) || // << สำคัญ
+            clean(x.brand?.name) ||
+            (typeof x.brand === "string" ? clean(x.brand) : "") ||
+            (brandId != null ? (brandById.get(brandId) || "") : "");
 
           return {
             id: x.id ?? x.productId ?? x.product_id,
             name: clean(x.name),
             price: Number(x.price) || 0,
+            catId,
+            brandId,
             cat: catName,
             brand: brandName,
-            promo: "-",                // phase โปรโมชันในอนาคต
+            promo: "-", // เฟสโปรโมชันในอนาคต
             img: resolveImageUrl(x),
           };
         });
 
         setPRODUCTS(mapped);
-        setCATEGORIES((cats || []).map((c) => ({ ...c, name: clean(c.name) })));
-        setBRANDS_MASTER((brands || []).map((b) => ({ ...b, name: clean(b.name) })));
+        setCATEGORIES((cats || []).map((c) => ({ id: Number(c.id), name: clean(c.name) })));
+        setBRANDS_MASTER((brands || []).map((b) => ({ id: Number(b.id), name: clean(b.name) })));
       } catch (e) {
         setLoadErr(e.message || "โหลดข้อมูลไม่สำเร็จ");
       } finally {
@@ -129,36 +142,44 @@ export default function ShopPage() {
     return () => { alive = false; };
   }, []);
 
-  /* ===== สถานะ UI เดิม ===== */
+  /* ===== สถานะ UI ===== */
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("featured");
   const [filters, setFilters] = useState({
-    cat: new Set(),
-    brand: new Set(),
+    cat: new Set(),     // เก็บ "ชื่อ" (ให้ทำงานทันที โดยไม่ refactor ไปใช้ id)
+    brand: new Set(),   // เก็บ "ชื่อ"
     promo: new Set(),
     priceMin: null,
     priceMax: null,
   });
 
-  /* ===== รายการตัวเลือกจาก DB (แทนที่ของเดิมแบบฮาร์ดโค้ด) ===== */
-  const CAT_LIST = useMemo(
-    () => (CATEGORIES.length ? CATEGORIES.map((c) => c.name) : []),
-    [CATEGORIES]
-  );
+  /* ===== ตัวเลือก Category/Brand =====
+     เอาจาก PRODUCTS ก่อน (การันตีว่ามีจริง) ถ้ายังไม่มีชื่อ → ตกไปใช้ master */
+  const CAT_LIST = useMemo(() => {
+    const fromProducts = Array.from(new Set(PRODUCTS.map((p) => clean(p.cat)).filter(Boolean)));
+    if (fromProducts.length) return fromProducts.sort((a, b) => a.localeCompare(b));
+    const fromMaster = Array.from(new Set(CATEGORIES.map((c) => clean(c.name)).filter(Boolean)));
+    return fromMaster.sort((a, b) => a.localeCompare(b));
+  }, [PRODUCTS, CATEGORIES]);
 
-  // รองรับ ?cat= จาก URL
+  const BRANDS = useMemo(() => {
+    const fromProducts = Array.from(new Set(PRODUCTS.map((p) => clean(p.brand)).filter(Boolean)));
+    if (fromProducts.length) return fromProducts.sort((a, b) => a.localeCompare(b));
+    const fromMaster = Array.from(new Set(BRANDS_MASTER.map((b) => clean(b.name)).filter(Boolean)));
+    return fromMaster.sort((a, b) => a.localeCompare(b));
+  }, [PRODUCTS, BRANDS_MASTER]);
+
+  // รองรับ ?cat= แบบไม่แคร์ตัวเล็กใหญ่/เว้นวรรค โดยเทียบกับรายการที่ "เกิดจาก PRODUCTS/master"
   useEffect(() => {
     const catParam = searchParams.get("cat");
-    if (catParam && CAT_LIST.includes(catParam)) {
-      setFilters((prev) => ({ ...prev, cat: new Set([clean(catParam)]) }));
-      setPage(1);
+    if (catParam) {
+      const target = CAT_LIST.find((c) => norm(c) === norm(catParam));
+      if (target) {
+        setFilters((prev) => ({ ...prev, cat: new Set([clean(target)]) }));
+        setPage(1);
+      }
     }
   }, [searchParams, CAT_LIST]);
-
-  const BRANDS = useMemo(
-    () => BRANDS_MASTER.map((b) => b.name).filter(Boolean).sort(),
-    [BRANDS_MASTER]
-  );
 
   // Promotions: ยังไม่มีใน DB — เตรียมโครงไว้ก่อน
   const PROMOS = useMemo(() => [], []);
@@ -187,7 +208,7 @@ export default function ShopPage() {
     setPage(1);
   };
 
-  /* ===== กรองข้อมูลจริงแบบ normalize (NEW) ===== */
+  /* ===== กรองข้อมูลจริงแบบ normalize ===== */
   const filtered = useMemo(() => {
     const f = filters;
     const catSet   = new Set([...f.cat].map(norm));
@@ -235,6 +256,7 @@ export default function ShopPage() {
       out.push({ key: "price", label: `฿${filters.priceMin ?? 0}–${filters.priceMax ?? "∞"}` });
     return out;
   }, [filters]);
+
   const removeChip = (c) => {
     if (c.key === "price")
       setFilters((p) => ({ ...p, priceMin: null, priceMax: null }));
@@ -254,7 +276,7 @@ export default function ShopPage() {
     setMaxVal(filters.priceMax ?? "");
   }, [filters.priceMin, filters.priceMax]);
 
-  /* ===== Card สินค้า (เดิม) ===== */
+  /* ===== Card สินค้า ===== */
   const ProductCard = ({ p }) => {
     const [wish, setWish] = useState(() => {
       try { return new Set(JSON.parse(localStorage.getItem(LS_WISH) || "[]")); }
@@ -312,11 +334,11 @@ export default function ShopPage() {
     );
   };
 
-  /* ===== Checklist (เดิม) ===== */
+  /* ===== Checklist ===== */
   const CheckList = ({ list, setKey, selected }) => (
     <div className={`checklist ${setKey === "brand" ? "scroll" : ""}`}>
-      {list.map((val) => {
-        const id = `${setKey}-${val}`;
+      {list.map((val, idx) => {
+        const id = `${setKey}-${val}-${idx}`;
         return (
           <label key={id} htmlFor={id}>
             <input
@@ -371,7 +393,7 @@ export default function ShopPage() {
 
             <div className="toolbar-row">
               <p className="result-count">
-                {loading ? "Loading…" : loadErr ? "0 items" : `${filtered.length} items found`}
+                {loading ? "Loading…" : `${filtered.length} items found`}
               </p>
               <div className="sort-area">
                 <label className="sr-only" htmlFor="sort">Sort by</label>
