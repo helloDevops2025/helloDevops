@@ -40,7 +40,7 @@ Cypress.Commands.add('loginAsAdmin', () => {
     // ✅ มาถึงหน้า list แล้ว
     cy.location('pathname', { timeout: 10000 }).should('include', '/admin/products');
 
-    // ✅ บังคับ auth state ฝั่ง client (ครอบทุกชื่อ key ที่พบบ่อย)
+    //  บังคับ auth state ฝั่ง client (ครอบทุกชื่อ key ที่พบบ่อย)
     cy.window().then((w) => {
       const authPayload = JSON.stringify({ user: { name: 'admin', role: 'ADMIN' }, token: 'test-token' });
       // ใส่หลาย key ไว้ก่อน — ถ้าระบบคุณใช้ key ใด key หนึ่งก็จะจับได้
@@ -78,20 +78,22 @@ Cypress.Commands.add('logoutUI', () => {
 
 // cypress/support/commands.js
 Cypress.Commands.add('loginAs', (role = 'ADMIN', payload = {}) => {
-  cy.intercept('POST', '**/api/auth/login', (req) => {
-    req.reply({
+  cy.session([role, payload.email], () => {
+    cy.visit('/login');
+    cy.intercept('POST', '**/api/auth/login', {
       statusCode: 200,
       body: {
         token: 'fake-jwt',
         role,
-        email: payload.email || (role === 'ADMIN' ? 'admin@puremart.com' : 'user@puremart.com'),
-        user: { role }
+        email: payload.email || 'admin@puremart.com',
+        user: { name: 'admin', role }
       }
-    });
-  }).as('loginApi');
+    }).as('loginApi');
 
-  cy.get('#email').clear().type(payload.email || (role === 'ADMIN' ? 'admin' : 'user'));
-  cy.get('#password').clear().type(payload.password || '123456');
-  cy.get('#submitBtn').click();
-  cy.wait('@loginApi');
+    cy.get('#email').type(payload.email || 'admin@puremart.com');
+    cy.get('#password').type(payload.password || 'admin123');
+    cy.get('#submitBtn').click();
+    cy.wait('@loginApi');
+  });
 });
+

@@ -1,3 +1,276 @@
-/* AdminOrderDetailPage */
+/* AdminOrderDetailPage.css */
 body { font-family: system-ui, Arial, sans-serif; }
-h1 { margin: 24px; text-align: center; font-size: 28px; }
+
+.admin-order-detail-page {
+    --bg: #ebeff7;
+    --card: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --radius: 16px;
+    --radius-sm: 12px;
+
+    display: flex;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 28px;
+    gap: 24px;
+    box-sizing: border-box;
+}
+
+/* Content area */
+.admin-order-detail-page .content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+}
+
+/* Header */
+.admin-order-detail-page .header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0;
+    text-align: left;
+    letter-spacing: 0.02em;
+}
+
+/* Summary Section */
+.admin-order-detail-page .summary {
+    grid-column: 1 / -1;        /* ให้เต็มความกว้างหน้าหลัก */
+    display: flex;              /* ใช้ flex layout */
+    justify-content: center;    /* จัดให้อยู่ตรงกลาง */
+    align-items: stretch;
+    gap: 24px;                  /* ระยะห่างระหว่างการ์ด */
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+/* การ์ดแต่ละใบ */
+.admin-order-detail-page .card-top {
+    flex: 1;                    /* ทำให้แต่ละกล่องกว้างเท่ากัน */
+    max-width: 50%;             /* จำกัดไม่ให้กินเกินครึ่งหนึ่งของแถว */
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+
+.admin-order-detail-page .summary-text h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.admin-order-detail-page .info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 8px 0;
+    font-size: 16px;
+    color: var(--text);
+}
+
+.admin-order-detail-page .total-head {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* Table Section */
+.admin-order-detail-page .order {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.admin-order-detail-page .order-head {
+    background: #f9fafb;
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 16px;
+}
+
+.admin-order-detail-page .table-wrapper {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--line);
+}
+
+.admin-order-detail-page table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+.admin-order-detail-page thead {
+    background: #f3f4f6;
+    font-weight: 600;
+}
+
+.admin-order-detail-page th,
+.admin-order-detail-page td {
+    padding: 14px;
+    font-size: 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.admin-order-detail-page tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+/* Right Panel */
+.admin-order-detail-page .right-panel {
+    flex: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.admin-order-detail-page .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow:  0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Address */
+.admin-order-detail-page #Address {
+    color: var(--muted);
+    font-size: 15px;
+    margin-top: 6px;
+}
+
+/* Status Card */
+.admin-order-detail-page .status-text {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.admin-order-detail-page .status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-order-detail-page .selection-wrapper {
+    position: relative;
+    flex: 1 1 220px;
+}
+
+.admin-order-detail-page .selection {
+    width: 100%;
+    height: 42px;
+    padding: 6px 32px 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: #f3f4f6;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+    appearance: none;
+    outline: none;
+}
+
+.admin-order-detail-page .selection-wrapper::after {
+    content: "▼";
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+}
+
+.admin-order-detail-page .change {
+    height: 42px;
+    background: #00B62E;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-weight: 600;
+    padding: 0 18px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.admin-order-detail-page .change:hover {
+    background: #0a9e2b;
+}
+
+/* Tracking Card */
+.admin-order-detail-page .tracking {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    text-align: center;
+    box-shadow:  0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.admin-order-detail-page .tracking-text h2 {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.admin-order-detail-page .tracking-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    background: #3556FF;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.admin-order-detail-page .tracking-btn h2{
+    text-align: center;
+    margin-top: 15px;
+}
+
+.admin-order-detail-page .tracking-btn:hover {
+    background: #0056b3;
+}
+
+.admin-order-detail-page .tracking-btn i {
+    font-size: 20px;
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+    .admin-order-detail-page {
+        flex-direction: column;
+    }
+    .admin-order-detail-page .summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Responsive */
+@media (min-width: 1000px) {
+    .admin-order-detail-page {
+        flex-direction: row;
+    }
+    .admin-order-detail-page .summary {
+        grid-template-columns: 1fr;
+    }
+}
