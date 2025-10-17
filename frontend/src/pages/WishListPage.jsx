@@ -1,6 +1,6 @@
 import "./WishListPage.css";
 import Header from "../components/header";
-import Footer from "../components/Footer";
+import Footer from "../components/footer";
 import { useEffect, useMemo, useState } from "react";
 
 const LS_KEY = "pm_wishlist";

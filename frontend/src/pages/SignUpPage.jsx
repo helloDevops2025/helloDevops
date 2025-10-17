@@ -1,5 +1,5 @@
-// src/pages/SignUpPage.jsx
 import { useEffect, useState } from "react";
+
 import { useNavigate, Link } from "react-router-dom";
 import api from "../lib/api";             // ✅ ใช้ axios instance เดิม
 import "./SignUpPage.css";
@@ -27,6 +27,7 @@ export default function SignUpPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+
     setErr("");
 
     // HTML5 validation ก่อน (คงสไตล์ของคุณ)
@@ -91,7 +92,7 @@ export default function SignUpPage() {
     }
   };
 
-  // ไอคอนตา
+
   const EyeClosed = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3E40AE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.71 21.71 0 0 1 5.06-6.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.74 21.74 0 0 1-2.45 3.94"/>
@@ -108,6 +109,7 @@ export default function SignUpPage() {
   return (
     <main className="shell reverse">
       {/* ซ้าย: ภาพ/พื้นม่วง */}
+
       <aside className="art-side" aria-label="Pure Mart artwork">
         <div className="illustration">
           <div className="phone" aria-hidden="true">
@@ -126,7 +128,9 @@ export default function SignUpPage() {
       {/* ขวา: ฟอร์ม Sign Up */}
       <section className="form-side_signup">
         <div className="logo_signup">
+
           {/* 🆕 ปรับ alt ให้สื่อความ */}
+
           <img src="/assets/logo.png" alt="Pure Mart" />
         </div>
 

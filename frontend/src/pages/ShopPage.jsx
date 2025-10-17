@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import "./ShopPage.css";
-import Footer from "../components/Footer";
+import Footer from "../components/footer";
 
 /* ===== Config & helpers ===== */
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";

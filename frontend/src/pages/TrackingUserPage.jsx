@@ -1,5 +1,5 @@
 import "./TrackingUserPage.css";
-import "../components/Header.css";
+import "../components/header.css";
 import "./breadcrumb.css";
 
 import React, { useMemo } from "react";
@@ -34,7 +34,7 @@ const Breadcrumb = ({ items = [] }) => {
 };
 
 import Header from "../components/header";
-import Footer from "../components/Footer";
+import Footer from "../components/footer";
 
 /* ===== Progress Card ===== */
 const ProgressCard = ({ steps }) => {

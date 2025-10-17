@@ -5,7 +5,7 @@ import Header from "../components/header";
 import "../components/header.css";              // สไตล์ของ Header
 import "./CartPage.css";
 import "./breadcrumb.css";
-import Footer from "../components/Footer";
+import Footer from "../components/footer";
 
 // Remove this incomplete CartPage component and keep only the main one below
 
