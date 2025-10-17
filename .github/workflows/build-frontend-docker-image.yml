@@ -1,0 +1,52 @@
+name: Build Frontend Docker Image
+
+on:
+  push:
+    branches: [ main, develop, fluke, grace, mint, pair, ploy ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Clean npm cache
+        run: npm cache clean --force
+
+      - name: Install and Run dev test
+        run: |
+          cd ./frontend
+          npm install
+          npm run dev &              # 🔹 รัน dev server แบบ background
+          sleep 10                   # 🔹 รอ 10 วินาทีให้ server เริ่ม
+          curl -I http://localhost:5173 || true  # 🔹 ตรวจสอบว่า server ตอบได้ไหม
+          pkill -f "vite"            # 🔹 หยุด process dev server
+          
+      - name: Build project
+        working-directory: ./frontend
+        run: 
+          npm run build 
+        
+      - name: Build Docker image
+        run: |
+          docker build -t hello-devops-frontend:latest ./frontend
+
+      - name: Login to Docker Hub
+        run: |
+          echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
+          
+      # Build and push image to Docker Hub
+      - name: Build and push image to Docker Hub
+        if: success()
+        run: |
+          echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
+          docker tag hello-devops-frontend:latest u6687032/hello-devops-frontend:latest
+          docker push u6687032/hello-devops-frontend:latest
