@@ -23,6 +23,19 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+      backend:
+        image: u6687032/hello-devops-backend:latest   # 👈 ใช้ image ที่ push จาก backend repo
+        ports:
+          - 8080:8080
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/sombun_db
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: root
+        options: >-
+          --health-cmd="curl -f http://localhost:8080/api/health || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
           
     steps:
       - name: Checkout repository
@@ -51,7 +64,9 @@ jobs:
           mysql -h 127.0.0.1 -uroot -proot testdb -e "INSERT INTO users VALUES (1, 'Ploy');"
           mysql -h 127.0.0.1 -uroot -proot testdb -e "SELECT * FROM users;"
 
-
+      - name: Wait for backend to be ready
+        run: npx wait-on http://localhost:8080/api/health
+        
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
