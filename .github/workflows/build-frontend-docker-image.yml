@@ -51,7 +51,6 @@ jobs:
           mysql -h 127.0.0.1 -uroot -proot testdb -e "INSERT INTO users VALUES (1, 'Ploy');"
           mysql -h 127.0.0.1 -uroot -proot testdb -e "SELECT * FROM users;"
 
-        
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -61,13 +60,14 @@ jobs:
       - name: Clean npm cache
         run: npm cache clean --force
 
-      - name: Install and Run dev test
+      - name: Install and Run dev test and E2E
         run: |
           cd ./frontend
           npm install
           npm run dev &              # 🔹 รัน dev server แบบ background
           sleep 10                   # 🔹 รอ 10 วินาทีให้ server เริ่ม
           curl -I http://localhost:5173 || true  # 🔹 ตรวจสอบว่า server ตอบได้ไหม
+          npx cypress run            # E2E run test
           pkill -f "vite"            # 🔹 หยุด process dev server
           
       - name: Build project
