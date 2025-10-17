@@ -32,11 +32,11 @@ jobs:
           curl -I http://localhost:5173 || true  # 🔹 ตรวจสอบว่า server ตอบได้ไหม
           pkill -f "vite"            # 🔹 หยุด process dev server
           
-      # - name: Build project
-      #   working-directory: ./frontend
-        # run: 
-        # npm run build => ถ้าเสร็จทั้งหมดแล้ว เปิดได้ทุกหน้าไม่มีปัญหาควรจะ run build ได้ ยังติด error อยู่ '=/index.html'
-
+      - name: Build project
+        working-directory: ./frontend
+        run: 
+          npm run build 
+        
       - name: Build Docker image
         run: |
           docker build -t hello-devops-frontend:latest ./frontend
