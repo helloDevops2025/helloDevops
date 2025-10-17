@@ -1,17 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { getEmail, isAuthed, logout } from "../auth"; // ✅ ใช้ helper เดียวกับฝั่งแอดมิน
 import "./header.css";
 
 const Header = () => {
   const [accOpen, setAccOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [email, setEmail] = useState("");
   const wrapRef = useRef(null);
+  const navigate = useNavigate();
 
   // ให้ body มี padding-top รองรับ header ติดบน
   useEffect(() => {
     document.body.classList.add("has-header");
-    return () => {
-      document.body.classList.remove("has-header");
-    };
+    return () => document.body.classList.remove("has-header");
   }, []);
 
   // ปิดเมนูเมื่อคลิกนอก/resize
@@ -34,11 +36,14 @@ const Header = () => {
     };
   }, []);
 
-  // ===== NEW: ติด active ให้เมนู + ไอคอนตาม path ปัจจุบัน (รวมหน้า Home และไอคอนขวา)
+  // ดึงอีเมลจาก session/localStorage ผ่าน helper
+  useEffect(() => {
+    setEmail(getEmail() || "");
+  }, []);
+
+  // ===== ติด active ให้เมนู + ไอคอนตาม path (คงของเดิม) =====
   useEffect(() => {
     const path = (window.location.pathname || "/").toLowerCase();
-
-    // helper
     const markActive = (el) => {
       if (!el) return;
       el.classList.add("active");
@@ -50,11 +55,8 @@ const Header = () => {
         el.removeAttribute("aria-current");
       });
     };
-
-    // เคลียร์ก่อน
     unmarkAll(".pm-nav a, .pm-right a.pm-icon, .pm-account");
 
-    // เมนูหลักซ้าย
     document.querySelectorAll(".pm-nav a").forEach((a) => {
       const href = (a.getAttribute("href") || "").toLowerCase();
       const isHomeLink = href === "/" || href === "/home" || href.endsWith("/index.html");
@@ -69,7 +71,6 @@ const Header = () => {
       }
     });
 
-    // ไอคอนขวา: wishlist / cart
     document.querySelectorAll(".pm-right a.pm-icon").forEach((a) => {
       const href = (a.getAttribute("href") || "").toLowerCase();
       if (href && path.startsWith(href)) {
@@ -77,7 +78,6 @@ const Header = () => {
       }
     });
 
-    // ปุ่ม ACCOUNT (เป็น button ไม่มี href) → ให้ active เมื่ออยู่หน้าเกี่ยวกับบัญชี
     const accountBtn = document.querySelector(".pm-account");
     if (accountBtn) {
       const isAccountRelated =
@@ -90,27 +90,37 @@ const Header = () => {
     }
   }, []);
 
+  // ===== ส่วนที่ "เพิ่ม" เข้ามา =====
+  const authed = isAuthed();
+  const displayName = authed && email ? email.split("@")[0] : "ACCOUNT";
+
+  const handleLogout = () => {
+    logout();
+    setAccOpen(false);
+    navigate("/login");
+  };
+
   return (
     <>
-      {/* Top stripe */}
+      {/* Top stripe (ของเดิม) */}
       <div className="pm-topbar" />
 
       <header className="pm-header" ref={wrapRef}>
         <div className="pm-header__inner">
-          {/* Logo */}
+          {/* Logo (ของเดิม) */}
           <a href="/home" className="pm-logo" aria-label="Pure Mart">
             <img src="/assets/logo.png" alt="PURE MART" />
           </a>
 
-          {/* Nav */}
+          {/* Nav (ของเดิม) */}
           <nav className={`pm-nav ${navOpen ? "is-open" : ""}`} aria-label="Primary">
             <a href="/home">Home</a>
             <a href="/shop">Shop</a>
-            <a href="/best-sellers">Best Sellers</a>
-            <a href="/categories">Categories</a>
+            <a href="/home#best-sellers">Best Sellers</a>
+            <a href="/home#categories">Categories</a>
           </nav>
 
-          {/* Search */}
+          {/* Search (ของเดิม) */}
           <form className="pm-search" role="search" aria-label="Site search">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -119,7 +129,7 @@ const Header = () => {
             <input type="search" placeholder="Search....." />
           </form>
 
-          {/* Right icons */}
+          {/* Right icons (ของเดิม + แค่เพิ่ม logic account) */}
           <div className="pm-right">
             {/* Account Dropdown */}
             <div className="pm-dropdown-wrapper">
@@ -135,7 +145,12 @@ const Header = () => {
                   <circle cx="12" cy="8" r="4" />
                   <path d="M4 20a8 8 0 0 1 16 0" />
                 </svg>
-                <span className="pm-icon__label">ACCOUNT</span>
+
+                {/* ▼ แสดงชื่อผู้ใช้แทนคำว่า ACCOUNT เมื่อมีอีเมล */}
+                <span className="pm-icon__label">
+                  <span className="pm-name">{displayName}</span>
+                </span>
+
                 <svg className="pm-caret" viewBox="0 0 24 24" aria-hidden="true">
                   <polygon points="6,8 18,8 12,16" fill="currentColor" />
                 </svg>
@@ -146,33 +161,57 @@ const Header = () => {
                 className={`pm-dropdown ${accOpen ? "is-open" : ""}`}
                 role="menu"
               >
-                <a
-                  href="/history"
-                  role="menuitem"
-                  tabIndex={accOpen ? 0 : -1}
-                  onClick={() => setAccOpen(false)}
-                >
-                  Order History
-                </a>
-                <a
-                  href="/login"
-                  role="menuitem"
-                  tabIndex={accOpen ? 0 : -1}
-                  onClick={() => setAccOpen(false)}
-                >
-                  Log Out
-                </a>
+                {authed ? (
+                  <>
+                    <Link
+                      to="/history"
+                      role="menuitem"
+                      tabIndex={accOpen ? 0 : -1}
+                      onClick={() => setAccOpen(false)}
+                    >
+                      Order History
+                    </Link>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      tabIndex={accOpen ? 0 : -1}
+                      className="pm-dropdown__btn"
+                      onClick={handleLogout}
+                    >
+                      Log Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      role="menuitem"
+                      tabIndex={accOpen ? 0 : -1}
+                      onClick={() => setAccOpen(false)}
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/register"
+                      role="menuitem"
+                      tabIndex={accOpen ? 0 : -1}
+                      onClick={() => setAccOpen(false)}
+                    >
+                      Register
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Wishlist */}
+            {/* Wishlist (ของเดิม) */}
             <a href="/wishlist" className="pm-icon" aria-label="Wishlist">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M20.8 7.1a5 5 0 0 0-7.1 0L12 8.8l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.1 8.8-8.1a5 5 0 0 0 0-7.1Z" />
               </svg>
             </a>
 
-            {/* Cart */}
+            {/* Cart (ของเดิม) */}
             <a href="/cart" className="pm-icon" aria-label="Cart">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="9" cy="21" r="1.6" />
@@ -181,7 +220,7 @@ const Header = () => {
               </svg>
             </a>
 
-            {/* Hamburger */}
+            {/* Hamburger (ของเดิม) */}
             <button
               className="pm-burger"
               aria-label="Open menu"

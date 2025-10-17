@@ -132,7 +132,7 @@ VALUES
   (SELECT id FROM categories WHERE name='Meats'),
   (SELECT id FROM brands    WHERE name='U FARM')
 ),
-('#00009','Q FRESH เทร้าซาซิมิสไลซ์ 120 กรัม','',90.00,30,TRUE,
+('#00009','แซลมอน โคโฮหั่นชิ้น แช่แข็ง 100 กรัม','',99.00,30,TRUE,
   (SELECT id FROM categories WHERE name='Meats'),
   (SELECT id FROM brands    WHERE name='Q FRESH')
 ),
@@ -154,7 +154,7 @@ VALUES
   (SELECT id FROM categories WHERE name='Frozen Foods'),
   (SELECT id FROM brands    WHERE name='Q FRESH')
 ),
-('#00014','โออิชิ อีทโตะเกี๊ยวซ่าไส้หมูแช่แข็ง 660 กรัม','',150.00,25,TRUE,
+('#00014','โออิชิ เกี๊ยวซ่าแช่แข็ง ไส้หมู 240 ก. 12 ชิ้น','',150.00,25,TRUE,
   (SELECT id FROM categories WHERE name='Frozen Foods'),
   (SELECT id FROM brands    WHERE name='OISHI EATO')
 ),
@@ -238,3 +238,92 @@ INSERT IGNORE INTO product_images (product_id_fk, image_url, filename, content_t
 SELECT p.id, '/products/019.jpg', '019.jpg', 'image/jpeg', TRUE, 0 FROM products p WHERE p.product_id='#00019';
 INSERT IGNORE INTO product_images (product_id_fk, image_url, filename, content_type, is_cover, sort_order)
 SELECT p.id, '/products/020.jpg', '020.jpg', 'image/jpeg', TRUE, 0 FROM products p WHERE p.product_id='#00020';
+
+-- USERS table
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  phone VARCHAR(50),
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('USER','ADMIN') DEFAULT 'USER',
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- ===========================
+-- 4) Orders (ตารางคำสั่งซื้อ)
+-- ===========================
+CREATE TABLE IF NOT EXISTS orders (
+                                      id            BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                      order_code    VARCHAR(50) NOT NULL UNIQUE,        -- เช่น #ORD0001
+    customer_name VARCHAR(255) NOT NULL,
+    customer_phone VARCHAR(50),
+    shipping_address TEXT NOT NULL,
+    payment_method ENUM('COD','BANK_TRANSFER','CREDIT_CARD') DEFAULT 'COD',
+    shipping_method ENUM('STANDARD','EXPRESS') DEFAULT 'STANDARD',
+    order_status ENUM('PENDING','PREPARING','READY_TO_SHIP','SHIPPING','DELIVERED','CANCELLED') DEFAULT 'PENDING',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===========================
+-- 5) Order Items (สินค้าที่อยู่ในแต่ละออเดอร์)
+-- ===========================
+CREATE TABLE IF NOT EXISTS order_items (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    order_id_fk BIGINT NOT NULL,
+    product_id_fk BIGINT NULL,
+
+
+    quantity      INT NOT NULL DEFAULT 1,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_order_items_order
+    FOREIGN KEY (order_id_fk) REFERENCES orders(id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_order_items_product
+    FOREIGN KEY (product_id_fk) REFERENCES products(id)
+    ON DELETE SET NULL ON UPDATE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===========================
+-- SEED: Orders
+-- ===========================
+INSERT INTO orders (
+    order_code,
+    customer_name,
+    customer_phone,
+    shipping_address,
+    payment_method,
+    shipping_method,
+    order_status
+) VALUES
+    (
+        '#ORD001',
+        'Somsak Suksun',
+        '0812345678',
+        '999 Road, Bangkok, Thailand 10110',
+        'COD',
+        'STANDARD',
+        'DELIVERED'
+    );
+
+-- ===========================
+-- SEED: Order items (ของ Order #ORD001)
+-- ===========================
+INSERT INTO order_items (order_id_fk, product_id_fk, quantity)
+SELECT
+    o.id AS order_id_fk,
+    p.id AS product_id_fk,
+    2 AS quantity
+FROM orders o JOIN products p ON p.product_id = '#00001'   -- ตัวอย่างเลือกสินค้ารหัส #00001
+WHERE o.order_code = '#ORD001';
+
+ALTER TABLE orders
+ADD COLUMN preparing_at DATETIME NULL,
+ADD COLUMN ready_at DATETIME NULL,
+ADD COLUMN shipping_at DATETIME NULL,
+ADD COLUMN delivered_at DATETIME NULL,
+ADD COLUMN cancelled_at DATETIME NULL;
