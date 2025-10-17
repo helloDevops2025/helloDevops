@@ -106,7 +106,7 @@ describe('Sign Up Page', () => {
     cy.get('#confirm-password').should('have.attr', 'type', 'password');
   });
 
-  it('HTML5 validation: ถ้าปล่อยว่าง ไม่ควรยิง API', () => {
+  it('ผู้ใช้ไม่กรอกข้อมูลใด ๆ แล้วกด Submit - form จะถูก browser validation block ไว้', () => {
     // ตั้ง intercept ไว้ก่อน แล้ว assert ว่าไม่ถูกเรียก
     cy.intercept('POST', '**/api/auth/signup').as('signupBlocked');
 
