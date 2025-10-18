@@ -40,16 +40,15 @@ jobs:
             sleep 5
           done
           exit 1
-
+          
+      - name: Login to Docker Hub
+        run: |
+          echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
       # ✅ ดึง backend จาก Docker Hub แล้วรัน container
+
       - name: Run backend container
         run: |
-          docker run -d --name backend \
-            -p 8080:8080 \
-            -e SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/testdb \
-            -e SPRING_DATASOURCE_USERNAME=root \
-            -e SPRING_DATASOURCE_PASSWORD=root \
-            u6687032/hello-devops-backend:latest
+          docker build -t hello-devops-backend:latest .
       
         # ตรวจสอบว่ารันได้ไหม
       - name: Check backend health
