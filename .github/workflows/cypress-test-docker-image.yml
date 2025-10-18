@@ -1,0 +1,92 @@
+name: Build Frontend and Run Cypress Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  e2e-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ecommerce
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ✅ รัน MySQL readiness check
+      - name: Wait for MySQL to be ready
+        run: |
+          echo "⏳ Waiting for MySQL..."
+          for i in {1..10}; do
+            if mysql -h 127.0.0.1 -uroot -proot -e "SELECT 1" >/dev/null 2>&1; then
+              echo "✅ MySQL is ready!"
+              exit 0
+            fi
+            echo "❌ Retry ($i/10)..."
+            sleep 5
+          done
+          exit 1
+
+      # ✅ ดึง backend จาก Docker Hub แล้วรัน container
+      - name: Run backend container
+        run: |
+          docker run -d --name backend \
+            -p 8080:8080 \
+            -e SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/testdb \
+            -e SPRING_DATASOURCE_USERNAME=root \
+            -e SPRING_DATASOURCE_PASSWORD=root \
+            u6687032/hello-devops-backend:latest
+      
+        # ตรวจสอบว่ารันได้ไหม
+      - name: Check backend health
+        run: |
+          echo "⏳ Waiting for backend..."
+          for i in {1..10}; do
+            if curl -s http://localhost:8080/actuator/health | grep '"status":"UP"' > /dev/null; then
+              echo "✅ Backend is up!"
+              exit 0
+            fi
+            echo "❌ Retry ($i/10)..."
+            sleep 5
+          done
+          exit 1
+
+
+      # ✅ Install Node.js + dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      # ✅ Run Cypress tests (frontend + backend พร้อม)
+      - name: Run Cypress E2E tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: ./frontend
+          start: npm run dev
+          wait-on: 'http://localhost:5173'
+          browser: chrome
+          headless: true
+
+      # ✅ Build frontend for deploy
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
