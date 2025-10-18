@@ -402,7 +402,7 @@ const HomePage = () => {
 
           {/* ===== Banner 2 ===== */}
           <a href="#categories" className="hero-card" aria-label="Browse by Category">
-            <img src="/assets/user/banner2.jpg" alt="Browse by Category" loading="lazy" />
+            <img src="/assets/user/banner2.jpg" alt="Browse by Category" loading="lazy" /> 
           </a>
 
           {/* ===== Categories (DB) ===== */}

@@ -52,6 +52,9 @@ export default function App() {
             {/* รองรับทั้งแบบมี/ไม่มี :id เพื่อกันลิงก์เดิมไม่พัง (ของฟลุ๊คเพิ่ม) */}
             <Route path="/detail" element={<DetailPage />} />
             <Route path="/detail/:id" element={<DetailPage />} />
+            {/* ✅ เพิ่มเส้นทางใหม่สำหรับ Tracking พร้อม orderId */}
+            <Route path="/tracking-user/:orderId" element={<TrackingUserPage />} />
+            {/* ✅ คงเส้นทางเดิมไว้เพื่อ backward compatibility */}
             <Route path="/tracking" element={<TrackingUserPage />} />
             <Route path="/wishlist" element={<WishListPage />} />
             <Route path="/history" element={<HistoryPage />} />
@@ -78,3 +81,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
