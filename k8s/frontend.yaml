@@ -19,7 +19,7 @@ spec:
         - containerPort: 80
         env:
         - name: VITE_API_URL
-          value: "http://backend-service:8080"
+          value: ""
 ---
 apiVersion: v1
 kind: Service
