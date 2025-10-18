@@ -42,13 +42,13 @@ jobs:
           exit 1
           
       - name: Login to Docker Hub
+        run: echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
+      
+      - name: Run backend container from Docker Hub
         run: |
-          echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
-      # ✅ ดึง backend จาก Docker Hub แล้วรัน container
+          docker pull u6687032/hellodevops-backend:latest
+          docker run -d -p 8080:8080 --name backend u6687032/hellodevops-backend:latest
 
-      - name: Run backend container
-        run: |
-          docker build -t hello-devops-backend:latest .
       
         # ตรวจสอบว่ารันได้ไหม
       - name: Check backend health
