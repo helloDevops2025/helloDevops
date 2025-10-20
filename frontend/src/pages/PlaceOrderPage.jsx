@@ -5,371 +5,407 @@ import Header from "../components/header";
 import Footer from "../components/footer";
 import "./PlaceOrderPage.css";
 import "./breadcrumb.css";
+import "./toast.css";
 
 /* ===== Utils ===== */
 function isValidThaiMobile(raw) {
-    const digits = raw.replace(/\D/g, "");
-    if (digits.startsWith("66")) {
-        const n = "0" + digits.slice(2);
-        return /^0[689]\d{8}$/.test(n);
-    }
-    return /^0[689]\d{8}$/.test(digits);
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("66")) {
+    const n = "0" + digits.slice(2);
+    return /^0[689]\d{8}$/.test(n);
+  }
+  return /^0[689]\d{8}$/.test(digits);
 }
+
 function formatThaiMobile(raw) {
-    let d = raw.replace(/\D/g, "");
-    if (d.startsWith("66")) d = "0" + d.slice(2);
-    if (d.length > 10) d = d.slice(0, 10);
-    if (d.length <= 3) return d;
-    if (d.length <= 6) return d.slice(0, 3) + "-" + d.slice(3);
-    return d.slice(0, 3) + "-" + d.slice(3, 6) + "-" + d.slice(6);
+  let d = raw.replace(/\D/g, "");
+  if (d.startsWith("66")) d = "0" + d.slice(2);
+  if (d.length > 10) d = d.slice(0, 10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return d.slice(0, 3) + "-" + d.slice(3);
+  return d.slice(0, 3) + "-" + d.slice(3, 6) + "-" + d.slice(6);
 }
+
 const currencyTHB = (n) =>
-    n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
+  n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
+
+// Zip code helper: keep digits only and limit to 5 characters
+function formatZipCode(raw) {
+  if (!raw) return "";
+  return raw.replace(/\D/g, "").slice(0, 5);
+}
+
+function isValidZipCode(raw) {
+  const d = (raw || "").replace(/\D/g, "");
+  return /^\d{5}$/.test(d);
+}
 
 /* ===== Breadcrumb ===== */
 function Breadcrumb({ items = [] }) {
-    if (!items.length) return null;
-    return (
-        <nav className="pm-breadcrumb" aria-label="Breadcrumb">
-            {items.map((it, idx) => {
-                const isLast = idx === items.length - 1;
-                return (
-                    <span key={idx} className="pm-breadcrumb__item">
+  if (!items.length) return null;
+  return (
+    <nav className="pm-breadcrumb" aria-label="Breadcrumb">
+      {items.map((it, idx) => {
+        const isLast = idx === items.length - 1;
+        return (
+          <span key={idx} className="pm-breadcrumb__item">
             {isLast ? (
-                <span className="current">{it.label}</span>
+              <span className="current">{it.label}</span>
             ) : (
-                <a href={it.href || "#"}>{it.label}</a>
+              <a href={it.href || "#"}>{it.label}</a>
             )}
-                        {!isLast && <span className="divider">›</span>}
+            {!isLast && <span className="divider">›</span>}
           </span>
-                );
-            })}
-        </nav>
-    );
+        );
+      })}
+    </nav>
+  );
 }
 
 /* ===== Address Form ===== */
-function AddressForm({ initial, onCancel, onSave }) {
-    const [name, setName] = useState(initial?.name ?? "");
-    const [phone, setPhone] = useState(initial?.phone ?? "");
-    const [house, setHouse] = useState(initial?.house ?? "");
-    const [street, setStreet] = useState(initial?.street ?? "");
-    const [subdistrict, setSubdistrict] = useState(initial?.subdistrict ?? "");
-    const [district, setDistrict] = useState(initial?.district ?? "");
-    const [province, setProvince] = useState(initial?.province ?? "");
-    const [zipcode, setZipcode] = useState(initial?.zipcode ?? "");
-    const [isDefault, setIsDefault] = useState(initial?.isDefault ?? false);
+function AddressForm({ initial, onCancel, onSave, onError }) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [phone, setPhone] = useState(initial?.phone ?? "");
+  const [house, setHouse] = useState(initial?.house ?? "");
+  const [street, setStreet] = useState(initial?.street ?? "");
+  const [subdistrict, setSubdistrict] = useState(initial?.subdistrict ?? "");
+  const [district, setDistrict] = useState(initial?.district ?? "");
+  const [province, setProvince] = useState(initial?.province ?? "");
+  const [zipcode, setZipcode] = useState(initial?.zipcode ?? "");
+  const [isDefault, setIsDefault] = useState(initial?.isDefault ?? false);
 
-    const handlePhoneInput = (e) => setPhone(formatThaiMobile(e.target.value));
+  const handlePhoneInput = (e) => setPhone(formatThaiMobile(e.target.value));
 
-    const submit = (e) => {
-        e.preventDefault();
-        if (!name || !phone || !house || !subdistrict || !district || !province || !zipcode) {
-            alert("Please fill in all required fields");
-            return;
-        }
-        if (!isValidThaiMobile(phone)) {
-            alert("Please enter a valid Thai mobile number");
-            return;
-        }
-        const text = `${house} ${street ? street + ", " : ""}${subdistrict}, ${district}, ${province} ${zipcode} | Tel: ${phone}`;
-        onSave({
-            id: initial?.id ?? Date.now(),
-            name,
-            phone,
-            house,
-            street,
-            subdistrict,
-            district,
-            province,
-            zipcode,
-            text,
-            isDefault,
-        });
-    };
+  // ฟังก์ชันจัดการ Zip Code
+  const handleZipCodeInput = (e) => setZipcode(formatZipCode(e.target.value)); // จัดรูปแบบ Zip Code
 
-    useEffect(() => {
-        document.getElementById("addr-name")?.focus();
-    }, []);
+  const submit = (e) => {
+    e.preventDefault();
+    if (!name || !phone || !house || !subdistrict || !district || !province || !zipcode) {
+      if (onError) onError("Please fill in all required fields");
+      else alert("Please fill in all required fields");
+      return;
+    }
+    if (!isValidThaiMobile(phone)) {
+      if (onError) onError("Please enter a valid Thai mobile number");
+      else alert("Please enter a valid Thai mobile number");
+      return;
+    }
+    if (!isValidZipCode(zipcode)) {
+      if (onError) onError("Please enter a valid Zip Code (5 digits only)");
+      else alert("Please enter a valid Zip Code (5 digits only)"); // แจ้งเตือนหากรหัสไปรษณีย์ไม่ถูกต้อง
+      return;
+    }
+    const text = `${house} ${street ? street + ", " : ""}${subdistrict}, ${district}, ${province} ${zipcode} | Tel: ${phone}`;
+    onSave({
+      id: initial?.id ?? Date.now(),
+      name,
+      phone,
+      house,
+      street,
+      subdistrict,
+      district,
+      province,
+      zipcode,
+      text,
+      isDefault,
+    });
+  };
 
-    return (
-        <form className="address-form" onSubmit={submit} noValidate>
-            <label>
-                <span className="label-text">Full name</span>
-                <input
-                    id="addr-name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                />
-            </label>
+  useEffect(() => {
+    document.getElementById("addr-name")?.focus();
+  }, []);
 
-            <label>
-                <span className="label-text">Phone number</span>
-                <input
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    placeholder="0xx-xxx-xxxx"
-                    maxLength={12}
-                    value={phone}
-                    onChange={handlePhoneInput}
-                    required
-                />
-            </label>
+  return (
+    <form className="address-form" onSubmit={submit} noValidate>
+      <label>
+        <span className="label-text">Full name</span>
+        <input
+          id="addr-name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+      </label>
 
-            <label>
-                <span className="label-text">House / Building / Village</span>
-                <input
-                    type="text"
-                    value={house}
-                    onChange={(e) => setHouse(e.target.value)}
-                    required
-                />
-            </label>
+      <label>
+        <span className="label-text">Phone number</span>
+        <input
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="0xx-xxx-xxxx"
+          maxLength={12}
+          value={phone}
+          onChange={handlePhoneInput}
+          required
+        />
+      </label>
 
-            <label>
-                <span className="label-text">Street / Soi</span>
-                <input
-                    type="text"
-                    value={street}
-                    onChange={(e) => setStreet(e.target.value)}
-                />
-            </label>
+      <label>
+        <span className="label-text">House / Building / Village</span>
+        <input
+          type="text"
+          value={house}
+          onChange={(e) => setHouse(e.target.value)}
+          required
+        />
+      </label>
 
-            <div className="form-row">
-                <label>
-                    <span className="label-text">Subdistrict</span>
-                    <input
-                        type="text"
-                        value={subdistrict}
-                        onChange={(e) => setSubdistrict(e.target.value)}
-                        required
-                    />
-                </label>
-                <label>
-                    <span className="label-text">District</span>
-                    <input
-                        type="text"
-                        value={district}
-                        onChange={(e) => setDistrict(e.target.value)}
-                        required
-                    />
-                </label>
-            </div>
+      <label>
+        <span className="label-text">Street / Soi</span>
+        <input
+          type="text"
+          value={street}
+          onChange={(e) => setStreet(e.target.value)}
+        />
+      </label>
 
-            <div className="form-row">
-                <label>
-                    <span className="label-text">Province</span>
-                    <select
-                        value={province}
-                        onChange={(e) => setProvince(e.target.value)}
-                        required
-                    >
-                        <option value="">-- Select province --</option>
-                        <option>Bangkok</option>
-                        <option>Chiang Mai</option>
-                        <option>Khon Kaen</option>
-                        <option>Phuket</option>
-                    </select>
-                </label>
-                <label>
-                    <span className="label-text">Zip code</span>
-                    <input
-                        type="text"
-                        value={zipcode}
-                        onChange={(e) => setZipcode(e.target.value)}
-                        required
-                    />
-                </label>
-            </div>
+      <div className="form-row">
+        <label>
+          <span className="label-text">Subdistrict</span>
+          <input
+            type="text"
+            value={subdistrict}
+            onChange={(e) => setSubdistrict(e.target.value)}
+            required
+          />
+        </label>
+        <label>
+          <span className="label-text">District</span>
+          <input
+            type="text"
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            required
+          />
+        </label>
+      </div>
 
-            <label className="inline">
-                <input
-                    type="checkbox"
-                    checked={isDefault}
-                    onChange={(e) => setIsDefault(e.target.checked)}
-                />
-                <span>Save as default address</span>
-            </label>
+      <div className="form-row">
+        <label>
+          <span className="label-text">Province</span>
+          <select
+            value={province}
+            onChange={(e) => setProvince(e.target.value)}
+            required
+          >
+            <option value="">-- Select province --</option>
+            <option>Bangkok</option>
+            <option>Chiang Mai</option>
+            <option>Khon Kaen</option>
+            <option>Phuket</option>
+          </select>
+        </label>
+        <label>
+          <span className="label-text">Zip code</span>
+          <input
+            type="text"
+            value={zipcode}
+            onChange={handleZipCodeInput}  // ใช้ฟังก์ชันจัดรูปแบบ Zip Code
+            required
+            inputMode="numeric"
+            maxLength={5}
+            pattern="\d{5}"
+            placeholder="e.g. 10110"
+          />
+        </label>
+      </div>
 
-            <div className="form-actions">
-                {onCancel && (
-                    <button type="button" className="btn-cancel" onClick={onCancel}>
-                        Back
-                    </button>
-                )}
-                <button type="submit" className="btn-save">Save address</button>
-            </div>
-        </form>
-    );
+      <label className="inline">
+        <input
+          type="checkbox"
+          checked={isDefault}
+          onChange={(e) => setIsDefault(e.target.checked)}
+        />
+        <span>Save as default address</span>
+      </label>
+
+      <div className="form-actions">
+        {onCancel && (
+          <button type="button" className="btn-cancel" onClick={onCancel}>
+            Back
+          </button>
+        )}
+        <button type="submit" className="btn-save">Save address</button>
+      </div>
+    </form>
+  );
 }
 
 /* ===== Address List ===== */
 function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
-    if (!addresses.length) return null;
-    return (
-        <div className="saved-addresses">
-            {addresses.map((addr) => (
-                <label key={addr.id} className="address-option">
-                    <input
-                        type="radio"
-                        name="address"
-                        checked={!!addr.isDefault}
-                        readOnly
-                    />
-                    <div className="address-box" style={{ position: "relative" }}>
-                        {addr.isDefault ? (
-                            <span className="tag default">Default</span>
-                        ) : (
-                            <button
-                                type="button"
-                                className="link set-default-link"
-                                onClick={() => onSetDefault(addr.id)}
-                            >
-                                Set as default
-                            </button>
-                        )}
-                        <p className="addr-name">{addr.name}</p>
-                        <p className="addr-text">{addr.text}</p>
-                        <div className="addr-actions">
-                            <button type="button" className="icon-btn" onClick={() => onEdit(addr)} aria-label="Edit address">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                                     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                    <path d="M12 20h9"/>
-                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-                                </svg>
-                                <span>Edit</span>
-                            </button>
-
-                            <button type="button" className="icon-btn danger" onClick={() => onDelete(addr.id)} aria-label="Delete address">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                                     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                    <polyline points="3 6 5 6 21 6"/>
-                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                                    <path d="M10 11v6M14 11v6"/>
-                                    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
-                                </svg>
-                                <span>Delete</span>
-                            </button>
-                        </div>
-                    </div>
-                </label>
-            ))}
-            <button
+  if (!addresses.length) return null;
+  return (
+    <div className="saved-addresses">
+      {addresses.map((addr) => (
+        <label key={addr.id} className="address-option">
+          <input
+            type="radio"
+            name="address"
+            checked={!!addr.isDefault}
+            readOnly
+          />
+          <div className="address-box" style={{ position: "relative" }}>
+            {addr.isDefault ? (
+              <span className="tag default">Default</span>
+            ) : (
+              <button
                 type="button"
-                className="btn-add-inline"
-                onClick={onAddNew}
-                style={{ marginTop: 12 }}
-            >
-                + Add new address
-            </button>
-        </div>
-    );
+                className="link set-default-link"
+                onClick={() => onSetDefault(addr.id)}
+              >
+                Set as default
+              </button>
+            )}
+            <p className="addr-name">{addr.name}</p>
+            <p className="addr-text">{addr.text}</p>
+            <div className="addr-actions">
+              <button type="button" className="icon-btn" onClick={() => onEdit(addr)} aria-label="Edit address">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                </svg>
+                <span>Edit</span>
+              </button>
+
+              <button type="button" className="icon-btn danger" onClick={() => onDelete(addr.id)} aria-label="Delete address">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  <path d="M10 11v6M14 11v6"/>
+                  <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+                </svg>
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </label>
+      ))}
+      <button
+        type="button"
+        className="btn-add-inline"
+        onClick={onAddNew}
+        style={{ marginTop: 12 }}
+      >
+        + Add new address
+      </button>
+    </div>
+  );
 }
 
 /* ===== Order Summary ===== */
 function OrderSummary({ cart, canConfirm, onConfirm }) {
-    const { subtotal, itemsCount } = useMemo(() => {
-        let subtotal = 0, itemsCount = 0;
-        for (const it of cart) {
-            subtotal += it.price * it.qty;
-            itemsCount += it.qty;
-        }
-        return { subtotal, itemsCount };
-    }, [cart]);
-    const shipping = 0, discount = 0, total = subtotal - discount + shipping;
+  const { subtotal, itemsCount } = useMemo(() => {
+    let subtotal = 0, itemsCount = 0;
+    for (const it of cart) {
+      subtotal += it.price * it.qty;
+      itemsCount += it.qty;
+    }
+    return { subtotal, itemsCount };
+  }, [cart]);
+  const shipping = 0, discount = 0, total = subtotal - discount + shipping;
 
-    return (
-        <aside className="card summary-card">
-            <h2 className="section-title">Your order</h2>
-            <div id="order-list">
-                {cart.map((item) => {
-                    const t = item.price * item.qty;
-                    return (
-                        <div key={item.id} className="order-item">
-                            <img src={item.img} alt="" />
-                            <div className="order-item__body">
-                                <p className="order-item__name">{item.name}</p>
-                                <div className="qty-row">
-                                    <span>Quantity: {item.qty}</span>
-                                </div>
-                            </div>
-                            <div>
-                                <p className="order-item__price">
-                                    {currencyTHB(t)}
-                                    <span className="unit-price">{currencyTHB(item.price)} each</span>
-                                </p>
-                            </div>
-                        </div>
-                    );
-                })}
+  return (
+    <aside className="card summary-card">
+      <h2 className="section-title">Your order</h2>
+      <div id="order-list">
+        {cart.map((item) => {
+          const t = item.price * item.qty;
+          return (
+            <div key={item.id} className="order-item">
+              <img src={item.img} alt="" />
+              <div className="order-item__body">
+                <p className="order-item__name">{item.name}</p>
+                <div className="qty-row">
+                  <span>Quantity: {item.qty}</span>
+                </div>
+              </div>
+              <div>
+                <p className="order-item__price">
+                  {currencyTHB(t)}
+                  <span className="unit-price">{currencyTHB(item.price)} each</span>
+                </p>
+              </div>
             </div>
+          );
+        })}
+      </div>
 
-            <div className="totals">
-                <div className="line">
-                    <span>Item(s) total</span>
-                    <span>{currencyTHB(subtotal)}</span>
-                </div>
-                <div className="line">
-                    <span>Shop-discount</span>
-                    <span>−{currencyTHB(discount)}</span>
-                </div>
-                <div className="line">
-                    <span>Subtotal</span>
-                    <span>{currencyTHB(subtotal)}</span>
-                </div>
-                <div className="line">
-                    <span>Shipping</span>
-                    <span>{currencyTHB(shipping)}</span>
-                </div>
-                <div className="line total">
-                    <span> Total ({itemsCount} item{itemsCount > 1 ? "s" : ""}) </span>
-                    <span className="price">{currencyTHB(total)}</span>
-                </div>
-            </div>
+      <div className="totals">
+        <div className="line">
+          <span>Item(s) total</span>
+          <span>{currencyTHB(subtotal)}</span>
+        </div>
+        <div className="line">
+          <span>Shop-discount</span>
+          <span>−{currencyTHB(discount)}</span>
+        </div>
+        <div className="line">
+          <span>Subtotal</span>
+          <span>{currencyTHB(subtotal)}</span>
+        </div>
+        <div className="line">
+          <span>Shipping</span>
+          <span>{currencyTHB(shipping)}</span>
+        </div>
+        <div className="line total">
+          <span> Total ({itemsCount} item{itemsCount > 1 ? "s" : ""}) </span>
+          <span className="price">{currencyTHB(total)}</span>
+        </div>
+      </div>
 
-            {/* Primary action inside the summary card (desktop-first) */}
-            <div className="summary-actions">
-                <button
-                    className="btn-primary"
-                    disabled={!canConfirm}
-                    onClick={onConfirm}
-                    title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
-                >
-                    ยืนยันคำสั่งซื้อ
-                </button>
-            </div>
-        </aside>
-    );
+      {/* Primary action inside the summary card (desktop-first) */}
+      <div className="summary-actions">
+        <button
+          className="btn-primary"
+          disabled={!canConfirm}  // disable ปุ่มถ้ายังไม่มีที่อยู่
+          onClick={onConfirm}
+          title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
+        >
+          Place Order
+        </button>
+      </div>
+
+    </aside>
+  );
 }
 
 /* ===== Main Page ===== */
 export default function PlaceOrderPage() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        document.body.classList.add("po-page");
-        return () => document.body.classList.remove("po-page");
-    }, []);
+  // Simple in-app toast
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = "error", timeout = 4000) => {
+    setToast({ message, type });
+    if (timeout > 0) setTimeout(() => setToast(null), timeout);
+  };
 
-    const [cart] = useState([
-        { id: '#00001' , name: "ข้าวขาวหอมมะลิใหม่100% 5กก.", price: 165.00, qty: 1, img: "/products/001.jpg" },
-        { id: '#00007', name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3", price: 180.00, qty: 4, img: "/products/007.jpg" },
-        { id: '#00018', name: "มะม่วงน้ำดอกไม้สุก", price: 120.00, qty: 2, img: "/products/018.jpg" },
-        { id: '#00011' , name: "ซีพี ชิคแชค เนื้อไก่ปรุงรสทอดกรอบแช่แข็ง 800 กรัม", price: 179.00, qty: 2, img: "/products/011.jpg" },
-        { id: '#00004', name: "โกกิแป้งทอดกรอบ 500ก.", price: 45.00, qty: 2, img: "/products/004.jpg" },
-    ]);
-    const [addresses, setAddresses] = useState([]);
-    const [mode, setMode] = useState("list");
-    const [editing, setEditing] = useState(null);
+  useEffect(() => {
+    document.body.classList.add("po-page");
+    return () => document.body.classList.remove("po-page");
+  }, []);
 
-    const breadcrumbItems = [
-        { label: "Home", href: "/home" },
-        { label: "Cart", href: "/cart" },
-        { label: "Checkout" },
-    ];
+  const [cart] = useState([
+    { id: '#00001' , name: "ข้าวขาวหอมมะลิใหม่100% 5กก.", price: 165.00, qty: 1, img: "/assets/products/001.jpg" },
+    { id: '#00007', name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3", price: 180.00, qty: 4, img: "/assets/products/007.jpg" },
+    { id: '#00018', name: "มะม่วงน้ำดอกไม้สุก", price: 120.00, qty: 2, img: "/assets/products/018.jpg" },
+    { id: '#00011' , name: "ซีพี ชิคแชค เนื้อไก่ปรุงรสทอดกรอบแช่แข็ง 800 กรัม", price: 179.00, qty: 2, img: "/assets/products/011.jpg" },
+    { id: '#00004', name: "โกกิแป้งทอดกรอบ 500ก.", price: 45.00, qty: 2, img: "/assets/products/004.jpg" },
+  ]);
+  const [addresses, setAddresses] = useState([]);
+  const [mode, setMode] = useState("list");
+  const [editing, setEditing] = useState(null);
+
+  const breadcrumbItems = [
+    { label: "Home", href: "/home" },
+    { label: "Cart", href: "/cart" },
+    { label: "Checkout" },
+  ];
 
     const handleSetDefault = (id) =>
         setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
@@ -424,109 +460,108 @@ export default function PlaceOrderPage() {
         }, 0);
     };
 
-    useEffect(() => {
-        if (addresses.length === 0) setMode("add");
-        else if (mode === "add" && addresses.length > 0) setMode("list");
-        // eslint-disable-next-line
-    }, [addresses.length]);
+  useEffect(() => {
+    if (addresses.length === 0) setMode("add");
+    else if (mode === "add" && addresses.length > 0) setMode("list");
+    // eslint-disable-next-line
+  }, [addresses.length]);
 
-    const canConfirm = addresses.some(a => a.isDefault);
+  // ยังเก็บไว้ใช้โชว์ tooltip ได้
+  const canConfirm = addresses.some(a => a.isDefault);
 
-    const handleConfirm = () => {
-        // Re-check at click time (avoid stale closure) and log for debugging
-        const allowed = addresses.some(a => a.isDefault);
-        console.log('PlaceOrder: handleConfirm called', { canConfirmProp: canConfirm, allowed, addresses });
-        if (!allowed) {
-            // keep user-friendly feedback
-            alert('Please add/select a shipping address first');
-            return;
-        }
-        try {
-            navigate('/tracking');
-        } catch (err) {
-            console.error('Navigate failed, falling back to window.location', err);
-            window.location.href = '/tracking';
-        }
-        // Ensure navigation happens even if navigate() didn't change location due to some race.
-        // This is a pragmatic, test-friendly fallback to guarantee the tracking page is reached.
-        try {
-            if (typeof window !== 'undefined' && window.location.pathname !== '/tracking') {
-                // small timeout to let SPA navigation attempt succeed first
-                setTimeout(() => {
-                    if (window.location.pathname !== '/tracking') {
-                        console.log('PlaceOrder: forcing navigation to /tracking via window.location');
-                        window.location.href = '/tracking';
-                    }
-                }, 100);
-            }
-        } catch (e) {
-            /* ignore */
-        }
-    };
+  // ✅ แก้: ไม่บล็อกด้วย canConfirm แล้ว และทำ fallback address ให้เอง
+  const handleConfirm = () => {
+  const orderId = Date.now(); // mock id
+  const selectedAddress =
+    addresses.find(a => a.isDefault) || addresses[0] || null;  // เลือกที่อยู่แรกถ้าไม่ได้เลือกที่อยู่เป็น default
 
-    return (
-        <div className="place-order-page">
-            <Header />
+  if (!selectedAddress) {
+    showToast("กรุณาเพิ่มที่อยู่ก่อนทำการสั่งซื้อ", "error");
+    return;
+  }
 
-            <main className="container">
-                <Breadcrumb items={breadcrumbItems} />
-                <h1 className="title">Checkout Page</h1>
+  const orderPayload = { orderId, address: selectedAddress, cart };
+  try {
+    sessionStorage.setItem("pm_last_order", JSON.stringify(orderPayload));
+  } catch {}
 
-                <div className="checkout-grid">
-                    <section className="card form-card">
-                        <h2 className="section-title">Shipping Address</h2>
+  navigate(`/tracking-user/${orderId}`, { state: orderPayload });
+};
 
-                        {mode === "list" && (
-                            <AddressList
-                                addresses={addresses}
-                                onSetDefault={handleSetDefault}
-                                onAddNew={handleAddNew}
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
-                            />
-                        )}
-
-                        {mode === "add" && (
-                            <AddressForm
-                                initial={null}
-                                onCancel={() => (addresses.length ? setMode("list") : null)}
-                                onSave={handleSave}
-                            />
-                        )}
-
-                        {mode === "edit" && editing && (
-                            <AddressForm
-                                initial={editing}
-                                onCancel={() => {
-                                    setEditing(null);
-                                    setMode("list");
-                                }}
-                                onSave={handleSave}
-                            />
-                        )}
-                    </section>
-
-                    <OrderSummary
-                        cart={cart}
-                        canConfirm={canConfirm}
-                        onConfirm={handleConfirm}
-                    />
-                </div>
-            </main>
-
-            <Footer />
-
-            {/* Sticky bottom action (mobile-first) */}
-            <div className="sticky-checkout-bar">
-                <button
-                    className="btn-primary"
-                    disabled={!canConfirm}
-                    onClick={handleConfirm}
-                    title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
-                >
-                    ยืนยันคำสั่งซื้อ
-                </button>
-            </div>
+  return (
+    <div className="place-order-page">
+      <Header />
+      {/* Toast UI */}
+      {toast && (
+        <div className={`pm-toast pm-toast--${toast.type}`} role="status" aria-live="polite">
+          <div className="pm-toast__body">
+            <span>{toast.message}</span>
+            <button className="pm-toast__close" onClick={() => setToast(null)} aria-label="Close">×</button>
+          </div>
         </div>
-    );
+      )}
+
+      <main className="container">
+        <Breadcrumb items={breadcrumbItems} />
+        <h1 className="title">Checkout Page</h1>
+
+        <div className="checkout-grid">
+          <section className="card form-card">
+            <h2 className="section-title">Shipping Address</h2>
+
+            {mode === "list" && (
+              <AddressList
+                addresses={addresses}
+                onSetDefault={handleSetDefault}
+                onAddNew={handleAddNew}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            )}
+
+            {mode === "add" && (
+              <AddressForm
+                initial={null}
+                onCancel={() => (addresses.length ? setMode("list") : null)}
+                onSave={handleSave}
+                onError={showToast}
+              />
+            )}
+
+            {mode === "edit" && editing && (
+              <AddressForm
+                initial={editing}
+                onCancel={() => {
+                  setEditing(null);
+                  setMode("list");
+                }}
+                onSave={handleSave}
+                onError={showToast}
+              />
+            )}
+          </section>
+
+          <OrderSummary
+            cart={cart}
+            canConfirm={canConfirm}
+            onConfirm={handleConfirm}
+          />
+        </div>
+      </main>
+
+      <Footer />
+
+      {/* Sticky bottom action (mobile-first) */}
+      <div className="sticky-checkout-bar">
+        <button
+          className="btn-primary"
+          disabled={false} // เดโม: เปิดปุ่มเสมอ
+          onClick={handleConfirm}
+          title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
+        >
+          Place Order
+        </button>
+      </div>
+    </div>
+  );
 }

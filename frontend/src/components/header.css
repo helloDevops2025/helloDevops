@@ -151,9 +151,16 @@ html{ overflow-y:scroll; }
   .pm-icon__label{ display:none; }
 }
 
-@media (max-width:640px){
-  .pm-search{ height:40px; }
+/* When header collapses (mobile), increase top padding so main content doesn't overlap
+   the fixed header + topbar. This nudges body down a bit on smaller screens. */
+@media (max-width:1100px) {
+  /* increased extra space to avoid content overlap when header stacks */
+  body.has-header{
+    padding-top: calc(var(--pm-topbar-h) + var(--pm-header-h) + 28px);
+  }
 }
+
+
 
 /* ===== Breadcrumb ===== */
 .breadcrumb{

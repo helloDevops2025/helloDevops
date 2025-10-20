@@ -40,11 +40,11 @@ function Breadcrumb({ items = [] }) {
 export default function CartPage() {
     const defaultCart = useMemo(
         () => [
-            { id: '#00001' , name: "ข้าวขาวหอมมะลิใหม่100% 5กก.", price: 165.00, qty: 1, img: "/products/001.jpg" },
-            { id: '#00007', name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3", price: 180.00, qty: 4, img: "/products/007.jpg" },
-            { id: '#00018', name: "มะม่วงน้ำดอกไม้สุก", price: 120.00, qty: 2, img: "/products/018.jpg" },
-            { id: '#00011' , name: "ซีพี ชิคแชค เนื้อไก่ปรุงรสทอดกรอบแช่แข็ง 800 กรัม", price: 179.00, qty: 2, img: "/products/011.jpg" },
-            { id: '#00004', name: "โกกิแป้งทอดกรอบ 500ก.", price: 45.00, qty: 2, img: "/products/004.jpg" },
+            { id: '#00001' , name: "ข้าวขาวหอมมะลิใหม่100% 5กก.", price: 165.00, qty: 1, img: "/assets/products/001.jpg" },  
+            { id: '#00007', name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3", price: 180.00, qty: 4, img: "/assets/products/007.jpg" },
+            { id: '#00018', name: "มะม่วงน้ำดอกไม้สุก", price: 120.00, qty: 2, img: "/assets/products/018.jpg" },
+            { id: '#00011' , name: "ซีพี ชิคแชค เนื้อไก่ปรุงรสทอดกรอบแช่แข็ง 800 กรัม", price: 179.00, qty: 2, img: "/assets/products/011.jpg" },
+            { id: '#00004', name: "โกกิแป้งทอดกรอบ 500ก.", price: 45.00, qty: 2, img: "/assets/products/004.jpg" },
         ],
         []
     );

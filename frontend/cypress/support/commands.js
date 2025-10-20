@@ -48,15 +48,6 @@ Cypress.Commands.add('loginAsAdmin', () => {
       w.localStorage.setItem('pm_auth', authPayload);
       w.localStorage.setItem('puremart_auth', authPayload);
       w.localStorage.setItem('isAuthed', 'true');
-      // Also set sessionStorage so overwritten visit seeding won't force USER role
-      try {
-        w.sessionStorage.setItem('token', 'e2e-admin-token');
-        w.sessionStorage.setItem('role', 'ADMIN');
-        w.sessionStorage.setItem('user', JSON.stringify({ email: 'admin@puremart.com' }));
-        w.sessionStorage.setItem('email', 'admin@puremart.com');
-      } catch (e) {
-        // ignore if sessionStorage unavailable
-      }
     });
   });
 });
@@ -123,27 +114,10 @@ Cypress.Commands.overwrite('visit', (originalFn, url, options = {}) => {
 
   const seedAuth = (win) => {
     try {
-      // If the app already has a localStorage auth payload indicating ADMIN,
-      // preserve admin sessionStorage to avoid being redirected away from admin routes.
-      const authKeys = ['auth', 'pm_auth', 'puremart_auth'];
-      let parsed = null;
-      for (const k of authKeys) {
-        const v = win.localStorage.getItem(k);
-        if (v) {
-          try { parsed = JSON.parse(v); break; } catch (e) { /* ignore */ }
-        }
-      }
-      if (parsed && parsed.user && parsed.user.role === 'ADMIN') {
-        win.sessionStorage.setItem('token', 'e2e-admin-token');
-        win.sessionStorage.setItem('role', 'ADMIN');
-        win.sessionStorage.setItem('user', JSON.stringify({ email: parsed.email || 'admin@puremart.com' }));
-        win.sessionStorage.setItem('email', parsed.email || 'admin@puremart.com');
-      } else {
-        win.sessionStorage.setItem('token', 'e2e-dummy-token');
-        win.sessionStorage.setItem('role', 'USER');
-        win.sessionStorage.setItem('user', JSON.stringify({ email: 'e2e@test.local' }));
-        win.sessionStorage.setItem('email', 'e2e@test.local');
-      }
+      win.sessionStorage.setItem('token', 'e2e-dummy-token');
+      win.sessionStorage.setItem('role', 'USER');
+      win.sessionStorage.setItem('user', JSON.stringify({ email: 'e2e@test.local' }));
+      win.sessionStorage.setItem('email', 'e2e@test.local');
     } catch (e) {
       // ignore if sessionStorage is unavailable
     }
