@@ -1,6 +1,4 @@
 /// <reference types="cypress" />
-const API = 'http://127.0.0.1:8080';
-
 function data() {
   const cats = [{id:1,name:'Fruits & Vegetables'},{id:2,name:'Sauce'}];
   const brands = [{id:10,name:'Pure Farm'},{id:11,name:'MK'}];
@@ -15,9 +13,17 @@ function data() {
 describe('Shop Page', () => {
   beforeEach(() => {
     const {cats,brands,rows} = data();
-    cy.intercept('GET', `${API}/api/products`, rows).as('getP');
-    cy.intercept('GET', `${API}/api/categories`, cats).as('getC');
-    cy.intercept('GET', `${API}/api/brands`, brands).as('getB');
+    // Ensure tests run with an authenticated session if the app checks sessionStorage
+    cy.window().then((win) => {
+      win.sessionStorage.setItem('token', 'e2e-dummy-token');
+      win.sessionStorage.setItem('role', 'USER');
+      win.sessionStorage.setItem('user', JSON.stringify({ email: 'e2e@test.local' }));
+      win.sessionStorage.setItem('email', 'e2e@test.local');
+    });
+    // Use host-agnostic intercepts so tests don't depend on backend host/port
+    cy.intercept('GET', '**/api/products', { body: rows }).as('getP');
+    cy.intercept('GET', '**/api/categories', { body: cats }).as('getC');
+    cy.intercept('GET', '**/api/brands', { body: brands }).as('getB');
   });
 
   it('โหลดสำเร็จ: HERO, result-count, cards', () => {
@@ -37,15 +43,38 @@ describe('Shop Page', () => {
     cy.get('.chips .chip').should('have.length', 1);
 
     // กำหนดราคา min=20 max=30 → เหลือ Tomato เท่านั้น
-    cy.contains('.filters .filter-block h3', 'Price').parents('.filter-block').within(() => {
-      cy.get('input[placeholder="min"]').clear().type('20');
-      cy.get('input[placeholder="max"]').clear().type('30');
+  cy.contains('.filters .filter-block h3', 'Price').parents('.filter-block').within(() => {
+      // defensive: topbar may overlay inputs (pm-topbar). Hide it using window.document
+      // Use cy.window() because we're inside a `.within()` scope — cy.get('body') would be scoped and fail.
+      cy.window().then((win) => {
+        const topbar = win.document.querySelector('.pm-topbar');
+        if (topbar) topbar.style.display = 'none';
+      });
+      cy.get('input[placeholder="min"]').then($el => {
+        if ($el.is(':visible')) {
+          cy.wrap($el).clear().type('20');
+        } else {
+          cy.wrap($el).clear().type('20', { force: true });
+        }
+      });
+      cy.get('input[placeholder="max"]').then($el => {
+        if ($el.is(':visible')) {
+          cy.wrap($el).clear().type('30');
+        } else {
+          cy.wrap($el).clear().type('30', { force: true });
+        }
+      });
       cy.contains('button','Apply').click();
+    });
+    // restore topbar visibility for remaining page interactions
+    cy.window().then((win) => {
+      const topbar = win.document.querySelector('.pm-topbar');
+      if (topbar) topbar.style.display = '';
     });
     cy.get('.grid article.card').should('have.length', 1).and('contain.text', 'Tomato');
 
-    // ลบ chip ราคา
-    cy.get('.chips .chip').contains('฿20–30').parent().find('button').click();
+  // ลบ chip ราคา — ensure we click a single button (avoid multiple match error)
+  cy.contains('.chips .chip', '฿20–30').parent().find('button').first().click();
     cy.get('.grid article.card').should('have.length.at.least', 1);
   });
 

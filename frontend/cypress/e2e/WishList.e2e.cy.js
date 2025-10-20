@@ -1,6 +1,4 @@
 /// <reference types="cypress" />
-const API = 'http://127.0.0.1:8080';
-
 describe('WishList Page', () => {
   const rows = [
     {id:1,name:'Tomato',price:25,coverImageUrl:'/p1.jpg'},
@@ -9,8 +7,15 @@ describe('WishList Page', () => {
   ];
 
   beforeEach(() => {
-    cy.window().then(win => win.localStorage.setItem('pm_wishlist', JSON.stringify([2,1,3])));
-    cy.intercept('GET', `${API}/api/products`, rows).as('getP');
+    // seed wishlist and session to simulate logged-in user
+    cy.window().then((win) => {
+      win.localStorage.setItem('pm_wishlist', JSON.stringify([2,1,3]));
+      win.sessionStorage.setItem('token', 'e2e-dummy-token');
+      win.sessionStorage.setItem('role', 'USER');
+      win.sessionStorage.setItem('user', JSON.stringify({ email: 'e2e@test.local' }));
+      win.sessionStorage.setItem('email', 'e2e@test.local');
+    });
+    cy.intercept('GET', '**/api/products', { body: rows }).as('getP');
   });
 
   it('โหลดรายการ wishlist จาก LS และนับจำนวนถูกต้อง', () => {

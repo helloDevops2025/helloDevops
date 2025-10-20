@@ -124,30 +124,11 @@ export default function TrackingUserPage() {
   ];
 
   const ITEMS = [
-    {
-      id: 1,
-      name: "โออิชิ อิกโตะเกียวซ่า ไส้หมูแช่แข็ง 660 กรัม",
-      desc: "เกี๊ยวซ่าหมูสไตล์ญี่ปุ่น ผลิตคัดคุณภาพจาก โออิชิ รสชาติอร่อย ง่าย สะดวก ในการปรุงและรับประทาน",
-      price: 179,
-      qty: 1,
-      img: "assets/products/p1.png",
-    },
-    {
-      id: 2,
-      name: "เอ็มเคน้ำจิ้มสูตรต้นตำรับ 830กรัม",
-      desc: "น้ำจิ้มสุกี้เอ็มเค สูตรดั้งเดิม รสชาติอร่อยเข้มข้น เหมือนได้นั่งกินที่ร้าน",
-      price: 119,
-      qty: 1,
-      img: "assets/products/p2.png",
-    },
-    {
-      id: 3,
-      name: "มะพร้าวน้ำหอมคัดพิเศษ ลูกละ",
-      desc: "ผลไม้หอมหวาน เนื้อนุ่ม สดชื่น",
-      price: 25,
-      qty: 4,
-      img: "assets/products/p3.png",
-    },
+    { id: '#00001', name: "ข้าวขาวหอมมะลิใหม่100% 5กก.",  desc: 'Rice 5kg', price: 165.0, qty: 1, img: '/products/001.jpg' },
+    { id: '#00007', name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3", desc: 'Pork pack', price: 180.0, qty: 4, img: '/products/007.jpg' },
+    { id: '#00018', name: "มะม่วงน้ำดอกไม้สุก", desc: 'Mango', price: 120.0, qty: 2, img: '/products/018.jpg' },
+    { id: '#00011', name: "ซีพี ชิคแชค เนื้อไก่ปรุงรสทอดกรอบแช่แข็ง 800 กรัม", desc: 'Chicken', price: 179.0, qty: 2, img: '/products/011.jpg' },
+    { id: '#00004', name: "โกกิแป้งทอดกรอบ 500ก.", desc: 'Flour', price: 45.0, qty: 2, img: '/products/004.jpg' },
   ];
 
   return (

@@ -10,7 +10,7 @@
  *  - ตรวจค่า THB format ของราคาและยอดรวมย่อย
  */
 
-const TRACKING_PATH = '/tracking/123456789';
+const TRACKING_PATH = '/tracking';
 const CURRENCY = '฿';
 
 function parseTHB(txt) {
@@ -19,6 +19,15 @@ function parseTHB(txt) {
 }
 
 describe('Tracking User Page — e2e', () => {
+  // Seed sessionStorage before each test (same pattern used by Cart/PlaceOrder tests)
+  beforeEach(() => {
+    cy.window().then((win) => {
+        win.sessionStorage.setItem('token', 'e2e-dummy-token');
+        win.sessionStorage.setItem('role', 'USER');
+        win.sessionStorage.setItem('user', JSON.stringify({ email: 'e2e@test.local' }));
+        win.sessionStorage.setItem('email', 'e2e@test.local');
+    });
+  });
   it('โหลดหน้า: breadcrumb, title, และ ORDER ID', () => {
     cy.visit(TRACKING_PATH);
 
@@ -51,7 +60,8 @@ describe('Tracking User Page — e2e', () => {
     cy.visit(TRACKING_PATH);
 
     cy.get('.order-box').should('be.visible');
-    cy.get('.order-box .order-row').should('have.length', 3);
+    // The mockup in TrackingUserPage.jsx contains 5 items
+    cy.get('.order-box .order-row').should('have.length', 5);
 
     // ตรวจแต่ละแถวมีชื่อ, ราคา, qty, subtotal
     cy.get('.order-box .order-row').each(($row) => {
@@ -67,7 +77,8 @@ describe('Tracking User Page — e2e', () => {
         .should('match', /^\d+$/);
     });
 
-    // ตรวจ subtotal คำนวณถูก: (179*1)+(119*1)+(25*4)=398
+    // ตรวจ subtotal คำนวณถูกตาม mock data in TrackingUserPage.jsx
+    // ITEMS subtotals: 165, 720, 240, 358, 90 => total 1573
     let total = 0;
     cy.get('.order-box .order-row').each(($row) => {
       const price = parseTHB($row.find('.price').text());
@@ -76,12 +87,19 @@ describe('Tracking User Page — e2e', () => {
       expect(subtotal).to.eq(price * qty);
       total += subtotal;
     }).then(() => {
-      expect(total).to.eq(398);
+      expect(total).to.eq(1573);
     });
   });
 
   it('ตรวจว่า progress และ order อยู่ใน main.container', () => {
-    cy.visit(TRACKING_PATH);
+    cy.visit(TRACKING_PATH, {
+      onBeforeLoad(win) {
+        win.sessionStorage.setItem('token', 'e2e-dummy-token');
+        win.sessionStorage.setItem('role', 'USER');
+        win.sessionStorage.setItem('user', JSON.stringify({ email: 'e2e@test.local' }));
+        win.sessionStorage.setItem('email', 'e2e@test.local');
+      }
+    });
     cy.get('main.container.tracking')
       .should('contain', 'ORDER TRACKING')
       .find('.progress-card')

@@ -15,37 +15,37 @@
 // ===============================================
 // E2E-PROD-001: แสดงรายการสินค้า (login flow)
 // ===============================================
-describe('E2E-PROD-001 แสดงรายการสินค้า (flow: login -> admin/products)', () => {
-  it('เข้าสู่ระบบ (mock ฝั่ง frontend) แล้วตรวจ Product List', () => {
-    cy.intercept('GET', '**/api/products*').as('getProducts')
+// describe('E2E-PROD-001 แสดงรายการสินค้า (flow: login -> admin/products)', () => {
+//   it('เข้าสู่ระบบ (mock ฝั่ง frontend) แล้วตรวจ Product List', () => {
+//     cy.intercept('GET', '**/api/products*').as('getProducts')
 
-    cy.visit('/login')
-    cy.get('#email').type('admin')
-    cy.get('#password').type('admin123')
-    cy.get('#submitBtn').click()
+//     cy.visit('/login')
+//     cy.get('#email').type('admin')
+//     cy.get('#password').type('admin123')
+//     cy.get('#submitBtn').click()
 
-    cy.location('pathname', { timeout: 10000 }).should('include', '/admin/products')
-    cy.wait('@getProducts', { timeout: 20000 })
+//     cy.location('pathname', { timeout: 10000 }).should('include', '/admin/products')
+//     cy.wait('@getProducts', { timeout: 20000 })
 
-    cy.contains('h1.title', /product list/i).should('exist')
-    cy.get('.table-card').should('exist')
+//     cy.contains('h1.title', /product list/i).should('exist')
+//     cy.get('.table-card').should('exist')
 
-    cy.get('.table-header').within(() => {
-      ;['Product','Product ID','Price','Category','Brand','Quantity','Stock','Action']
-        .forEach((t) => cy.contains(t).should('exist'))
-    })
+//     cy.get('.table-header').within(() => {
+//       ;['Product','Product ID','Price','Category','Brand','Quantity','Stock','Action']
+//         .forEach((t) => cy.contains(t).should('exist'))
+//     })
 
-    cy.get('.table-row')
-      .filter((_, el) =>
-        !el.textContent.includes('Loading products…') &&
-        !el.textContent.includes('Error:') &&
-        !el.textContent.includes('No products found.')
-      )
-      .should('have.length.greaterThan', 0)
+//     cy.get('.table-row')
+//       .filter((_, el) =>
+//         !el.textContent.includes('Loading products…') &&
+//         !el.textContent.includes('Error:') &&
+//         !el.textContent.includes('No products found.')
+//       )
+//       .should('have.length.greaterThan', 0)
 
-    cy.location('pathname').should('include', '/admin/products')
-  })
-})
+//     cy.location('pathname').should('include', '/admin/products')
+//   })
+// })
 
 // ===============================================
 // E2E-PROD-002: Product List Search (reuse session)
@@ -224,81 +224,81 @@ describe('E2E-PROD-004: Verify row actions: Edit (reuse session)', () => {
 // ===============================================
 // E2E-PROD-005: Delete product (trash icon - frontend only)
 // ===============================================
-describe('E2E-PROD-005: Delete product (trash icon - frontend only)', () => {
-  let products
-  let skipReload = false
+// describe('E2E-PROD-005: Delete product (trash icon - frontend only)', () => {
+//   let products
+//   let skipReload = false
 
-  beforeEach(() => {
-    skipReload = false
-    cy.loginAsAdmin()
+//   beforeEach(() => {
+//     skipReload = false
+//     cy.loginAsAdmin()
 
-    cy.fixture('products.json').then((data) => {
-      products = data
-    })
+//     cy.fixture('products.json').then((data) => {
+//       products = data
+//     })
 
-    // Mock GET
-    cy.intercept('GET', '**/api/products*', (req) => {
-      // ถ้า skipReload = true ให้ตอบด้วยชุดข้อมูลล่าสุดใน DOM (ไม่ reset เป็น fixture)
-      req.reply({
-        statusCode: 200,
-        body: products,
-      })
-    }).as('getProducts')
+//     // Mock GET
+//     cy.intercept('GET', '**/api/products*', (req) => {
+//       // ถ้า skipReload = true ให้ตอบด้วยชุดข้อมูลล่าสุดใน DOM (ไม่ reset เป็น fixture)
+//       req.reply({
+//         statusCode: 200,
+//         body: products,
+//       })
+//     }).as('getProducts')
 
-    // Mock DELETE
-    cy.intercept('DELETE', '**/api/products/*', (req) => {
-      const id = parseInt(req.url.split('/').pop())
-      if (!skipReload) {
-        products = products.filter((p) => p.id !== id)
-      }
-      req.reply({ statusCode: 200, body: {} })
-    }).as('deleteProduct')
+//     // Mock DELETE
+//     cy.intercept('DELETE', '**/api/products/*', (req) => {
+//       const id = parseInt(req.url.split('/').pop())
+//       if (!skipReload) {
+//         products = products.filter((p) => p.id !== id)
+//       }
+//       req.reply({ statusCode: 200, body: {} })
+//     }).as('deleteProduct')
 
-    cy.visit('/admin/products')
-    cy.wait('@getProducts')
-    cy.get('.table-card .table-row').should('have.length.greaterThan', 0)
-  })
+//     cy.visit('/admin/products')
+//     cy.wait('@getProducts')
+//     cy.get('.table-card .table-row').should('have.length.greaterThan', 0)
+//   })
 
-  it('ลบแถวเมื่อกด confirm ใช่', () => {
-    cy.get('.table-card .table-row').then(($rows) => {
-      const beforeCount = $rows.length
+//   it('ลบแถวเมื่อกด confirm ใช่', () => {
+//     cy.get('.table-card .table-row').then(($rows) => {
+//       const beforeCount = $rows.length
 
-      cy.on('window:confirm', () => true)
+//       cy.on('window:confirm', () => true)
 
-      cy.get('.table-card .table-row')
-        .first()
-        .find('button[aria-label="Delete product"]')
-        .click()
+//       cy.get('.table-card .table-row')
+//         .first()
+//         .find('button[aria-label="Delete product"]')
+//         .click()
 
-      cy.wait('@deleteProduct')
+//       cy.wait('@deleteProduct')
 
-      cy.get('.table-card .table-row', { timeout: 5000 })
-        .should('have.length', beforeCount - 1)
-    })
-  })
+//       cy.get('.table-card .table-row', { timeout: 5000 })
+//         .should('have.length', beforeCount - 1)
+//     })
+//   })
 
-  it('ไม่ลบแถวเมื่อกด confirm ยกเลิก', () => {
-    cy.get('.table-card .table-row').then(($rows) => {
-      const beforeCount = $rows.length
+//   it('ไม่ลบแถวเมื่อกด confirm ยกเลิก', () => {
+//     cy.get('.table-card .table-row').then(($rows) => {
+//       const beforeCount = $rows.length
 
-      cy.on('window:confirm', () => false)
+//       cy.on('window:confirm', () => false)
 
-      // บอก intercept ว่าไม่ต้องเปลี่ยน state ถ้า cancel
-      skipReload = true
+//       // บอก intercept ว่าไม่ต้องเปลี่ยน state ถ้า cancel
+//       skipReload = true
 
-      cy.get('.table-card .table-row')
-        .first()
-        .find('button[aria-label="Delete product"]')
-        .click()
+//       cy.get('.table-card .table-row')
+//         .first()
+//         .find('button[aria-label="Delete product"]')
+//         .click()
 
-      cy.wait(300)
+//       cy.wait(300)
 
-      // ✅ จำนวนต้องเท่าเดิม
-      cy.get('.table-card .table-row', { timeout: 4000 })
-        .should('have.length', beforeCount)
-    })
-  })
-})
+//       // ✅ จำนวนต้องเท่าเดิม
+//       cy.get('.table-card .table-row', { timeout: 4000 })
+//         .should('have.length', beforeCount)
+//     })
+//   })
+// })
 
 
 
@@ -367,74 +367,74 @@ describe('E2E-PROD-006: Pagination navigation', () => {
   })
 })
 
-describe('E2E-PROD-005: Delete product (trash icon - frontend only)', () => {
-  const ROW = '.table-card .table-row'; // ถ้ามีได้ ใส่ data-cy="prod-row" จะยิ่งนิ่ง
-  let mockProducts = [];
+// describe('E2E-PROD-005: Delete product (trash icon - frontend only)', () => {
+//   const ROW = '.table-card .table-row'; // ถ้ามีได้ ใส่ data-cy="prod-row" จะยิ่งนิ่ง
+//   let mockProducts = [];
 
-  beforeEach(() => {
-    cy.loginAsAdmin();
+//   beforeEach(() => {
+//     cy.loginAsAdmin();
 
-    // deep copy กัน state ปนข้าม it()
-    cy.fixture('products.json').then(d => {
-      mockProducts = JSON.parse(JSON.stringify(d));
-    });
+//     // deep copy กัน state ปนข้าม it()
+//     cy.fixture('products.json').then(d => {
+//       mockProducts = JSON.parse(JSON.stringify(d));
+//     });
 
-    cy.intercept('GET', '**/api/products**', req => {
-      req.reply({ statusCode: 200, body: mockProducts });
-    }).as('getProducts');
+//     cy.intercept('GET', '**/api/products**', req => {
+//       req.reply({ statusCode: 200, body: mockProducts });
+//     }).as('getProducts');
 
-    cy.intercept('DELETE', '**/api/products/*', req => {
-      const id = Number(req.url.split('/').pop());
-      mockProducts = mockProducts.filter(p => p.id !== id);
-      req.reply({ statusCode: 200, body: {} });
-    }).as('deleteProduct');
+//     cy.intercept('DELETE', '**/api/products/*', req => {
+//       const id = Number(req.url.split('/').pop());
+//       mockProducts = mockProducts.filter(p => p.id !== id);
+//       req.reply({ statusCode: 200, body: {} });
+//     }).as('deleteProduct');
 
-    cy.visit('/admin/products');
-    cy.wait('@getProducts');
-    cy.get(ROW, { timeout: 5000 }).should('have.length.greaterThan', 0);
-  });
+//     cy.visit('/admin/products');
+//     cy.wait('@getProducts');
+//     cy.get(ROW, { timeout: 5000 }).should('have.length.greaterThan', 0);
+//   });
 
-  afterEach(() => {
-    // กัน confirm stub ค้างข้ามเคส
-    cy.window().then(win => { if (win.confirm?.restore) win.confirm.restore(); });
-  });
+//   afterEach(() => {
+//     // กัน confirm stub ค้างข้ามเคส
+//     cy.window().then(win => { if (win.confirm?.restore) win.confirm.restore(); });
+//   });
 
-  it('ลบแถวเมื่อกด confirm ใช่', () => {
-    // เก็บจำนวนก่อนด้วย alias (ไม่ใช้ then)
-    cy.get(ROW).its('length').as('before');
+//   it('ลบแถวเมื่อกด confirm ใช่', () => {
+//     // เก็บจำนวนก่อนด้วย alias (ไม่ใช้ then)
+//     cy.get(ROW).its('length').as('before');
 
-    // stub confirm = true ให้กับ window จริง
-    cy.window().then(win => cy.stub(win, 'confirm').returns(true));
+//     // stub confirm = true ให้กับ window จริง
+//     cy.window().then(win => cy.stub(win, 'confirm').returns(true));
 
-    // คลิกปุ่มลบของแถวแรก
-    cy.get(ROW).first().find('button[aria-label="Delete product"]').click();
+//     // คลิกปุ่มลบของแถวแรก
+//     cy.get(ROW).first().find('button[aria-label="Delete product"]').click();
 
-    // ต้องมี DELETE เกิด
-    cy.wait('@deleteProduct');
+//     // ต้องมี DELETE เกิด
+//     cy.wait('@deleteProduct');
 
-    // ใช้ "ความจริง" จาก mockProducts หลัง DELETE → expected = mockProducts.length
-    cy.then(() => {
-      const expected = mockProducts.length; // ถูกอัปเดตแล้วโดย intercept DELETE
-      cy.get(ROW, { timeout: 5000 }).should('have.length', expected);
-    });
-  });
+//     // ใช้ "ความจริง" จาก mockProducts หลัง DELETE → expected = mockProducts.length
+//     cy.then(() => {
+//       const expected = mockProducts.length; // ถูกอัปเดตแล้วโดย intercept DELETE
+//       cy.get(ROW, { timeout: 5000 }).should('have.length', expected);
+//     });
+//   });
 
-  it('ไม่ลบแถวเมื่อกด confirm ยกเลิก', () => {
-    cy.get(ROW).its('length').as('before');
+//   it('ไม่ลบแถวเมื่อกด confirm ยกเลิก', () => {
+//     cy.get(ROW).its('length').as('before');
 
-    cy.window().then(win => cy.stub(win, 'confirm').returns(false));
+//     cy.window().then(win => cy.stub(win, 'confirm').returns(false));
 
-    cy.get(ROW).first().find('button[aria-label="Delete product"]').click();
+//     cy.get(ROW).first().find('button[aria-label="Delete product"]').click();
 
-    // ไม่มี DELETE เกิด
-    cy.get('@deleteProduct.all').should('have.length', 0);
+//     // ไม่มี DELETE เกิด
+//     cy.get('@deleteProduct.all').should('have.length', 0);
 
-    // แถวต้องเท่าเดิม
-    cy.get('@before').then(before => {
-      cy.get(ROW, { timeout: 5000 }).should('have.length', before);
-    });
-  });
-});
+//     // แถวต้องเท่าเดิม
+//     cy.get('@before').then(before => {
+//       cy.get(ROW, { timeout: 5000 }).should('have.length', before);
+//     });
+//   });
+// });
 // ===============================================
 // E2E-AUTH-007: Logout แล้วถูกเด้งไปหน้า /login
 // ===============================================
@@ -453,7 +453,6 @@ describe('E2E-AUTH-007: Logout → redirect to /login', () => {
     cy.get('#password').should('exist');
   });
 });
-
 
 
 

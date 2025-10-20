@@ -55,6 +55,8 @@ export default function App() {
             <Route path="/tracking" element={<TrackingUserPage />} />
             <Route path="/wishlist" element={<WishListPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            {/* Alias route used by tests and some links */}
+            <Route path="/orders" element={<HistoryPage />} />
             {/* 🆕 รถเข็นจากฟลุ๊ค */}
             <Route path="/cart" element={<CartPage />} />
           </Route>
