@@ -118,6 +118,7 @@ export default function ShopPage() {
 
           return {
             id: x.id ?? x.productId ?? x.product_id,
+            productCode: pick(x, "productCode", "productId", "product_id", "id"),
             name: clean(x.name),
             price: Number(x.price) || 0,
             catId,
@@ -209,17 +210,101 @@ export default function ShopPage() {
   };
 
   /* ===== กรองข้อมูลจริงแบบ normalize ===== */
+  // Levenshtein distance for tolerant (fuzzy) matching
+  const levenshtein = (a = "", b = "") => {
+    const m = a.length;
+    const n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    const v0 = new Array(n + 1).fill(0).map((_, i) => i);
+    const v1 = new Array(n + 1).fill(0);
+    for (let i = 0; i < m; i++) {
+      v1[0] = i + 1;
+      for (let j = 0; j < n; j++) {
+        const cost = a[i] === b[j] ? 0 : 1;
+        v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+      }
+      for (let k = 0; k <= n; k++) v0[k] = v1[k];
+    }
+    return v1[n];
+  };
+
+  const fuzzyMatch = (q = "", text = "") => {
+    if (!q) return false;
+    const A = String(q).toLowerCase();
+    const B = String(text).toLowerCase();
+    if (B.includes(A)) return true;
+    // compare against tokens in text to allow matching short words within long product names
+    const tokens = B.split(/\s+/).filter(Boolean);
+    const qLen = A.length;
+    // choose threshold: short queries allow 1 typo, longer allow ~30% of length
+    const maxDist = qLen <= 4 ? 1 : Math.max(1, Math.floor(qLen * 0.3));
+    for (const t of tokens) {
+      const dist = levenshtein(A, t.slice(0, Math.max(A.length + 2, t.length)));
+      if (dist <= maxDist) return true;
+    }
+    // also check full text as fallback
+    const distFull = levenshtein(A, B.slice(0, Math.max(A.length + 2, B.length)));
+    return distFull <= maxDist;
+  };
+
   const filtered = useMemo(() => {
     const f = filters;
     const catSet   = new Set([...f.cat].map(norm));
     const brandSet = new Set([...f.brand].map(norm));
     const promoSet = new Set([...f.promo].map(norm));
 
+    // normalize helper (strip diacritics for friendly matching)
+    const normalize = (s = "") =>
+      String(s ?? "")
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/\p{Diacritic}/gu, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const searchQ = (searchParams.get("search") || "").trim();
+    const searchScope = (searchParams.get("scope") || "").toLowerCase();
+    const hasSearch = !!searchQ;
+
     return PRODUCTS.filter((p) => {
       const pCat   = norm(p.cat);
       const pBrand = norm(p.brand);
       const pPromo = norm(p.promo);
 
+      // Header-driven search (if present)
+      if (hasSearch) {
+        const q = normalize(searchQ).replace(/^#/, "");
+        if (searchScope === "productid" || searchScope === "product_id") {
+          if (!String(p.productCode || p.id || "").toLowerCase().includes(q)) return false;
+        } else if (searchScope === "category") {
+          if (!normalize(p.cat || "").includes(q)) return false;
+        } else if (searchScope === "stock") {
+          const sq = q.replace(/\s+/g, "");
+          if (/(in|instock|available)/.test(sq)) {
+            if (!(p.stock && Number(p.stock) > 0)) return false;
+          } else if (/(out|outofstock|soldout)/.test(sq)) {
+            if (p.stock && Number(p.stock) > 0) return false;
+          } else {
+            return false;
+          }
+        } else {
+          const name = normalize(p.name || "");
+          const code = String(p.productCode || "").toLowerCase();
+          const terms = q.split(" ").filter(Boolean);
+          const ok = terms.every((t) => {
+            // direct include
+            if (name.includes(t) || code.includes(t)) return true;
+            // fuzzy match against name tokens or product code
+            if (fuzzyMatch(t, name)) return true;
+            if (code && fuzzyMatch(t, code)) return true;
+            return false;
+          });
+          if (!ok) return false;
+        }
+      }
+
+      // existing filters
       if (catSet.size   && !catSet.has(pCat))     return false;
       if (brandSet.size && !brandSet.has(pBrand)) return false;
       if (promoSet.size && !promoSet.has(pPromo)) return false;
@@ -228,7 +313,7 @@ export default function ShopPage() {
       if (f.priceMax != null && Number(p.price) > Number(f.priceMax)) return false;
       return true;
     });
-  }, [filters, PRODUCTS]);
+  }, [filters, PRODUCTS, searchParams]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
