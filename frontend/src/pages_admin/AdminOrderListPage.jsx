@@ -7,153 +7,121 @@ export default function AdminOrderListPage() {
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
 
-    // ✅ mock data (แทนการ fetch)
-    const mockOrders = [
-        {
-            id: 1,
-            productId: "ORD001",
-            name: "รสดีชิคเก้น ปรุงรสไก่ชุบทอด 90 กรัม",
-            price: 391.0,
-            category: 3,
-            brand: "Preparing",
-            quantity: 3,
-        },
-        {
-            id: 2,
-            productId: "ORD002",
-            name: "คุกกี้เนยอบกรอบ 1 กล่อง",
-            price: 480.0,
-            category: 2,
-            brand: "Shipping",
-            quantity: 2,
-        },
-        {
-            id: 3,
-            productId: "ORD003",
-            name: "ปลากระป๋อง 3 กระป๋อง",
-            price: 90.0,
-            category: 1,
-            brand: "Delivered",
-            quantity: 1,
-        },
-        {
-            id: 4,
-            productId: "ORD004",
-            name: "ข้าวหอมมะลิใหม่ 100% 5 กก.",
-            price: 330.0,
-            category: 1,
-            brand: "Preparing",
-            quantity: 2,
-        },
-        {
-            id: 5,
-            productId: "ORD005",
-            name: "น้ำปลาแท้ตราปลาหมึก 700 มล.",
-            price: 62.0,
-            category: 1,
-            brand: "Delivered",
-            quantity: 2,
-        },
-        {
-            id: 6,
-            productId: "ORD006",
-            name: "แป้งทอดกรอบตราว่าว 500 กรัม",
-            price: 45.0,
-            category: 3,
-            brand: "Cancelled",
-            quantity: 1,
-        },
-        {
-            id: 7,
-            productId: "ORD007",
-            name: "บะหมี่กึ่งสำเร็จรูป รสต้มยำกุ้ง 10 ซอง",
-            price: 120.0,
-            category: 2,
-            brand: "Ready to Ship",
-            quantity: 1,
-        },
-        {
-            id: 8,
-            productId: "ORD008",
-            name: "ขนมปังแผ่นโฮลวีต 1 แพ็ค",
-            price: 65.0,
-            category: 2,
-            brand: "Pending",
-            quantity: 4,
-        },
-        {
-            id: 9,
-            productId: "ORD009",
-            name: "นม UHT รสจืด 6 กล่อง",
-            price: 180.0,
-            category: 1,
-            brand: "Shipping",
-            quantity: 2,
-        },
-        {
-            id: 10,
-            productId: "ORD010",
-            name: "ผงกาแฟสำเร็จรูป 3-in-1 20 ซอง",
-            price: 199.0,
-            category: 3,
-            brand: "Preparing",
-            quantity: 1,
-        }
-    ];
+    // ✅ ดึงข้อมูล order ทั้งหมดจาก backend
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const res = await fetch("http://localhost:8080/api/orders");
+                if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
+                const data = await res.json();
+                setItems(data);
+            } catch (error) {
+                setErr(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchOrders();
+    }, []);
+    // ---------- pagination ----------
 
     useEffect(() => {
-        // 模拟 fetch delay
-        setTimeout(() => {
-            setItems(mockOrders);
-            setLoading(false);
-        }, 500);
-    }, []);
+        function initTablePager({
+                                    container = ".table-card",
+                                    rowsPerPage = 10,
+                                    windowSize = 3,
+                                } = {}) {
+            const root = document.querySelector(container);
+            if (!root) return;
+
+            const rows = Array.from(root.querySelectorAll(".table-row"));
+            const hint = root.querySelector(".hint");
+            const prev = root.querySelector("#prevBtn");
+            const next = root.querySelector("#nextBtn");
+            const nums = root.querySelector("#pagerNumbers");
+            if (!hint || !prev || !next || !nums) return;
+
+            const totalItems = rows.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+            let currentPage = 1;
+
+            const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+            const pageRange = (page) => {
+                const start = (page - 1) * rowsPerPage;
+                const end = Math.min(start + rowsPerPage, totalItems);
+                return { start, end };
+            };
+            const windowRange = (page) => {
+                const lastStart = Math.max(1, totalPages - windowSize + 1);
+                const start = clamp(page, 1, lastStart);
+                const end = Math.min(totalPages, start + windowSize - 1);
+                return { start, end };
+            };
+
+            function renderRows(page) {
+                const { start, end } = pageRange(page);
+                rows.forEach((row, i) => {
+                    row.style.display = i >= start && i < end ? "grid" : "none";
+                });
+            }
+            function renderHint(page) {
+                const { start, end } = pageRange(page);
+                const a = totalItems ? start + 1 : 0;
+                const b = totalItems ? end : 0;
+                hint.textContent = `Showing ${a}–${b} of ${totalItems} entries`;
+            }
+            function renderPager(page) {
+                nums.innerHTML = "";
+                const { start, end } = windowRange(page);
+                for (let p = start; p <= end; p++) {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "pill" + (p === page ? " active" : "");
+                    btn.textContent = String(p);
+                    btn.setAttribute("aria-current", p === page ? "page" : "false");
+                    btn.addEventListener("click", () => goTo(p));
+                    nums.appendChild(btn);
+                }
+                prev.disabled = page === 1;
+                next.disabled = page === totalPages;
+            }
+            function goTo(page) {
+                currentPage = clamp(page, 1, totalPages);
+                renderRows(currentPage);
+                renderHint(currentPage);
+                renderPager(currentPage);
+            }
+
+            prev.addEventListener("click", () => goTo(currentPage - 1));
+            next.addEventListener("click", () => goTo(currentPage + 1));
+            goTo(1);
+        }
+
+        initTablePager({ container: ".table-card", rowsPerPage: 10, windowSize: 3 });
+    }, [items]);
+
 
     // ---------- helpers ----------
-    const showProductId = (val) => {
-        const s = (val ?? "").toString();
-        if (s.startsWith("#")) return s;
-        const padded = String(s).replace(/\D/g, "");
-        return "#" + padded.padStart(5, "0");
+    const showOrderCode = (code) => {
+        if (!code) return "-";
+        return code.startsWith("#") ? code : `#${code}`;
     };
-    const getKey = (p) => p.id ?? p.productId;
-
-    // ✅ เปลี่ยนเฉพาะ path ให้ไปหน้า detail
+    const getKey = (p) => p.id ?? p.orderCode;
     const getEditPath = (p) => `/admin/orders/${encodeURIComponent(p.id)}`;
-
-    const toInt = (v) => {
-        const n = parseInt(String(v ?? "").replace(/[^\d-]/g, ""), 10);
-        return Number.isFinite(n) ? n : 0;
-    };
-    const isInStock = (p) => toInt(p.quantity) > 0;
-    const stockLabelOf = (p) => (isInStock(p) ? "In Stock" : "Out of stock");
-    const stockStyleOf = (p) =>
-        isInStock(p)
-            ? {
-                display: "inline-block",
-                padding: "4px 10px",
-                borderRadius: "999px",
-                fontSize: 12,
-                lineHeight: 1,
-                border: "1px solid #a7f3d0",
-                background: "#ecfdf5",
-                color: "#065f46",
-            }
-            : {
-                display: "inline-block",
-                padding: "4px 10px",
-                borderRadius: "999px",
-                fontSize: 12,
-                lineHeight: 1,
-                border: "1px solid #fecaca",
-                background: "#fef2f2",
-                color: "#7f1d1d",
-            };
 
     // ---------- DELETE ----------
     async function handleDelete(p) {
-        alert(`(Mock) Delete order id=${p.id}`);
-        setItems((prev) => prev.filter((x) => x.id !== p.id));
+        if (!window.confirm(`ต้องการลบคำสั่งซื้อ #${p.orderCode} ใช่ไหม?`)) return;
+        try {
+            const res = await fetch(`http://localhost:8080/api/orders/${p.id}`, {
+                method: "DELETE",
+            });
+            if (!res.ok) throw new Error("ลบคำสั่งซื้อไม่สำเร็จ");
+            setItems((prev) => prev.filter((x) => x.id !== p.id));
+            alert("✅ ลบคำสั่งซื้อสำเร็จแล้ว");
+        } catch (error) {
+            alert("❌ " + error.message);
+        }
     }
 
     return (
@@ -166,32 +134,24 @@ export default function AdminOrderListPage() {
                         <div className="action-bar">
                             <div className="search">
                                 <i className="fa-solid fa-magnifying-glass" />
-                                <select defaultValue="name" aria-label="Search by">
-                                    <option value="name">Product</option>
-                                    <option value="productId">Order ID</option>
-                                    <option value="category">Status</option>
-                                    {/*<option value="stock">Stock</option>*/}
+                                <select defaultValue="orderCode" aria-label="Search by">
+                                    <option value="orderCode">Order Code</option>
+                                    <option value="customerName">Customer</option>
+                                    <option value="orderStatus">Status</option>
                                 </select>
-                                <input type="text" placeholder="ค้นหาชื่อสินค้า…" />
+                                <input type="text" placeholder="ค้นหาคำสั่งซื้อ…" />
                             </div>
-                            <Link to="/admin/products/new" className="btn-add">
-                <span className="box">
-                  <i className="fa-solid fa-plus" />
-                </span>
-                                ADD NEW
-                            </Link>
                         </div>
                     </div>
 
                     <div className="table-card">
                         <div className="table-header">
-                            <div>Product Name</div>
-                            <div>Order ID</div>
-                            <div>Price</div>
-                            <div>Quantity</div>
+                            <div>Order Code</div>
+                            <div>Customer Name</div>
+                            <div>Phone</div>
+                            <div>Shipping Address</div>
+                            <div>Total</div>
                             <div>Status</div>
-                            {/*<div>Tracking</div>*/}
-                            <div></div>
                             <div>Action</div>
                         </div>
 
@@ -200,11 +160,13 @@ export default function AdminOrderListPage() {
                                 <div style={{ gridColumn: "1 / -1" }}>Loading orders…</div>
                             </div>
                         )}
+
                         {!loading && err && (
                             <div className="table-row" style={{ display: "grid", color: "#c00" }}>
                                 <div style={{ gridColumn: "1 / -1" }}>Error: {err}</div>
                             </div>
                         )}
+
                         {!loading && !err && items.length === 0 && (
                             <div className="table-row" style={{ display: "grid" }}>
                                 <div style={{ gridColumn: "1 / -1" }}>No orders found.</div>
@@ -218,39 +180,29 @@ export default function AdminOrderListPage() {
                                 <div
                                     className="table-row"
                                     key={getKey(p)}
-                                    data-product-id={p.productId}
-                                    data-name={p.name}
-                                    data-category={p.category}
-                                    data-brand={p.brand}
-                                    data-quantity={p.quantity}
+                                    data-order-code={p.orderCode}
+                                    data-name={p.customerName}
+                                    data-status={p.orderStatus}
                                 >
-                                    <div className="prod">
-                    <span className="cube">
-                      <i className="fa-solid fa-cube" />
-                    </span>{" "}
-                                        {p.name}
-                                    </div>
-                                    <div>{showProductId(p.productId)}</div>
-                                    <div>{Number(p.price ?? 0).toFixed(2)}</div>
-                                    <div>{p.quantity}</div>
-                                    <div>{p.brand ?? "-"}</div>
-                                    {/*<div>{p.quantity ?? 0}</div>*/}
-                                    <div></div>
-                                    {/*<div>*/}
-                                    {/*    <span style={stockStyleOf(p)}>{stockLabelOf(p)}</span>*/}
-                                    {/*</div>*/}
+                                    <div>{showOrderCode(p.orderCode)}</div>
+                                    <div>{p.customerName ?? "-"}</div>
+                                    <div>{p.customerPhone ?? "-"}</div>
+                                    <div>{p.shippingAddress ?? "-"}</div>
+                                    <div>{Number(p.totalAmount ?? 0).toFixed(2)}</div>
+                                    <div>{p.orderStatus ?? "-"}</div>
+
                                     <div className="act">
                                         {/* ✅ ปุ่ม Edit ไปหน้า Detail */}
                                         <Link
                                             to={getEditPath(p)}
-                                            aria-label="Edit product"
+                                            aria-label="Edit order"
                                             title="Edit"
                                         >
                                             <i className="fa-solid fa-pen" />
                                         </Link>
                                         <button
                                             type="button"
-                                            aria-label="Delete product"
+                                            aria-label="Delete order"
                                             title="Delete"
                                             onClick={() => handleDelete(p)}
                                             style={{
