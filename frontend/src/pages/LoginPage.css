@@ -128,15 +128,7 @@ label {
 }
 
 
-.toggle-eye {
-  position: absolute;
-  right: 110px; /* ชิดขวา 12px จากขอบ */
-  top: 55%;    /* จัดให้ตรงกลางแนวตั้ง */
-  transform: translateY(-50%); /* จัดตำแหน่งตรงกลาง */
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
+/* removed earlier misplaced .toggle-eye rule to avoid duplicate/conflict */
 
 
 
@@ -274,3 +266,42 @@ label {
     font-family: 'Inter', sans-serif;
 }
 
+/* ===== ปุ่มแสดง/ซ่อนรหัสผ่าน ===== */
+.toggle-eye {
+  position: absolute;
+  top: 50%;
+  /* place the icon inside the visible input area without changing the input frame
+     input has width:85% and margin-left:9px; place eye near the right edge of that input */
+  left: calc(9px + 85% - 48px);
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  z-index: 5; /* ensure it's above the input */
+}
+
+/* ===== SVG ไอคอนตา ===== */
+.toggle-eye svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: block;
+  object-fit: contain;
+  transform-origin: center center;   /* ตรึงจุดหมุนไว้ตรงกลาง */
+  transition: transform 0.25s ease;
+}
+
+/* เวลา hover ให้ลูกตาเด้งเล็กน้อยแต่ไม่หลุด */
+.toggle-eye:hover svg {
+  transform: scale(1.1);
+}
+
+/* ป้องกันไม่ให้ SVG หลุดกรอบเวลา zoom ออก */
+.toggle-eye {
+  overflow: hidden;             /* กันหลุดขอบ */
+}
