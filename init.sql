@@ -250,6 +250,27 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE user_addresses (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    phone_number VARCHAR(20) NOT NULL,
+    address TEXT NOT NULL,
+    street VARCHAR(255),
+    subdistrict VARCHAR(100),
+    district VARCHAR(100),
+    province VARCHAR(100),
+    zipcode VARCHAR(10),
+    status ENUM('DEFAULT', 'NON_DEFAULT') DEFAULT 'NON_DEFAULT',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_userid
+    FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
 
 -- ===========================
 -- 4) Orders (ตารางคำสั่งซื้อ)
