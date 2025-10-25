@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../lib/api";             // ✅ ใช้ axios instance เดิม
 import "./SignUpPage.css";
+import "./toast.css";
 
 export default function SignUpPage() {
   const [pwdVisible, setPwdVisible] = useState(false);
@@ -17,7 +18,33 @@ export default function SignUpPage() {
 
   const navigate = useNavigate();
 
+  // Toast state for in-page notifications
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = "success", timeout = 3000) => {
+    setToast({ message, type });
+    if (timeout > 0) setTimeout(() => setToast(null), timeout);
+  };
+
   const normalizePhone = (s) => s.replace(/[^\d]/g, "");
+
+  // Format Thai mobile numbers for display (accepts raw input)
+  function formatThaiMobile(raw) {
+    let d = (raw || "").replace(/\D/g, "");
+    if (d.startsWith("66")) d = "0" + d.slice(2);
+    if (d.length > 10) d = d.slice(0, 10);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return d.slice(0, 3) + "-" + d.slice(3);
+    return d.slice(0, 3) + "-" + d.slice(3, 6) + "-" + d.slice(6);
+  }
+
+  function isValidThaiMobile(raw) {
+    const digits = (raw || "").replace(/\D/g, "");
+    if (digits.startsWith("66")) {
+      const n = "0" + digits.slice(2);
+      return /^0[689]\d{8}$/.test(n);
+    }
+    return /^0[689]\d{8}$/.test(digits);
+  }
 
   // 🆕 จากฟลุ๊ค: ใส่คลาสลง body เฉพาะหน้านี้ เพื่อซ่อน header/topbar และตัด padding-top
   useEffect(() => {
@@ -45,12 +72,13 @@ export default function SignUpPage() {
       return;
     }
 
-    // (ออปชัน) ทำเบอร์ให้เหลือแต่ตัวเลข
-    const phoneDigits = normalizePhone(phone);
-    if (phoneDigits.length < 9) {
-      setErr("Please enter a valid phone number.");
+    // (ออปชัน) ตรวจฟอร์แมตเบอร์ไทย
+    if (!isValidThaiMobile(phone)) {
+      setErr("Please enter a valid Thai mobile number (e.g. 0xx-xxx-xxxx)");
       return;
     }
+    // เบื้องต้น payload จะส่งเป็นตัวเลขเท่านั้น
+    const phoneDigits = normalizePhone(phone);
 
     try {
       setSubmitting(true);
@@ -65,9 +93,9 @@ export default function SignUpPage() {
         setPhone("");
         setPassword("");
         setConfirm("");
-
-        alert("Sign up successful! Please log in.");
-        navigate("/login", { replace: true });
+        // show toast instead of alert, then navigate after short delay
+        showToast("Sign up successful! Please log in.", "success");
+        setTimeout(() => navigate("/login", { replace: true }), 1200);
         return;
       }
 
@@ -108,6 +136,15 @@ export default function SignUpPage() {
 
   return (
     <main className="shell reverse">
+      {/* Toast UI */}
+      {toast && (
+        <div className={`pm-toast pm-toast--${toast.type}`} role="status" aria-live="polite">
+          <div className="pm-toast__body">
+            <span>{toast.message}</span>
+            <button className="pm-toast__close" onClick={() => setToast(null)} aria-label="Close">×</button>
+          </div>
+        </div>
+      )}
       {/* ซ้าย: ภาพ/พื้นม่วง */}
 
       <aside className="art-side" aria-label="Pure Mart artwork">
@@ -164,12 +201,13 @@ export default function SignUpPage() {
             id="phone"
             type="tel"
             className="input"
-            placeholder="Phone number"
+            placeholder="0xx-xxx-xxxx"
             inputMode="tel"
             autoComplete="tel"
             required
+            maxLength={12}
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(formatThaiMobile(e.target.value))}
           />
 
           <label htmlFor="password">Password</label>

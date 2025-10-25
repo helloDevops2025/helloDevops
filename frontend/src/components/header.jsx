@@ -7,6 +7,8 @@ const Header = () => {
   const [accOpen, setAccOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [searchQ, setSearchQ] = useState("");
+  const [searchScope, setSearchScope] = useState("name");
   const wrapRef = useRef(null);
   const navigate = useNavigate();
 
@@ -120,13 +122,40 @@ const Header = () => {
             <a href="/home#categories">Categories</a>
           </nav>
 
-          {/* Search (ของเดิม) */}
-          <form className="pm-search" role="search" aria-label="Site search">
+          {/* Search (scoped) */}
+          <form
+            className="pm-search"
+            role="search"
+            aria-label="Site search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const params = new URLSearchParams();
+              if (searchQ) params.set("search", searchQ);
+              if (searchScope) params.set("scope", searchScope);
+              navigate(`/shop?${params.toString()}`);
+            }}
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="search" placeholder="Search....." />
+            <select
+              aria-label="Search by"
+              className="pm-search-scope"
+              value={searchScope}
+              onChange={(e) => setSearchScope(e.target.value)}
+            >
+              <option value="name">Product</option>
+              <option value="productId">Product ID</option>
+              <option value="category">Category</option>
+              <option value="stock">Stock</option>
+            </select>
+            <input
+              type="search"
+              placeholder="Search..."
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+            />
           </form>
 
           {/* Right icons (ของเดิม + แค่เพิ่ม logic account) */}

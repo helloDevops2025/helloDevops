@@ -342,5 +342,19 @@ label span { font-size: 14px; }
   z-index: 50;
 }
 @media (max-width: 960px){
-  .sticky-checkout-bar{ display:block; }
+  /* On small screens use fixed so the bar always sits above content and is clickable
+     (sticky can fail inside some layout/scroll containers). Also add safe padding
+     to the page so content isn't covered by the fixed bar). */
+  .sticky-checkout-bar{
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display:block;
+    z-index: 9999;
+    background: rgba(255,255,255,0.98);
+    box-shadow: 0 -6px 18px rgba(0,0,0,0.06);
+  }
+  /* Ensure page content isn't hidden behind the fixed bar on small screens */
+  .place-order-page{ padding-bottom: 88px; }
 }

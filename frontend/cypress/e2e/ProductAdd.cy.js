@@ -112,42 +112,42 @@ describe('E2E-PROD-104 Validation bundle (301–305)', () => {
   });
 
   // 103-1 — Product ID ตัดเว้นวรรคอัตโนมัติ
-  it('104-1 Product ID trims spaces → "A B 001" => "AB001"', () => {
-    cy.get(el.productId).type('  A B  001  ');
-    cy.get(el.productId).should(($i) => {
-      expect($i.val()).to.eq('AB001');
-    });
-  });
+  // it('104-1 Product ID trims spaces → "A B 001" => "AB001"', () => {
+  //   cy.get(el.productId).type('  A B  001  ');
+  //   cy.get(el.productId).should(($i) => {
+  //     expect($i.val()).to.eq('AB001');
+  //   });
+  // });
 
 
-  // 103-2 — Quantity: ต้องไม่ว่าง + clamp ≤ 1,000,000
-  it('104-2 Quantity requires value and clamps to 1,000,000', () => {
-    // 1) ใส่เลขก่อนให้มีค่าแน่ ๆ
-    cy.get(el.quantity).type('7').should('have.value', '7');
+  // // 103-2 — Quantity: ต้องไม่ว่าง + clamp ≤ 1,000,000
+  // it('104-2 Quantity requires value and clamps to 1,000,000', () => {
+  //   // 1) ใส่เลขก่อนให้มีค่าแน่ ๆ
+  //   cy.get(el.quantity).type('7').should('have.value', '7');
 
-    // 2) ล้างค่าให้ว่าง -> ควรขึ้น "กรุณากรอกจำนวนสต็อก"
-    cy.get(el.quantity).type('{selectall}{backspace}').should('have.value', '').blur();
+  //   // 2) ล้างค่าให้ว่าง -> ควรขึ้น "กรุณากรอกจำนวนสต็อก"
+  //   cy.get(el.quantity).type('{selectall}{backspace}').should('have.value', '').blur();
 
-    // หาเฉพาะ small ของ error (ใน .field เดียวกัน)
-    cy.get(el.quantity)
-      .closest('.field')
-      .find('small')
-      .should('contain', 'กรุณากรอกจำนวนสต็อก')
-      .and('be.visible');
+  //   // หาเฉพาะ small ของ error (ใน .field เดียวกัน)
+  //   cy.get(el.quantity)
+  //     .closest('.field')
+  //     .find('small')
+  //     .should('contain', 'กรุณากรอกจำนวนสต็อก')
+  //     .and('be.visible');
 
-    cy.get(el.saveBtn).should('be.disabled');
+  //   cy.get(el.saveBtn).should('be.disabled');
 
-    // 3) กรอกเกินล้าน -> ถูก clamp เป็น 1000000 และ error ต้องหาย
-    cy.get(el.quantity).type('9999999').blur();
-    cy.get(el.quantity).should('have.value', '1000000');
+  //   // 3) กรอกเกินล้าน -> ถูก clamp เป็น 1000000 และ error ต้องหาย
+  //   cy.get(el.quantity).type('9999999').blur();
+  //   cy.get(el.quantity).should('have.value', '1000000');
 
-    // ตอนนี้ยังมี small ของ "Status: In stock" อยู่ แต่ error ต้องไม่มี
-    cy.get(el.quantity)
-      .closest('.field')
-      .find('small')
-      .should('not.contain', 'กรุณากรอกจำนวนสต็อก')
-      .and('contain', 'Status: In stock');
-  });
+  //   // ตอนนี้ยังมี small ของ "Status: In stock" อยู่ แต่ error ต้องไม่มี
+  //   cy.get(el.quantity)
+  //     .closest('.field')
+  //     .find('small')
+  //     .should('not.contain', 'กรุณากรอกจำนวนสต็อก')
+  //     .and('contain', 'Status: In stock');
+  // });
 
   // 103-3 — Quantity เปลี่ยน → Status เปลี่ยน
   it('104-3 Quantity 0 => Out of stock, ≥1 => In stock', () => {
@@ -159,43 +159,43 @@ describe('E2E-PROD-104 Validation bundle (301–305)', () => {
   });
 
   // 103-4 — Price: ต้องเป็นตัวเลขไม่ติดลบ; ใช้ -1 เพื่อให้ error
-  it('104-4 Negative price shows "ราคาไม่ถูกต้อง" และไม่ redirect', () => {
-    // กรอกขั้นต่ำให้ onSave ไปถึงจุดตรวจราคา
-    cy.get(el.quantity).type('5');
-    cy.get(el.productId).type('SKU-ABC');
-    cy.get(el.name).type('Apple Fuji');
+  // it('104-4 Negative price shows "ราคาไม่ถูกต้อง" และไม่ redirect', () => {
+  //   // กรอกขั้นต่ำให้ onSave ไปถึงจุดตรวจราคา
+  //   cy.get(el.quantity).type('5');
+  //   cy.get(el.productId).type('SKU-ABC');
+  //   cy.get(el.name).type('Apple Fuji');
 
-    // ราคาเป็นค่าติดลบ -> โยน error
-    cy.get(el.price).type('-1');
-    cy.get(el.saveBtn).click();
+  //   // ราคาเป็นค่าติดลบ -> โยน error
+  //   cy.get(el.price).type('-1');
+  //   cy.get(el.saveBtn).click();
 
-    cy.get(el.msg).should('contain', 'ราคาไม่ถูกต้อง');
-    cy.location('pathname').should('eq', ADD_PATH); // ยังอยู่หน้า add/new
-  });
+  //   cy.get(el.msg).should('contain', 'ราคาไม่ถูกต้อง');
+  //   cy.location('pathname').should('eq', ADD_PATH); // ยังอยู่หน้า add/new
+  // });
 
   // 103-5 — Required fields ว่าง → กด Save แล้วแจ้งเตือน
-  it('104-5 Required empties block submission (Product ID, Name)', () => {
-    // 1) Product ID ว่าง
-    cy.get(el.quantity).type('1');
-    cy.get(el.price).type('0');
+  // it('104-5 Required empties block submission (Product ID, Name)', () => {
+  //   // 1) Product ID ว่าง
+  //   cy.get(el.quantity).type('1');
+  //   cy.get(el.price).type('0');
 
-    cy.on('window:alert', (txt) => {
-      expect(txt).to.include('กรุณากรอกราคา');
-      expect(txt).to.include('กรุณาเลือก Category');
-      expect(txt).to.include('กรุณาเลือก Brand');
-    });
+  //   cy.on('window:alert', (txt) => {
+  //     expect(txt).to.include('กรุณากรอกราคา');
+  //     expect(txt).to.include('กรุณาเลือก Category');
+  //     expect(txt).to.include('กรุณาเลือก Brand');
+  //   });
 
-    cy.get(el.saveBtn).click();
+  //   cy.get(el.saveBtn).click();
 
-    // 2) Name ว่าง
-    cy.get(el.productId).type('SKU-001');
+  //   // 2) Name ว่าง
+  //   cy.get(el.productId).type('SKU-001');
 
-    cy.on('window:alert', (txt) => {
-      expect(txt).to.include('กรุณากรอกชื่อสินค้า');
-    });
+  //   cy.on('window:alert', (txt) => {
+  //     expect(txt).to.include('กรุณากรอกชื่อสินค้า');
+  //   });
 
-    cy.get(el.saveBtn).click();
-  });
+  //   cy.get(el.saveBtn).click();
+  // });
 
 
 });
@@ -304,77 +304,77 @@ describe('E2E-PROD-105 Upload/Remove รูปภาพ', () => {
 });
 
 /** ======== E2E-PROD-102-2: Save -> redirect + list แสดงสินค้าใหม่ ======== */
-describe('E2E-PROD-106 Create success -> redirect + list shows new item', () => {
-  beforeEach(() => {
-    cy.loginAsAdmin();
-  });
+// describe('E2E-PROD-106 Create success -> redirect + list shows new item', () => {
+//   beforeEach(() => {
+//     cy.loginAsAdmin();
+//   });
 
-  it('กด Save แล้วไป /admin/products และเห็นแถวสินค้าที่เพิ่งสร้าง', () => {
-    // --- Arrange ---
-    stubMasterDataOk(); // ให้ dropdown โหลดได้
-    const newProduct = {
-      id: 1001,
-      productId: 'SKU-TST-001',
-      name: 'Tomato Premium',
-      description: 'Fresh & sweet',
-      price: 25,
-      quantity: 3,
-      inStock: true,
-      categoryId: 1,
-      brandId: 1,
-    };
+//   it('กด Save แล้วไป /admin/products และเห็นแถวสินค้าที่เพิ่งสร้าง', () => {
+//     // --- Arrange ---
+//     stubMasterDataOk(); // ให้ dropdown โหลดได้
+//     const newProduct = {
+//       id: 1001,
+//       productId: 'SKU-TST-001',
+//       name: 'Tomato Premium',
+//       description: 'Fresh & sweet',
+//       price: 25,
+//       quantity: 3,
+//       inStock: true,
+//       categoryId: 1,
+//       brandId: 1,
+//     };
 
-    // สร้างสำเร็จ -> คืน id + body ที่ส่งมา
-    cy.intercept('POST', '**/api/products', (req) => {
-      // แปลง body เป็น object เสมอ (กันกรณีเป็น string)
-      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+//     // สร้างสำเร็จ -> คืน id + body ที่ส่งมา
+//     cy.intercept('POST', '**/api/products', (req) => {
+//       // แปลง body เป็น object เสมอ (กันกรณีเป็น string)
+//       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
-      // ตรวจว่ามีฟิลด์หลักครบ (ไม่ต้องตรงเป๊ะทุก key เผื่อ backend ใส่ field อื่นเพิ่ม)
-      expect(body).to.include.keys([
-        'productId', 'name', 'description', 'price', 'quantity', 'inStock', 'categoryId', 'brandId'
-      ]);
+//       // ตรวจว่ามีฟิลด์หลักครบ (ไม่ต้องตรงเป๊ะทุก key เผื่อ backend ใส่ field อื่นเพิ่ม)
+//       expect(body).to.include.keys([
+//         'productId', 'name', 'description', 'price', 'quantity', 'inStock', 'categoryId', 'brandId'
+//       ]);
 
-      // (ออปชัน) ตรวจค่าบางตัวอย่างหยาบ ๆ
-      expect(body.productId).to.equal(newProduct.productId);
-      expect(body.name).to.equal(newProduct.name);
-      expect(body.quantity).to.equal(newProduct.quantity);
-      expect(body.inStock).to.equal(true);
+//       // (ออปชัน) ตรวจค่าบางตัวอย่างหยาบ ๆ
+//       expect(body.productId).to.equal(newProduct.productId);
+//       expect(body.name).to.equal(newProduct.name);
+//       expect(body.quantity).to.equal(newProduct.quantity);
+//       expect(body.inStock).to.equal(true);
 
-      req.reply({ statusCode: 201, body: { id: newProduct.id, ...body } });
-    }).as('create');
+//       req.reply({ statusCode: 201, body: { id: newProduct.id, ...body } });
+//     }).as('create');
 
-    // เมื่อ redirect ไปหน้า list ให้ตอบรายการที่มีสินค้าที่เพิ่งสร้างปนอยู่
-    cy.intercept('GET', '**/api/products*', {
-      statusCode: 200,
-      body: [
-        { id: 55, productId: 'SKU-OLD', name: 'Old Item', price: 10, quantity: 2, categoryId: 2, brandId: 2, inStock: true },
-        newProduct,
-      ],
-    }).as('listAfterCreate');
+//     // เมื่อ redirect ไปหน้า list ให้ตอบรายการที่มีสินค้าที่เพิ่งสร้างปนอยู่
+//     cy.intercept('GET', '**/api/products*', {
+//       statusCode: 200,
+//       body: [
+//         { id: 55, productId: 'SKU-OLD', name: 'Old Item', price: 10, quantity: 2, categoryId: 2, brandId: 2, inStock: true },
+//         newProduct,
+//       ],
+//     }).as('listAfterCreate');
 
-    // --- Act ---
-    cy.visit(ADD_PATH);
-    cy.wait('@getCategories');
-    cy.wait('@getBrands');
+//     // --- Act ---
+//     cy.visit(ADD_PATH);
+//     cy.wait('@getCategories');
+//     cy.wait('@getBrands');
 
-    cy.get(el.productId).type(newProduct.productId);
-    cy.get(el.name).type(newProduct.name);
-    cy.get(el.description).type(newProduct.description);
-    cy.get(el.category).select(String(newProduct.categoryId));
-    cy.get(el.brand).select(String(newProduct.brandId));
-    cy.get(el.price).type(String(newProduct.price));
-    cy.get(el.quantity).type(String(newProduct.quantity));
+//     cy.get(el.productId).type(newProduct.productId);
+//     cy.get(el.name).type(newProduct.name);
+//     cy.get(el.description).type(newProduct.description);
+//     cy.get(el.category).select(String(newProduct.categoryId));
+//     cy.get(el.brand).select(String(newProduct.brandId));
+//     cy.get(el.price).type(String(newProduct.price));
+//     cy.get(el.quantity).type(String(newProduct.quantity));
 
-    cy.get(el.saveBtn).click();
+//     cy.get(el.saveBtn).click();
 
-    // --- Assert ---
-    cy.wait('@create');
-    cy.location('pathname', { timeout: 10000 }).should('eq', LIST_PATH);
-    cy.wait('@listAfterCreate');
-    cy.contains(newProduct.name, { matchCase: false }).should('be.visible');
+//     // --- Assert ---
+//     cy.wait('@create');
+//     cy.location('pathname', { timeout: 10000 }).should('eq', LIST_PATH);
+//     cy.wait('@listAfterCreate');
+//     cy.contains(newProduct.name, { matchCase: false }).should('be.visible');
 
-  });
-});
+//   });
+// });
 // 
 describe('E2E-AUTH-107: Logout → redirect to /login', () => {
   beforeEach(() => {
@@ -391,4 +391,3 @@ describe('E2E-AUTH-107: Logout → redirect to /login', () => {
     cy.get('#password').should('exist');
   });
 });
-

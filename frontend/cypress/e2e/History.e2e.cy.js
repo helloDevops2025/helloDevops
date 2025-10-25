@@ -2,6 +2,14 @@
 
 describe('Order History Page', () => {
   beforeEach(() => {
+    // Ensure authenticated session for guarded routes
+    cy.window().then((win) => {
+      win.sessionStorage.setItem('token', 'e2e-dummy-token');
+      win.sessionStorage.setItem('role', 'USER');
+      win.sessionStorage.setItem('user', JSON.stringify({ email: 'e2e@test.local' }));
+      win.sessionStorage.setItem('email', 'e2e@test.local');
+    });
+
     cy.intercept('GET', /\/api\/orders.*/, { statusCode: 500, body: 'fail' }).as('orders'); // บังคับใช้ mock
   });
 

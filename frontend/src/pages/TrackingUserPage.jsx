@@ -180,11 +180,24 @@ export default function TrackingUserPage() {
     return { subtotal, items, total: subtotal };
   }, [order.cart]);
 
-  const breadcrumb = [
-    { label: "Home", href: "/home" },
-    { label: "Account", href: "#" },
-    { label: "Order Tracking" },
-  ];
+  // If this page was reached via navigate(..., { state }) from PlaceOrder,
+  // `location.state` will contain order info — treat that as 'fromPlaceOrder'.
+  const fromPlaceOrder = !!(
+    location.state && (location.state.orderId || location.state.cart)
+  );
+
+  const breadcrumb = fromPlaceOrder
+    ? [
+        { label: "Home", href: "/home" },
+        { label: "Cart", href: "/cart" },
+        { label: "Checkout", href: "/checkout" },
+        { label: "Order Tracking" },
+      ]
+    : [
+        { label: "Home", href: "/home" },
+        { label: "Account", href: "#" },
+        { label: "Order Tracking" },
+      ];
 
   // ขั้นความคืบหน้า: ใช้ค่า default แต่คุณสามารถส่งมาด้วยใน state เช่น state.steps ได้
   const defaultSteps = [
@@ -216,7 +229,7 @@ export default function TrackingUserPage() {
         {/* (ทางเลือก) แสดงที่อยู่จัดส่งหากมี */}
         {order.address && (
           <section className="card" style={{ padding: 16, marginBottom: 20 }}>
-            <h3 style={{ marginBottom: 8 }}>ที่อยู่จัดส่ง</h3>
+            <h3 style={{ marginBottom: 8 }}>Shipping Address</h3>
             <div><strong>{order.address.name}</strong></div>
             <div>{order.address.text}</div>
           </section>
@@ -228,15 +241,15 @@ export default function TrackingUserPage() {
         {/* สรุปยอดรวม */}
         <section className="card" style={{ padding: 16, marginTop: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <div>รวม {totals.items} ชิ้น</div>
+            <div>Total {totals.items} items</div>
             <div style={{ fontSize: 18, fontWeight: 700 }}>
-              ยอดสุทธิ {THB(totals.total)}
+              Total Amount {THB(totals.total)}
             </div>
           </div>
         </section>
 
         <div style={{ marginTop: 24 }}>
-          <Link to="/home" className="btn-primary">กลับหน้าแรก</Link>
+          <Link to="/home" className="btn-primary">Back to Home</Link>
         </div>
       </main>
 
