@@ -98,89 +98,89 @@ INSERT INTO products
 (product_id, name, description, price, quantity, in_stock, category_id, brand_id)
 VALUES
 -- Dried Foods
-('#00001','ข้าวขาวหอมมะลิใหม่100% 5กก.','',165.00,30,TRUE,
+('#00001','100% Jasmine Rice 5 kg','Premium Thai jasmine rice; new-crop harvest. Soft, fragrant grains in a 5 kg bag.',165.00,30,TRUE,
   (SELECT id FROM categories WHERE name='Dried Foods'),
   (SELECT id FROM brands    WHERE name='Chat')
 ),
-('#00002','ข้าวกล้องหอมมะลิ ออร์แกนิค1กก.','',150.00,25,TRUE,
+('#00002','Organic Brown Jasmine Rice 1 kg','High-fiber organic brown jasmine rice. Nutty aroma; 1 kg pack.',150.00,25,TRUE,
   (SELECT id FROM categories WHERE name='Dried Foods'),
   (SELECT id FROM brands    WHERE name='Raw Food')
 ),
-('#00003','ซีเล็คฟิตต์ทูน่าสเต็กน้ำแร่ 165ก.','',59.00,40,TRUE,
+('#00003','SEAlect Fit Tuna Steak in Mineral Water 165 g','Ready-to-eat tuna steak in mineral water; lean protein source.',59.00,40,TRUE,
   (SELECT id FROM categories WHERE name='Dried Foods'),
   (SELECT id FROM brands    WHERE name='SEAlect')
 ),
-('#00004','โกกิแป้งทอดกรอบ 500ก.','',45.00,35,TRUE,
+('#00004','GOGI Crispy Frying Flour 500 g','Crispy tempura/frying mix for light, crunchy coating.',45.00,35,TRUE,
   (SELECT id FROM categories WHERE name='Dried Foods'),
   (SELECT id FROM brands    WHERE name='GOGI')
 ),
-('#00005','เอ็มเคน้ำจิ้มสุกี้สูตรต้นตำรับ 830กรัม','',120.00,20,TRUE,
+('#00005','MK Original Suki Sauce 830 g','Signature MK suki dipping sauce; savory and mildly sweet.',120.00,20,TRUE,
   (SELECT id FROM categories WHERE name='Dried Foods'),
   (SELECT id FROM brands    WHERE name='MK')
 ),
 
 -- Meats
-('#00006','ARO RED เนื้อชายท้องสเต็ก 300 กรัม','',220.00,30,TRUE,
+('#00006','ARO RED Beef Belly Steak 300 g','Well-marbled beef belly cut; tender and flavorful; 300 g.',220.00,30,TRUE,
   (SELECT id FROM categories WHERE name='Meats'),
   (SELECT id FROM brands    WHERE name='ARO')
 ),
-('#00007','ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3','',180.00,25,TRUE,
+('#00007','SUPER CHEF Pork Paste Frozen 220 g (Pack of 3)','Versatile frozen pork paste for soups, stir-fries, or dumplings.',180.00,25,TRUE,
   (SELECT id FROM categories WHERE name='Meats'),
   (SELECT id FROM brands    WHERE name='SUPER CHEF')
 ),
-('#00008','ยูฟาร์ม อกไก่ 2 กก.','',350.00,20,TRUE,
+('#00008','U FARM Chicken Breast 2 kg','Boneless, skinless chicken breast; family-size 2 kg pack.',350.00,20,TRUE,
   (SELECT id FROM categories WHERE name='Meats'),
   (SELECT id FROM brands    WHERE name='U FARM')
 ),
-('#00009','แซลมอน โคโฮหั่นชิ้น แช่แข็ง 100 กรัม','',99.00,30,TRUE,
+('#00009','Coho Salmon Chunks Frozen 100 g','Convenient salmon chunks; quickly thaw and cook; 100 g.',99.00,30,TRUE,
   (SELECT id FROM categories WHERE name='Meats'),
   (SELECT id FROM brands    WHERE name='Q FRESH')
 ),
-('#00010','CP กุ้งแปซิฟิกถุงตาข่าย (21-25) 500 กรัม','',300.00,15,TRUE,
+('#00010','CP Pacific Shrimp (21–25) 500 g','Pacific white shrimp ~21–25 pcs/lb; cleaned; 500 g net.',300.00,15,TRUE,
   (SELECT id FROM categories WHERE name='Meats'),
   (SELECT id FROM brands    WHERE name='CP')
 ),
 
 -- Frozen Foods
-('#00011','ซีพี ชิคแชค เนื้อไก่ปรุงรสทอดกรอบแช่แข็ง 800 กรัม','',179.00,25,TRUE,
+('#00011','CP Chick Chack Crispy Seasoned Chicken 800 g (Frozen)','Crispy seasoned chicken bites; oven or air-fryer friendly.',179.00,25,TRUE,
   (SELECT id FROM categories WHERE name='Frozen Foods'),
   (SELECT id FROM brands    WHERE name='CP')
 ),
-('#00012','แลมบ์เวสตัน มันฝรั่งเส้นหยักแช่แข็ง 1 กก.','',120.00,20,TRUE,
+('#00012','LAMB WESTON Crinkle-Cut Fries 1 kg (Frozen)','Classic crinkle-cut French fries; restaurant-grade quality.',120.00,20,TRUE,
   (SELECT id FROM categories WHERE name='Frozen Foods'),
   (SELECT id FROM brands    WHERE name='LAMB WESTON')
 ),
-('#00013','คิวเฟรช กุ้งป๊อบรสกระเทียมพริกไทยดำ150ก.','',89.00,30,TRUE,
+('#00013','Q FRESH Garlic & Black Pepper Popcorn Shrimp 150 g (Frozen)','Bite-size shrimp with garlic & black pepper seasoning.',89.00,30,TRUE,
   (SELECT id FROM categories WHERE name='Frozen Foods'),
   (SELECT id FROM brands    WHERE name='Q FRESH')
 ),
-('#00014','โออิชิ เกี๊ยวซ่าแช่แข็ง ไส้หมู 240 ก. 12 ชิ้น','',150.00,25,TRUE,
+('#00014','OISHI EATO Pork Gyoza 240 g (12 pcs, Frozen)','Pan-fry or steam for juicy dumplings; 12 pieces.',150.00,25,TRUE,
   (SELECT id FROM categories WHERE name='Frozen Foods'),
   (SELECT id FROM brands    WHERE name='OISHI EATO')
 ),
-('#00015','สโลนส์ ไส้กรอกหมูอิตาเลี่ยนแช่แข็ง 500 กรัม','',140.00,20,TRUE,
+('#00015','SLOANES Italian Pork Sausage 500 g (Frozen)','Rich, herby Italian-style pork sausage; 500 g.',140.00,20,TRUE,
   (SELECT id FROM categories WHERE name='Frozen Foods'),
   (SELECT id FROM brands    WHERE name='SLOANES')
 ),
 
 -- Fruits & Vegetables
-('#00016','มะเขือเทศสีดา พรีเมี่ยม กก.ละ ฿85.00','',85.00,50,TRUE,
+('#00016','Premium Plum Tomatoes (per kg)','Firm, sweet plum tomatoes ideal for salad, salsa, or sauces.',85.00,50,TRUE,
   (SELECT id FROM categories WHERE name='Fruits & Vegetables'),
   (SELECT id FROM brands    WHERE name='No brand')
 ),
-('#00017','ซุปเปอร์เฟรช การ์เด้นสลัดมิกซ์ แพ็คละ ฿35.00','',35.00,60,TRUE,
+('#00017','SUPER FRESH Garden Salad Mix (per pack)','Ready-to-eat salad greens; rinse and serve.',35.00,60,TRUE,
   (SELECT id FROM categories WHERE name='Fruits & Vegetables'),
   (SELECT id FROM brands    WHERE name='SUPER FRESH')
 ),
-('#00018','มะม่วงน้ำดอกไม้สุก','',120.00,40,TRUE,
+('#00018','Nam Dok Mai Mango (ripe)','Fragrant, sweet Thai mango variety; perfect for dessert.',120.00,40,TRUE,
   (SELECT id FROM categories WHERE name='Fruits & Vegetables'),
   (SELECT id FROM brands    WHERE name='No brand')
 ),
-('#00019','แอปเปิ้ลเขียว M 4 ลูก แพ็คละ ฿69.00','',69.00,45,TRUE,
+('#00019','Green Apple M (4 pcs per pack)','Crisp and refreshing green apples; pack of 4.',69.00,45,TRUE,
   (SELECT id FROM categories WHERE name='Fruits & Vegetables'),
   (SELECT id FROM brands    WHERE name='LOTUSS NO BRAND')
 ),
-('#00020','ออสเตรเลีย สตรอเบอร์รี่ บิ๊กแพ็ค ฿299.00','',299.00,30,TRUE,
+('#00020','Australian Strawberries – Big Pack','Juicy, aromatic strawberries; family-size pack.',299.00,30,TRUE,
   (SELECT id FROM categories WHERE name='Fruits & Vegetables'),
   (SELECT id FROM brands    WHERE name='No brand')
 )
@@ -271,7 +271,6 @@ CREATE TABLE user_addresses (
         ON UPDATE CASCADE
 );
 
-
 -- ===========================
 -- 4) Orders (ตารางคำสั่งซื้อ)
 -- ===========================
@@ -348,3 +347,97 @@ ADD COLUMN ready_at DATETIME NULL,
 ADD COLUMN shipping_at DATETIME NULL,
 ADD COLUMN delivered_at DATETIME NULL,
 ADD COLUMN cancelled_at DATETIME NULL;
+
+/* ===========================
+   PATCH: Add Beverage + sample drinks
+   (Safe-upsert, no destructive change)
+   =========================== */
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- 1) Add new Category (Beverage)
+INSERT INTO categories (name) VALUES ('Beverage')
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- 2) Add new Brands (safe)
+INSERT INTO brands (name) VALUES
+  ('Nestlé Pure Life'),
+  ('Malee COCO'),
+  ('Pokka'),
+  ('Coca-Cola'),
+  ('Fuji Cha')
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- 3) Seed Beverage Products (#00021 - #00025)
+-- หมายเหตุ: ใช้ subquery อ้างอิง category_id/brand_id เพื่อไม่แตะ key อื่น ๆ
+INSERT INTO products
+(product_id, name, description, price, quantity, in_stock, category_id, brand_id)
+VALUES
+  -- #00021: น้ำดื่ม Nestlé Pure Life
+  ('#00021',
+   'Nestlé Pure Life Drinking Water 600 ml (Pack of 12)',
+   'Purified drinking water in convenient 600 ml bottles; 12-pack for home or on-the-go.',
+   85.00, 30, TRUE,
+   (SELECT id FROM categories WHERE name='Beverage'),
+   (SELECT id FROM brands    WHERE name='Nestlé Pure Life')
+  ),
+
+  -- #00022: Malee COCO น้ำมะพร้าว
+  ('#00022',
+   'Malee COCO 100% Coconut Water UHT 1 L',
+   '100% coconut water; naturally refreshing and hydrating; shelf-stable UHT 1-liter carton.',
+   65.00, 40, TRUE,
+   (SELECT id FROM categories WHERE name='Beverage'),
+   (SELECT id FROM brands    WHERE name='Malee COCO')
+  ),
+
+  -- #00023: Pokka ชาเขียวไม่หวาน
+  ('#00023',
+   'Pokka Unsweetened Green Tea 500 ml',
+   'Japanese-style green tea with no sugar; smooth and clean taste in a 500 ml PET bottle.',
+   28.00, 50, TRUE,
+   (SELECT id FROM categories WHERE name='Beverage'),
+   (SELECT id FROM brands    WHERE name='Pokka')
+  ),
+
+  -- #00024: Coca-Cola 1.5 ลิตร
+  ('#00024',
+   'Coca-Cola Original 1.5 L',
+   'Classic cola taste in a family-size 1.5-liter bottle; perfect for sharing.',
+   35.00, 60, TRUE,
+   (SELECT id FROM categories WHERE name='Beverage'),
+   (SELECT id FROM brands    WHERE name='Coca-Cola')
+  ),
+
+  -- #00025: Fuji Cha ชาข้าวคั่ว
+  ('#00025',
+   'Fuji Cha Roasted Rice Tea 500 ml',
+   'Genmaicha-style roasted rice tea; lightly toasted aroma with a smooth finish; 500 ml bottle.',
+   30.00, 40, TRUE,
+   (SELECT id FROM categories WHERE name='Beverage'),
+   (SELECT id FROM brands    WHERE name='Fuji Cha')
+  )
+ON DUPLICATE KEY UPDATE
+  name=VALUES(name),
+  description=VALUES(description),
+  price=VALUES(price),
+  quantity=VALUES(quantity),
+  in_stock=VALUES(in_stock),
+  category_id=VALUES(category_id),
+  brand_id=VALUES(brand_id),
+  updated_at=CURRENT_TIMESTAMP;
+
+-- 4) Cover images for #00021 - #00025 (ตามที่ให้มา)
+INSERT IGNORE INTO product_images (product_id_fk, image_url, filename, content_type, is_cover, sort_order) 
+SELECT p.id, '/products/021.jpg', '021.jpg', 'image/jpeg', TRUE, 0 FROM products p WHERE p.product_id='#00021';
+INSERT IGNORE INTO product_images (product_id_fk, image_url, filename, content_type, is_cover, sort_order)
+SELECT p.id, '/products/022.jpg', '022.jpg', 'image/jpeg', TRUE, 0 FROM products p WHERE p.product_id='#00022';
+INSERT IGNORE INTO product_images (product_id_fk, image_url, filename, content_type, is_cover, sort_order)
+SELECT p.id, '/products/023.jpg', '023.jpg', 'image/jpeg', TRUE, 0 FROM products p WHERE p.product_id='#00023';
+INSERT IGNORE INTO product_images (product_id_fk, image_url, filename, content_type, is_cover, sort_order)
+SELECT p.id, '/products/024.jpg', '024.jpg', 'image/jpeg', TRUE, 0 FROM products p WHERE p.product_id='#00024';
+INSERT IGNORE INTO product_images (product_id_fk, image_url, filename, content_type, is_cover, sort_order)
+SELECT p.id, '/products/025.jpg', '025.jpg', 'image/jpeg', TRUE, 0 FROM products p WHERE p.product_id='#00025';
+
+SET FOREIGN_KEY_CHECKS = 1;
