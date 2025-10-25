@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import "./AdminOrderDetailPage.css";
 import "../components/AdminSidebar";
@@ -7,25 +7,28 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 
 export default function AdminOrderDetailPage() {
     const navigate = useNavigate();
+    const { id } = useParams(); // ✅ ดึง orderId จาก URL เช่น /admin/orders/2
 
-    // 🧩 Mock Data (ใช้ useState เพื่อให้แก้ค่าได้)
-    const [order, setOrder] = useState({
-        id: 10023,
-        date: "20 May 2025",
-        customerName: "Pim Peace",
-        totalAmount: 391.0,
-        shippingCost: 60.0,
-        shippingAddress: "999 Road, District, Bangkok, Thailand 10110, 0812345678",
-        orderStatus: "Pending",
-        items: [
-            { productName: "ข้าวหอมมะลิ 5กก.", price: 165.0, quantity: 2, total: 330.0 },
-            { productName: "น้ำปลาแท้ตราปลาหมึก 700มล.", price: 31.0, quantity: 1, total: 31.0 },
-            { productName: "เกลือเสริมไอโอดีน 500กรัม", price: 30.0, quantity: 1, total: 30.0 },
-        ],
-    });
+    const [order, setOrder] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
-    // 🧠 Calculate subtotal
-    const subtotal = order.items.reduce((sum, i) => sum + i.total, 0);
+    // ✅ ดึงข้อมูล order จาก API
+    useEffect(() => {
+        const fetchOrder = async () => {
+            try {
+                const res = await fetch(`http://localhost:8080/api/orders/${id}`);
+                if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
+                const data = await res.json();
+                setOrder(data);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchOrder();
+    }, [id]);
 
     // ✅ ฟังก์ชันเปลี่ยนสถานะออเดอร์
     const handleChangeStatus = () => {
@@ -37,17 +40,18 @@ export default function AdminOrderDetailPage() {
             return;
         }
 
-        // อัปเดตสถานะใน state
+        // อัปเดตเฉพาะใน state (ยังไม่ส่งไป backend)
         setOrder((prev) => ({
             ...prev,
             orderStatus: newStatus,
         }));
-
-        // alert(`✅ เปลี่ยนสถานะคำสั่งซื้อเป็น "${newStatus}" แล้ว`);
     };
 
+    // 🧠 คำนวณ subtotal จาก items
+    const subtotal = order?.items?.reduce((sum, i) => sum + i.totalPrice, 0) || 0;
+
+    // 🧱 sidebar behavior (คงไว้เหมือนเดิม)
     useEffect(() => {
-        // sidebar behavior (ตามโค้ดเดิมทั้งหมด)
         document.querySelectorAll(".nav-toggle").forEach((toggle) => {
             const handler = () => {
                 const panel = document.querySelector(toggle.dataset.target);
@@ -87,6 +91,11 @@ export default function AdminOrderDetailPage() {
         }
     }, []);
 
+    // 🧾 แสดงสถานะระหว่างโหลด
+    if (loading) return <p style={{ padding: "20px" }}>⏳ กำลังโหลดข้อมูลคำสั่งซื้อ...</p>;
+    if (error) return <p style={{ padding: "20px", color: "red" }}>❌ {error}</p>;
+    if (!order) return <p style={{ padding: "20px" }}>ไม่พบข้อมูลคำสั่งซื้อ</p>;
+
     return (
         <div className="admin-order-detail-page">
             <main className="content">
@@ -104,8 +113,12 @@ export default function AdminOrderDetailPage() {
                             <span>#{order.id}</span>
                         </div>
                         <div className="info">
-                            <p>Date :</p>
-                            <span>{order.date}</span>
+                            <p>Customer :</p>
+                            <span>{order.customerName}</span>
+                        </div>
+                        <div className="info">
+                            <p>Shipping Method :</p>
+                            <span>{order.shippingMethod}</span>
                         </div>
                         <div className="info">
                             <p><b>Total :</b></p>
@@ -124,7 +137,7 @@ export default function AdminOrderDetailPage() {
                         </div>
                         <div className="info">
                             <p>Shipping :</p>
-                            <span>{order.shippingCost.toFixed(2)}</span>
+                            <span>{order.shippingCost ? order.shippingCost.toFixed(2) : "0.00"}</span>
                         </div>
                         <div className="info">
                             <p><b>Total price :</b></p>
@@ -150,9 +163,9 @@ export default function AdminOrderDetailPage() {
                                 {order.items.map((item, i) => (
                                     <tr key={i}>
                                         <td>{item.productName}</td>
-                                        <td>{item.price.toFixed(2)}</td>
+                                        <td>{item.priceEach.toFixed(2)}</td>
                                         <td>{item.quantity}</td>
-                                        <td>{item.total.toFixed(2)}</td>
+                                        <td>{item.totalPrice.toFixed(2)}</td>
                                     </tr>
                                 ))}
                                 </tbody>
@@ -164,8 +177,8 @@ export default function AdminOrderDetailPage() {
                 <aside className="right-panel">
                     <div className="card">
                         <div className="info-card">
-                            <h3>Shipping Address</h3>
-                            <p id="Address">{order.shippingAddress}</p>
+                            <h3>Shipping Info</h3>
+                            <p>Method: {order.shippingMethod}</p>
                         </div>
                     </div>
 
@@ -173,8 +186,7 @@ export default function AdminOrderDetailPage() {
                         <div className="status-card">
                             <div className="status-text">
                                 <h3>Edit Status</h3>
-                                {/* ✅ แสดงสถานะล่าสุด */}
-                                <p>{order.orderStatus}</p>
+                                <p>{order.orderStatus ?? "Pending"}</p>
                             </div>
                             <div className="status">
                                 <div className="selection-wrapper">
@@ -188,7 +200,6 @@ export default function AdminOrderDetailPage() {
                                         <option>Cancelled</option>
                                     </select>
                                 </div>
-                                {/* ✅ เมื่อกดจะอัปเดตสถานะ */}
                                 <button className="change" onClick={handleChangeStatus}>Change</button>
                             </div>
                         </div>

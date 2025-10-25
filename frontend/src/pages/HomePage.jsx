@@ -49,9 +49,10 @@ const resolveCoverUrl = (p) => {
 // fallback รูปหมวดหมู่หาก API ยังไม่มีรูป
 const CAT_IMAGE_FALLBACKS = {
   "Dried Foods": "/assets/user/cat-dried-food.jpg",
-  Meats: "/assets/user/cat-meat.jpg",
+  "Meats": "/assets/user/cat-meat.jpg",
   "Frozen Foods": "/assets/user/cat-frozen.jpg",
   "Fruits & Vegetables": "/assets/user/cat-fruits-veg.jpg",
+  "Beverage": "/assets/user/cat-beverage.jpg"
 };
 
 // URL รูปหมวดหมู่ — เหมือนหลักการสินค้า
@@ -71,6 +72,36 @@ function BestSellersSection() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+
+  // adjust long titles so they don't flow under the floating add-to-cart button
+  useEffect(() => {
+    if (loading) return;
+    const el = document.getElementById("best-sellers");
+    if (!el) return;
+
+    const adjust = () => {
+      const products = el.querySelectorAll('.product');
+      products.forEach((p) => {
+        const title = p.querySelector('.product__title');
+        const fab = p.querySelector('.add-to-cart');
+        if (!title) return;
+        title.classList.remove('title--shorten');
+        if (fab) {
+          const titleRect = title.getBoundingClientRect();
+          const fabRect = fab.getBoundingClientRect();
+          // if title's right edge would overlap the fab (with small padding), shorten it
+          if (titleRect.right > fabRect.left - 8) {
+            title.classList.add('title--shorten');
+          }
+        }
+      });
+    };
+
+    // run after paint
+    setTimeout(adjust, 0);
+    window.addEventListener('resize', adjust);
+    return () => window.removeEventListener('resize', adjust);
+  }, [loading, items]);
 
   useEffect(() => {
     let alive = true;
@@ -112,9 +143,9 @@ function BestSellersSection() {
     <section id="best-sellers" className="best-sellers" aria-labelledby="best-title">
       <div className="best-sellers__head">
         <h2 id="best-title">Best Sellers.</h2>
-        <a href="/home#best-sellers" className="shop-all">
+        <Link to="/shop?best=1" className="shop-all">
           Shop all
-        </a>
+        </Link>
       </div>
 
       {loading && (
@@ -269,6 +300,9 @@ function AllProductsSection({ listRef, onNext }) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+  // adjust titles in this list so they don't overlap fab
+  useClampTitlesInList(listRef, [loading, items]);
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -360,6 +394,33 @@ function AllProductsSection({ listRef, onNext }) {
   );
 }
 
+// mirror title adjustment for the All Products section (uses the ref passed in)
+function useClampTitlesInList(listRef, deps = []) {
+  useEffect(() => {
+    const el = listRef?.current;
+    if (!el) return;
+
+    const adjust = () => {
+      const products = el.querySelectorAll('.product');
+      products.forEach((p) => {
+        const title = p.querySelector('.product__title');
+        const fab = p.querySelector('.add-to-cart');
+        if (!title) return;
+        title.classList.remove('title--shorten');
+        if (fab) {
+          const titleRect = title.getBoundingClientRect();
+          const fabRect = fab.getBoundingClientRect();
+          if (titleRect.right > fabRect.left - 8) title.classList.add('title--shorten');
+        }
+      });
+    };
+
+    setTimeout(adjust, 0);
+    window.addEventListener('resize', adjust);
+    return () => window.removeEventListener('resize', adjust);
+  }, deps);
+}
+
 /* =========================================
    3) PAGE (JSX ทั้งหมดอยู่ล่าง)
    ========================================= */
@@ -388,22 +449,26 @@ const HomePage = () => {
 
       <main className="home">
         <div className="container">
-          {/* ===== Banner 1 ===== */}
-          <a href="/home#best-sellers" className="hero-card" aria-label="Shop Best Sellers">
+          {/* ===== Hero banner (single framed banner keeps 3:1 ratio) ===== */}
+          <section className="hero-banner" aria-label="Main banner">
             <img
+              className="hero-img hero-img--focus-right"
               src="/assets/user/image48.png"
               alt="Pure & Fresh for Every Meal — Shop Best Sellers"
               loading="lazy"
             />
-          </a>
+            <div className="hero-content">
+              <h1>Pure & Fresh for Every Meal</h1>
+              <p className="hero-sub">Find your favorites — fast.</p>
+              <div className="hero-ctas">
+                <Link to="/shop?best=1" className="hero-btn">Shop Best Sellers</Link>
+                <a href="#categories" className="hero-btn hero-btn--ghost">Browse Categories</a>
+              </div>
+            </div>
+          </section>
 
           {/* ===== Best Sellers (DB) ===== */}
           <BestSellersSection />
-
-          {/* ===== Banner 2 ===== */}
-          <a href="#categories" className="hero-card" aria-label="Browse by Category">
-            <img src="/assets/user/banner2.jpg" alt="Browse by Category" loading="lazy" />
-          </a>
 
           {/* ===== Categories (DB) ===== */}
           <CategoriesSection />

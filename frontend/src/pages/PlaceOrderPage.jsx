@@ -5,6 +5,7 @@ import Header from "../components/header";
 import Footer from "../components/footer";
 import "./PlaceOrderPage.css";
 import "./breadcrumb.css";
+import "./toast.css";
 
 /* ===== Utils ===== */
 function isValidThaiMobile(raw) {
@@ -15,6 +16,7 @@ function isValidThaiMobile(raw) {
   }
   return /^0[689]\d{8}$/.test(digits);
 }
+
 function formatThaiMobile(raw) {
   let d = raw.replace(/\D/g, "");
   if (d.startsWith("66")) d = "0" + d.slice(2);
@@ -23,8 +25,20 @@ function formatThaiMobile(raw) {
   if (d.length <= 6) return d.slice(0, 3) + "-" + d.slice(3);
   return d.slice(0, 3) + "-" + d.slice(3, 6) + "-" + d.slice(6);
 }
+
 const currencyTHB = (n) =>
   n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
+
+// Zip code helper: keep digits only and limit to 5 characters
+function formatZipCode(raw) {
+  if (!raw) return "";
+  return raw.replace(/\D/g, "").slice(0, 5);
+}
+
+function isValidZipCode(raw) {
+  const d = (raw || "").replace(/\D/g, "");
+  return /^\d{5}$/.test(d);
+}
 
 /* ===== Breadcrumb ===== */
 function Breadcrumb({ items = [] }) {
@@ -49,7 +63,7 @@ function Breadcrumb({ items = [] }) {
 }
 
 /* ===== Address Form ===== */
-function AddressForm({ initial, onCancel, onSave }) {
+function AddressForm({ initial, onCancel, onSave, onError }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [house, setHouse] = useState(initial?.house ?? "");
@@ -62,14 +76,24 @@ function AddressForm({ initial, onCancel, onSave }) {
 
   const handlePhoneInput = (e) => setPhone(formatThaiMobile(e.target.value));
 
+  // ฟังก์ชันจัดการ Zip Code
+  const handleZipCodeInput = (e) => setZipcode(formatZipCode(e.target.value)); // จัดรูปแบบ Zip Code
+
   const submit = (e) => {
     e.preventDefault();
     if (!name || !phone || !house || !subdistrict || !district || !province || !zipcode) {
-      alert("Please fill in all required fields");
+      if (onError) onError("Please fill in all required fields");
+      else alert("Please fill in all required fields");
       return;
     }
     if (!isValidThaiMobile(phone)) {
-      alert("Please enter a valid Thai mobile number");
+      if (onError) onError("Please enter a valid Thai mobile number");
+      else alert("Please enter a valid Thai mobile number");
+      return;
+    }
+    if (!isValidZipCode(zipcode)) {
+      if (onError) onError("Please enter a valid Zip Code (5 digits only)");
+      else alert("Please enter a valid Zip Code (5 digits only)"); // แจ้งเตือนหากรหัสไปรษณีย์ไม่ถูกต้อง
       return;
     }
     const text = `${house} ${street ? street + ", " : ""}${subdistrict}, ${district}, ${province} ${zipcode} | Tel: ${phone}`;
@@ -179,8 +203,12 @@ function AddressForm({ initial, onCancel, onSave }) {
           <input
             type="text"
             value={zipcode}
-            onChange={(e) => setZipcode(e.target.value)}
+            onChange={handleZipCodeInput}  // ใช้ฟังก์ชันจัดรูปแบบ Zip Code
             required
+            inputMode="numeric"
+            maxLength={5}
+            pattern="\d{5}"
+            placeholder="e.g. 10110"
           />
         </label>
       </div>
@@ -236,7 +264,7 @@ function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
             <div className="addr-actions">
               <button type="button" className="icon-btn" onClick={() => onEdit(addr)} aria-label="Edit address">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M12 20h9"/>
                   <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
                 </svg>
@@ -245,7 +273,7 @@ function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
 
               <button type="button" className="icon-btn danger" onClick={() => onDelete(addr.id)} aria-label="Delete address">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <polyline points="3 6 5 6 21 6"/>
                   <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
                   <path d="M10 11v6M14 11v6"/>
@@ -334,13 +362,14 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
       <div className="summary-actions">
         <button
           className="btn-primary"
-          disabled={!canConfirm}
+          disabled={!canConfirm}  // disable ปุ่มถ้ายังไม่มีที่อยู่
           onClick={onConfirm}
           title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
         >
-          ยืนยันคำสั่งซื้อ
+          Place Order
         </button>
       </div>
+
     </aside>
   );
 }
@@ -349,15 +378,24 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
 export default function PlaceOrderPage() {
   const navigate = useNavigate();
 
+  // Simple in-app toast
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = "error", timeout = 4000) => {
+    setToast({ message, type });
+    if (timeout > 0) setTimeout(() => setToast(null), timeout);
+  };
+
   useEffect(() => {
     document.body.classList.add("po-page");
     return () => document.body.classList.remove("po-page");
   }, []);
 
   const [cart] = useState([
-    { id: 1, name: "Oishi Gyoza", price: 179, qty: 1, img: "assets/products/p1.png" },
-    { id: 2, name: "MK Suki Sauce", price: 119, qty: 1, img: "assets/products/p2.png" },
-    { id: 3, name: "Coconut", price: 25, qty: 4, img: "assets/products/p3.png" },
+    { id: '#00001' , name: "ข้าวขาวหอมมะลิใหม่100% 5กก.", price: 165.00, qty: 1, img: "/assets/products/001.jpg" },
+    { id: '#00007', name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3", price: 180.00, qty: 4, img: "/assets/products/007.jpg" },
+    { id: '#00018', name: "มะม่วงน้ำดอกไม้สุก", price: 120.00, qty: 2, img: "/assets/products/018.jpg" },
+    { id: '#00011' , name: "ซีพี ชิคแชค เนื้อไก่ปรุงรสทอดกรอบแช่แข็ง 800 กรัม", price: 179.00, qty: 2, img: "/assets/products/011.jpg" },
+    { id: '#00004', name: "โกกิแป้งทอดกรอบ 500ก.", price: 45.00, qty: 2, img: "/assets/products/004.jpg" },
   ]);
   const [addresses, setAddresses] = useState([]);
   const [mode, setMode] = useState("list");
@@ -369,52 +407,58 @@ export default function PlaceOrderPage() {
     { label: "Checkout" },
   ];
 
-  const handleSetDefault = (id) =>
-    setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
-  const handleAddNew = () => {
-    setEditing(null);
-    setMode("add");
-  };
-  const handleEdit = (addr) => {
-    setEditing(addr);
-    setMode("edit");
-  };
-  const handleDelete = (id) => {
-    const target = addresses.find((a) => a.id === id);
-    if (!target) return;
-    if (!window.confirm(`Delete address of "${target.name}" ?`)) return;
-    setAddresses((prev) => {
-      const filtered = prev.filter((a) => a.id !== id);
-      if (target.isDefault && filtered.length > 0) {
-        filtered[0] = { ...filtered[0], isDefault: true };
-      }
-      return filtered;
-    });
-    if (editing?.id === id) {
-      setEditing(null);
-      setMode("list");
-    }
-  };
-  const handleSave = (payload) => {
-    setAddresses((prev) => {
-      let next = [...prev];
-      const willBeDefault = payload.isDefault || next.length === 0;
-      if (mode === "edit" && editing) {
-        const idx = next.findIndex((a) => a.id === editing.id);
-        if (idx !== -1) next[idx] = { ...payload };
-      } else {
-        next.push({ ...payload });
-      }
-      if (willBeDefault) {
-        next = next.map((a) => ({ ...a, isDefault: a.id === payload.id }));
-      } else if (!next.some((a) => a.isDefault) && next.length > 0) {
-        next[0] = { ...next[0], isDefault: true };
-      }
-      return next;
-    });
-    setEditing(null);
-    setMode("list");
-  };
+    const handleSetDefault = (id) =>
+        setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
+    const handleAddNew = () => {
+        setEditing(null);
+        setMode("add");
+    };
+    const handleEdit = (addr) => {
+        setEditing(addr);
+        setMode("edit");
+    };
+    const handleDelete = (id) => {
+        const target = addresses.find((a) => a.id === id);
+        if (!target) return;
+        if (!window.confirm(`Delete address of "${target.name}" ?`)) return;
+        setAddresses((prev) => {
+            const filtered = prev.filter((a) => a.id !== id);
+            if (target.isDefault && filtered.length > 0) {
+                filtered[0] = { ...filtered[0], isDefault: true };
+            }
+            return filtered;
+        });
+        if (editing?.id === id) {
+            setEditing(null);
+            setMode("list");
+        }
+    };
+    const handleSave = (payload) => {
+        setAddresses((prev) => {
+            let next = [...prev];
+            const willBeDefault = payload.isDefault || next.length === 0;
+            if (mode === "edit" && editing) {
+                const idx = next.findIndex((a) => a.id === editing.id);
+                if (idx !== -1) next[idx] = { ...payload };
+            } else {
+                next.push({ ...payload });
+            }
+            if (willBeDefault) {
+                next = next.map((a) => ({ ...a, isDefault: a.id === payload.id }));
+            } else if (!next.some((a) => a.isDefault) && next.length > 0) {
+                next[0] = { ...next[0], isDefault: true };
+            }
+            return next;
+        });
+        setEditing(null);
+        setMode("list");
+        // Force a tiny re-render tick to ensure derived states (like canConfirm)
+        // reflect the newly saved addresses immediately in all places (sticky bar)
+        setTimeout(() => {
+            // no-op update: use a global attribute on body to cause React to re-evaluate
+            document.body.dataset.po_tick = Date.now();
+        }, 0);
+    };
 
   useEffect(() => {
     if (addresses.length === 0) setMode("add");
@@ -422,17 +466,40 @@ export default function PlaceOrderPage() {
     // eslint-disable-next-line
   }, [addresses.length]);
 
+  // ยังเก็บไว้ใช้โชว์ tooltip ได้
   const canConfirm = addresses.some(a => a.isDefault);
 
+  // ✅ แก้: ไม่บล็อกด้วย canConfirm แล้ว และทำ fallback address ให้เอง
   const handleConfirm = () => {
-    if (!canConfirm) return;
-    const orderId = Date.now(); // mock id
-    navigate(`/tracking/${orderId}`);
-  };
+  const orderId = Date.now(); // mock id
+  const selectedAddress =
+    addresses.find(a => a.isDefault) || addresses[0] || null;  // เลือกที่อยู่แรกถ้าไม่ได้เลือกที่อยู่เป็น default
+
+  if (!selectedAddress) {
+    showToast("กรุณาเพิ่มที่อยู่ก่อนทำการสั่งซื้อ", "error");
+    return;
+  }
+
+  const orderPayload = { orderId, address: selectedAddress, cart };
+  try {
+    sessionStorage.setItem("pm_last_order", JSON.stringify(orderPayload));
+  } catch {}
+
+  navigate(`/tracking-user/${orderId}`, { state: orderPayload });
+};
 
   return (
     <div className="place-order-page">
       <Header />
+      {/* Toast UI */}
+      {toast && (
+        <div className={`pm-toast pm-toast--${toast.type}`} role="status" aria-live="polite">
+          <div className="pm-toast__body">
+            <span>{toast.message}</span>
+            <button className="pm-toast__close" onClick={() => setToast(null)} aria-label="Close">×</button>
+          </div>
+        </div>
+      )}
 
       <main className="container">
         <Breadcrumb items={breadcrumbItems} />
@@ -457,6 +524,7 @@ export default function PlaceOrderPage() {
                 initial={null}
                 onCancel={() => (addresses.length ? setMode("list") : null)}
                 onSave={handleSave}
+                onError={showToast}
               />
             )}
 
@@ -468,6 +536,7 @@ export default function PlaceOrderPage() {
                   setMode("list");
                 }}
                 onSave={handleSave}
+                onError={showToast}
               />
             )}
           </section>
@@ -486,11 +555,11 @@ export default function PlaceOrderPage() {
       <div className="sticky-checkout-bar">
         <button
           className="btn-primary"
-          disabled={!canConfirm}
+          disabled={false} // เดโม: เปิดปุ่มเสมอ
           onClick={handleConfirm}
           title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
         >
-          ยืนยันคำสั่งซื้อ
+          Place Order
         </button>
       </div>
     </div>

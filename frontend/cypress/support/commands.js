@@ -97,3 +97,39 @@ Cypress.Commands.add('loginAs', (role = 'ADMIN', payload = {}) => {
   });
 });
 
+// Overwrite cy.visit to seed sessionStorage auth keys by default so guarded routes
+// don't immediately redirect tests to /login. Tests that want to visit /login
+// for real auth flows should pass { seedAuth: false } or visit '/login' directly.
+Cypress.Commands.overwrite('visit', (originalFn, url, options = {}) => {
+  // If caller explicitly opts out, skip seeding
+  if (options && options.seedAuth === false) {
+    return originalFn(url, options);
+  }
+
+  // If visiting login page, don't seed (tests that exercise login flow need a clean state)
+  const urlStr = (typeof url === 'string') ? url : '';
+  if (urlStr.includes('/login') || urlStr.includes('/signup')) {
+    return originalFn(url, options);
+  }
+
+  const seedAuth = (win) => {
+    try {
+      win.sessionStorage.setItem('token', 'e2e-dummy-token');
+      win.sessionStorage.setItem('role', 'USER');
+      win.sessionStorage.setItem('user', JSON.stringify({ email: 'e2e@test.local' }));
+      win.sessionStorage.setItem('email', 'e2e@test.local');
+    } catch (e) {
+      // ignore if sessionStorage is unavailable
+    }
+    if (options && typeof options.onBeforeLoad === 'function') {
+      options.onBeforeLoad(win);
+    }
+  };
+
+  // NOTE: keep this overwrite minimal and only seed sessionStorage in onBeforeLoad.
+  // Avoid calling Cypress commands (cy.intercept, etc.) here to prevent unexpected
+  // command queue issues. Tests that require API stubbing should add intercepts
+  // themselves (or use helper commands) inside test context.
+  return originalFn(url, { ...options, onBeforeLoad: seedAuth });
+});
+

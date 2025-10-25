@@ -1,0 +1,13 @@
+/* Minimal toast styles used by PlaceOrderPage */
+.pm-toast{
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 2200;
+  min-width: 220px;
+}
+.pm-toast__body{
+  background: #222; color: #fff; padding: 10px 14px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.18); display:flex; gap:12px; align-items:center; justify-content:space-between;
+}
+.pm-toast--error .pm-toast__body{ background: #cc2e2e }
+.pm-toast__close{ background:transparent;border:0;color:inherit;font-size:16px;cursor:pointer }
