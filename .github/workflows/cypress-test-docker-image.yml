@@ -64,9 +64,20 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install frontend dependencies
-        working-directory: ./frontend
-        run: npm install
+      # - name: Install frontend dependencies
+      #   working-directory: ./frontend
+      #   run: npm install
+
+      - name: Install and Run dev test
+        run: |
+          cd ./frontend
+          npm install
+          echo "🚀 Starting dev server..." | tee -a ../reports/frontend_devtest_log.txt
+          npm run dev &>> ../reports/frontend_devtest_log.txt &
+          sleep 10
+          curl -I http://localhost:5173 >> ../reports/frontend_devtest_log.txt || true
+          pkill -f "vite" || true
+          echo "🧾 Dev test completed." >> ../reports/frontend_devtest_log.txt
 
       # ✅ Run Cypress tests (frontend + backend พร้อม)
       # - name: Run Cypress E2E tests
