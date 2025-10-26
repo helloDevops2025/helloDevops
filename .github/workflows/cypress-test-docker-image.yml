@@ -95,7 +95,7 @@ jobs:
       - name: Build Docker image
         run: |
           echo "🐳 Building Docker image..." 
-          docker build -t hello-devops-frontend:latest .
+          docker build -t hello-devops-frontend:latest ./frontend
 
       # 🔐 Login Docker Hub
       - name: Login to Docker Hub
@@ -105,15 +105,8 @@ jobs:
       - name: Push image to Docker Hub
         if: success()
         run: |
-          echo "🚀 Pushing image to Docker Hub..." | tee -a reports/docker_build_log.txt
+          echo "🚀 Pushing image to Docker Hub..." 
           docker tag hello-devops-frontend:latest u6687032/hello-devops-frontend:latest
-          docker push u6687032/hello-devops-frontend:latest 2>&1 | tee -a reports/docker_build_log.txt
+          docker push u6687032/hello-devops-frontend:latest  
 
-      # ✅ อัปโหลดทั้งหมดเป็น artifact
-      - name: Upload reports to GitHub
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-reports
-          path: reports/
 
