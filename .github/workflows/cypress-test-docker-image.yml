@@ -71,7 +71,7 @@ jobs:
           pwd
           npm install
 
-      ✅ Run Cypress tests (frontend + backend พร้อม)
+      # ✅ Run Cypress tests (frontend + backend พร้อม)
       - name: Run Cypress E2E tests
         uses: cypress-io/github-action@v6
         with:
