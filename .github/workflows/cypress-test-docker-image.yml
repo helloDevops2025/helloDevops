@@ -52,7 +52,6 @@ jobs:
       - name: Run backend container
         run: |
           docker run -d --name backend \
-            --network host \
             -p 8080:8080 \
             -e SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/testdb \
             -e SPRING_DATASOURCE_USERNAME=root \
