@@ -95,9 +95,11 @@ jobs:
       - name: Build Docker image
         run: |
           pwd
+          ls
           echo "🐳 Building Docker image..." 
           cd ..
-          cd frontend
+          pwd
+          ls
           docker build -t hello-devops-frontend:latest .
 
       # 🔐 Login Docker Hub
