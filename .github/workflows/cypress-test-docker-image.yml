@@ -80,6 +80,7 @@ jobs:
 
   build:
    runs-on: ubuntu-latest
+   needs: e2e-test
    steps:
       # ✅ Build frontend for deploy
       - name: Build frontend
@@ -87,6 +88,7 @@ jobs:
         run: npm run build
   Docker:
    runs-on: ubuntu-latest
+   needs: build
    steps:
       # 🐳 Build Docker image และเก็บ log
       - name: Build Docker image
