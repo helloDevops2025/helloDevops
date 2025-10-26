@@ -93,7 +93,7 @@ jobs:
    steps:
       # 🐳 Build Docker image และเก็บ log
       - name: Build Docker image
-        working-directory: ./frontend
+        working-directory: ../frontend
         run: |
           echo "🐳 Building Docker image..." | tee -a reports/docker_build_log.txt
           docker build -t hello-devops-frontend:latest ./frontend 2>&1 | tee -a reports/docker_build_log.txt
