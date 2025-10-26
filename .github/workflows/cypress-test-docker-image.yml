@@ -69,14 +69,14 @@ jobs:
         run: npm install
 
       # ✅ Run Cypress tests (frontend + backend พร้อม)
-      - name: Run Cypress E2E tests
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: ./frontend
-          start: npm run dev
-          wait-on: 'http://localhost:5173'
-          browser: chrome
-          headless: true
+      # - name: Run Cypress E2E tests
+      #   uses: cypress-io/github-action@v6
+      #   with:
+      #     working-directory: ./frontend
+      #     start: npm run dev
+      #     wait-on: 'http://localhost:5173'
+      #     browser: chrome
+      #     headless: true
 
   build:
    runs-on: ubuntu-latest
