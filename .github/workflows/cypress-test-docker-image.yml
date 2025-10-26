@@ -13,8 +13,8 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: 1234
-          MYSQL_DATABASE: hellodevops
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ecommerce
         ports:
           - 3306:3306
         options: >-
