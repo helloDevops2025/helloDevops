@@ -97,7 +97,14 @@ jobs:
    
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
+      - name: Generate package-lock.json if missing
+        working-directory: ./frontend
+        run: |
+          if [ ! -f package-lock.json ]; then
+            npm install
+          fi
+
       # 🐳 Build Docker image และเก็บ log
       - name: Build Docker image
         run: |
