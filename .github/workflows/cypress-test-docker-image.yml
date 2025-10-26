@@ -98,6 +98,10 @@ jobs:
       - name: Build Docker image
         run: |
           pwd
+          ls
+          cd frontend
+          pwd
+          ls
           docker build -t hello-devops-frontend:latest .
 
       # 🔐 Login Docker Hub
