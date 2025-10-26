@@ -66,7 +66,10 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./frontend
-        run: npm install
+        run: |
+          ls
+          pwd
+          npm install
 
       # ✅ Run Cypress tests (frontend + backend พร้อม)
       # - name: Run Cypress E2E tests
@@ -94,6 +97,7 @@ jobs:
       # 🐳 Build Docker image และเก็บ log
       - name: Build Docker image
         run: |
+          ls
           pwd
           ls
           echo "🐳 Building Docker image..." 
