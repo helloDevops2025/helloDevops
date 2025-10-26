@@ -78,7 +78,39 @@ jobs:
           browser: chrome
           headless: true
 
+  build:
+   runs-on: ubuntu-latest
+   steps:
       # ✅ Build frontend for deploy
       - name: Build frontend
         working-directory: ./frontend
         run: npm run build
+  Docker:
+   runs-on: ubuntu-latest
+   steps:
+      # 🐳 Build Docker image และเก็บ log
+      - name: Build Docker image
+        run: |
+          echo "🐳 Building Docker image..." | tee -a reports/docker_build_log.txt
+          docker build -t hello-devops-frontend:latest ./frontend 2>&1 | tee -a reports/docker_build_log.txt
+
+      # 🔐 Login Docker Hub
+      - name: Login to Docker Hub
+        run: echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
+
+      # 📦 Push image และเก็บ log
+      - name: Push image to Docker Hub
+        if: success()
+        run: |
+          echo "🚀 Pushing image to Docker Hub..." | tee -a reports/docker_build_log.txt
+          docker tag hello-devops-frontend:latest u6687032/hello-devops-frontend:latest
+          docker push u6687032/hello-devops-frontend:latest 2>&1 | tee -a reports/docker_build_log.txt
+
+      # ✅ อัปโหลดทั้งหมดเป็น artifact
+      - name: Upload reports to GitHub
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-reports
+          path: reports/
+
