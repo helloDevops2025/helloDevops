@@ -97,13 +97,7 @@ jobs:
       # 🐳 Build Docker image และเก็บ log
       - name: Build Docker image
         run: |
-          ls
           pwd
-          ls
-          echo "🐳 Building Docker image..." 
-          cd ..
-          pwd
-          ls
           docker build -t hello-devops-frontend:latest .
 
       # 🔐 Login Docker Hub
