@@ -88,7 +88,7 @@ services:
       SPRING_DATASOURCE_USERNAME: user_devops
       SPRING_DATASOURCE_PASSWORD: user1234
 
-      # 🔴 เพิ่ม 2 บรรทัดนี้เพื่อ "ปิด Flyway แบบเด็ดขาด"
+      # เพิ่ม 2 บรรทัดนี้เพื่อ "ปิด Flyway แบบเด็ดขาด"
       SPRING_FLYWAY_ENABLED: "false"   # ปิด Flyway ด้วยสวิชต์ตรง ๆ
       SPRING_AUTOCONFIGURE_EXCLUDE: "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"  # กัน Spring ไม่โหลด auto-config ของ Flyway เลย
 
@@ -109,12 +109,10 @@ services:
       # ถ้าจะให้วิ่งในเครือข่าย docker ภายใน (เช่น SSR/ฝั่งเซิร์ฟเวอร์), ใช้:
       # VITE_API_URL: http://backend:8080
     ports:
-      - "5173:5173"
+      - "5173:80"
     depends_on:
       - backend
 
 # ประกาศ named volume "db" เป็น mapping (ห้ามมี '-')
 volumes:
   db: {}
-
-
