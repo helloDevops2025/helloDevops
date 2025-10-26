@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./HistoryPage.css";
-import Footer from "../components/footer";
+import Footer from "./../components/Footer.jsx";
 import "./breadcrumb.css";
 
 /* ===== Utils ===== */
@@ -102,7 +103,7 @@ function StatusRight({ status }) {
   );
 }
 
-function OrderCard({ o, onAgain }) {
+function OrderCard({ o, onAgain, onView }) {
   const qtySum = o.items.reduce((s, it) => s + it.qty, 0);
   return (
     <article className="hx-card">
@@ -136,9 +137,9 @@ function OrderCard({ o, onAgain }) {
           </div>
         </div>
         <div className="hx-actions">
-          <a className="hx-btn ghost" href={`/orders/${o.id}`}>
+          <button className="hx-btn ghost" onClick={() => onView(o)}>
             View Details
-          </a>
+          </button>
           <button className="hx-btn primary" onClick={() => onAgain(o)}>
             Buy Again
           </button>
@@ -163,7 +164,7 @@ function Pager({ page, pages, onChange }) {
         ‹ Prev
       </button>
       {Array.from({ length: pages }, (_, i) => i + 1)
-        .slice(0, Math.min(3, pages)) /* ดีไซน์ตัวอย่าง: หน้า 1,2,… */
+        .slice(0, Math.min(3, pages))
         .map((n) => (
           <button
             key={n}
@@ -190,6 +191,7 @@ function Pager({ page, pages, onChange }) {
 export default function HistoryPage() {
   const API_BASE = import.meta.env.VITE_API_BASE || "";
   const FORCE_MOCK = import.meta.env.VITE_FORCE_MOCK === "1";
+  const navigate = useNavigate();
 
   const PAGE_SIZE = 6;
   const [page, setPage] = useState(1);
@@ -299,6 +301,16 @@ export default function HistoryPage() {
     setPage(1);
   }, [tab, qDeb]);
 
+  const handleViewDetails = (order) => {
+    try {
+      sessionStorage.setItem("pm_order_preview", JSON.stringify(order));
+    } catch {}
+    navigate("/place-order", {
+      state: { from: "history", orderId: order.id },
+      replace: false,
+    });
+  };
+
   return (
     <>
       <div className="history-page">
@@ -307,24 +319,17 @@ export default function HistoryPage() {
           <div className="wl-hero__inner">
             <h1 className="wl-title">ORDER HISTORY</h1>
             <nav className="custom-breadcrumb" aria-label="Breadcrumb">
-  <ol>
-    <li className="custom-breadcrumb__item">
-      <a href="/">HOME</a>
-    </li>
-    <li className="custom-breadcrumb__item">
-      <span className="divider">›</span><a href="/shop">SHOP</a>
-      <span className="divider">›</span>
-    </li>
-    <li className="custom-breadcrumb__item current" aria-current="page">ORDER HISTORY</li>
-  </ol>
-</nav>
-
-
-
-
-
-
-
+              <ol>
+                <li className="custom-breadcrumb__item">
+                  <a href="/">HOME</a>
+                </li>
+                <li className="custom-breadcrumb__item">
+                  <span className="divider">›</span><a href="/shop">SHOP</a>
+                  <span className="divider">›</span>
+                </li>
+                <li className="custom-breadcrumb__item current" aria-current="page">ORDER HISTORY</li>
+              </ol>
+            </nav>
           </div>
         </section>
 
@@ -347,6 +352,7 @@ export default function HistoryPage() {
                     key={o.id}
                     o={o}
                     onAgain={() => alert(`Buy again #${o.id}`)}
+                    onView={handleViewDetails}
                   />
                 ))}
               </div>
