@@ -1,6 +1,6 @@
 import "./WishListPage.css";
 import Header from "../components/header";
-import Footer from "../components/footer";
+import Footer from "./../components/Footer.jsx";
 import { useEffect, useMemo, useState } from "react";
 
 const LS_KEY = "pm_wishlist";
@@ -12,7 +12,7 @@ const isAbs = (u) => /^https?:\/\//i.test(String(u || ""));
 const join = (base, path) =>
   base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
 
-/* เลือก URL รูป cover จากข้อมูลแถวสินค้า (กติกาเดียวกับหน้า Shop/Home) */
+/* pick cover image URL */
 const resolveImageUrl = (row) => {
   const id = row.id ?? row.productId ?? row.product_id;
   let u =
@@ -35,15 +35,15 @@ function formatPrice(n) {
   return `฿ ${Number(n || 0).toFixed(2)}`;
 }
 
-/* Modal เดิม */
+/* Confirm Modal */
 function ConfirmModal({
   open,
   onOk,
   onCancel,
   title,
   message,
-  okText = "ล้างทั้งหมด",
-  cancelText = "ยกเลิก",
+  okText = "Clear all",
+  cancelText = "Cancel",
 }) {
   useEffect(() => {
     const onKey = (e) => {
@@ -77,21 +77,15 @@ function ConfirmModal({
   );
 }
 
-/* อ่านชุด id ที่กดหัวใจจาก localStorage (รองรับรูปแบบเก่า/ใหม่) */
+/* localStorage helpers */
 function readWishIds() {
   try {
     const raw = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
     if (!Array.isArray(raw)) return [];
-    // ถ้าเป็น array ของ object เก่า -> map เป็น id
     if (raw.length && typeof raw[0] === "object") {
-      return raw
-        .map((x) => Number(x?.id))
-        .filter((n) => Number.isFinite(n));
+      return raw.map((x) => Number(x?.id)).filter((n) => Number.isFinite(n));
     }
-    // กรณีเป็น array ของ id (string/number)
-    return raw
-      .map((x) => Number(x))
-      .filter((n) => Number.isFinite(n));
+    return raw.map((x) => Number(x)).filter((n) => Number.isFinite(n));
   } catch {
     return [];
   }
@@ -104,14 +98,12 @@ function writeWishIds(ids) {
 }
 
 export default function WishListPage() {
-  /* state หลัก */
-  const [wishIds, setWishIds] = useState(() => readWishIds()); // [id, id, ...]
-  const [items, setItems] = useState([]); // [{id,name,price,img,liked:true}]
+  const [wishIds, setWishIds] = useState(() => readWishIds());
+  const [items, setItems] = useState([]);
   const [sortBy, setSortBy] = useState("recent");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  /* โหลดสินค้าจริงตาม id ที่กดหัวใจ */
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -121,13 +113,11 @@ export default function WishListPage() {
           if (alive) setItems([]);
           return;
         }
-        // ดึงสินค้าทั้งหมดครั้งเดียว แล้วกรองตาม id ที่อยู่ใน wishIds
         const res = await fetch(`${API_URL}/api/products`, {
           headers: { Accept: "application/json" },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const rows = (await res.json()) || [];
-
         const wishSet = new Set(wishIds);
         const mapped = rows
           .filter((x) => wishSet.has(Number(x.id ?? x.productId ?? x.product_id)))
@@ -138,7 +128,6 @@ export default function WishListPage() {
             img: resolveImageUrl(x),
             liked: true,
           }));
-
         if (alive) setItems(mapped);
       } catch (e) {
         if (alive) setItems([]);
@@ -152,25 +141,19 @@ export default function WishListPage() {
     };
   }, [wishIds]);
 
-  /* sync localStorage เมื่อ wishIds เปลี่ยน */
   useEffect(() => {
     writeWishIds(wishIds);
   }, [wishIds]);
 
-  /* เรียงลำดับ (ดีไซน์เดิม) */
   const sorted = useMemo(() => {
     const arr = [...items];
     if (sortBy === "priceAsc") arr.sort((a, b) => a.price - b.price);
     if (sortBy === "priceDesc") arr.sort((a, b) => b.price - a.price);
     if (sortBy === "recent")
-      // แสดงตามลำดับ wishIds ปัจจุบัน (เหมือน "ล่าสุด")
-      arr.sort(
-        (a, b) => wishIds.indexOf(a.id) - wishIds.indexOf(b.id)
-      );
+      arr.sort((a, b) => wishIds.indexOf(a.id) - wishIds.indexOf(b.id));
     return arr;
   }, [items, sortBy, wishIds]);
 
-  /* actions */
   const removeItem = (id) => {
     setWishIds((prev) => prev.filter((x) => x !== id));
     setItems((prev) => prev.filter((x) => x.id !== id));
@@ -178,7 +161,7 @@ export default function WishListPage() {
 
   const handleAddToCart = (id) => {
     const p = items.find((x) => x.id === id);
-    if (p) alert(`เพิ่ม "${p.name}" ลงตะกร้าแล้ว`);
+    if (p) alert(`Added "${p.name}" to cart`);
   };
 
   const clearAll = () => setConfirmOpen(true);
@@ -198,13 +181,14 @@ export default function WishListPage() {
           <div className="wl-hero__inner">
             <h1 className="wl-title">WISHLIST</h1>
 
+            {/* ===== breadcrumb แบบเดิม ===== */}
             <nav className="custom-breadcrumb" aria-label="Breadcrumb">
               <ol>
                 <li className="custom-breadcrumb__item">
                   <a href="/">HOME</a>
+                  <span className="divider">›</span>
                 </li>
                 <li className="custom-breadcrumb__item">
-                  <span className="divider">›</span>
                   <a href="/shop">SHOP</a>
                   <span className="divider">›</span>
                 </li>
@@ -231,13 +215,14 @@ export default function WishListPage() {
                 id="wl-sort"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
+                aria-label="Sort wishlist"
               >
-                <option value="recent">ล่าสุด</option>
-                <option value="priceAsc">ราคาต่ำ→สูง</option>
-                <option value="priceDesc">ราคาสูง→ต่ำ</option>
+                <option value="recent">Latest</option>
+                <option value="priceAsc">Low → High</option>
+                <option value="priceDesc">High → Low</option>
               </select>
               <button id="wl-clear" className="btn" onClick={clearAll}>
-                ล้างทั้งหมด
+                Clear All
               </button>
             </div>
           </div>
@@ -301,7 +286,7 @@ export default function WishListPage() {
           </div>
 
           <p className="wl-empty" hidden={loading || items.length !== 0}>
-            ยังไม่มีรายการใน Wishlist
+            No items in your wishlist
           </p>
         </main>
       </div>
@@ -312,8 +297,10 @@ export default function WishListPage() {
         open={confirmOpen}
         onOk={handleClearOk}
         onCancel={() => setConfirmOpen(false)}
-        title="ล้าง Wishlist ทั้งหมด?"
-        message="รายการทั้งหมดจะถูกลบออกจาก Wishlist ของคุณ"
+        title="Clear all items?"
+        message="This will remove all items from your wishlist."
+        okText="Clear all"
+        cancelText="Cancel"
       />
     </>
   );
