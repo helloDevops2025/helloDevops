@@ -13,8 +13,8 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: ecommerce
+          MYSQL_ROOT_PASSWORD: 1234
+          MYSQL_DATABASE: hellodevops
         ports:
           - 3306:3306
         options: >-
@@ -55,8 +55,8 @@ jobs:
             --network host \
             -p 8080:8080 \
             -e SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/testdb \
-            -e SPRING_DATASOURCE_USERNAME=root \
-            -e SPRING_DATASOURCE_PASSWORD=root \
+            -e SPRING_DATASOURCE_USERNAME=user_devops \
+            -e SPRING_DATASOURCE_PASSWORD=user1234 \
             u6687032/hello-devops-backend:latest
 
       # ✅ ตรวจสอบ backend
@@ -73,26 +73,26 @@ jobs:
           docker logs backend
           exit 1
           
-      # - name: Run backend container from Docker Hub
-      #   run: |
-      #     docker network create testnet
-      #     docker network connect testnet $(docker ps -qf "name=mysql")
-      #     docker run -d --network testnet -p 8080:8080 --name backend u6687032/hellodevops-backend:latest
+      - name: Run backend container from Docker Hub
+        run: |
+          docker network create testnet
+          docker network connect testnet $(docker ps -qf "name=mysql")
+          docker run -d --network testnet -p 8080:8080 --name backend u6687032/hellodevops-backend:latest
       
-      # - name: Check backend health
-      #   run: |
-      #     echo "⏳ Waiting for backend..."
-      #     for i in {1..20}; do
-      #       if curl -s http://localhost:8080/actuator/health | grep '"status":"UP"' > /dev/null; then
-      #         echo "✅ Backend is up!"
-      #         exit 0
-      #       fi
-      #       echo "❌ Retry ($i/20)..."
-      #       sleep 6
-      #     done
-      #     echo "❌ Backend did not respond in time."
-      #     docker logs backend || true
-      #     exit 1
+      - name: Check backend health
+        run: |
+          echo "⏳ Waiting for backend..."
+          for i in {1..20}; do
+            if curl -s http://localhost:8080/actuator/health | grep '"status":"UP"' > /dev/null; then
+              echo "✅ Backend is up!"
+              exit 0
+            fi
+            echo "❌ Retry ($i/20)..."
+            sleep 6
+          done
+          echo "❌ Backend did not respond in time."
+          docker logs backend || true
+          exit 1
 
 
 
