@@ -232,6 +232,22 @@ export default function ShopPage() {
     setPage(1);
   };
 
+  /* ===== (ADD ONLY) No-op defaults for header-driven search to prevent ReferenceError ===== */
+  // ไม่เปลี่ยนพฤติกรรมเดิมของหน้า: แค่กำหนดค่าเริ่มต้นปิดฟีเจอร์ search ที่ส่วน filtered เรียกใช้
+  const hasSearch = false;
+  const searchQ = "";
+  const searchScope = "all";
+  const normalize = (s) =>
+    String(s ?? "")
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/[^\w\s-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const fuzzyMatch = () => false;
+  /* ===== END ADD ONLY ===== */
+
   const filtered = useMemo(() => {
     const f = filters;
     const catSet   = new Set([...f.cat].map(norm));
@@ -243,6 +259,44 @@ export default function ShopPage() {
       const pBrand = norm(p.brand);
       const pPromo = norm(p.promo);
 
+      // Header-driven search (if present)
+      if (hasSearch) {
+        const q = normalize(searchQ).replace(/^#/, "");
+        if (searchScope === "productid" || searchScope === "product_id") {
+          if (!String(p.productCode || p.id || "").toLowerCase().includes(q)) return false;
+        } else if (searchScope === "category") {
+          if (!normalize(p.cat || "").includes(q)) return false;
+        } else if (searchScope === "stock") {
+          const sq = q.replace(/\s+/g, "");
+          if (/(in|instock|available)/.test(sq)) {
+            if (!(p.stock && Number(p.stock) > 0)) return false;
+          } else if (/(out|outofstock|soldout)/.test(sq)) {
+            if (p.stock && Number(p.stock) > 0) return false;
+          } else {
+            return false;
+          }
+        } else {
+          // normalize searchable fields: name, code, brand, category
+          const name = normalize(p.name || "");
+          const brand = normalize(p.brand || "");
+          const cat = normalize(p.cat || "");
+          const code = String(p.productCode || "").toLowerCase();
+          const terms = q.split(" ").filter(Boolean);
+          const ok = terms.every((t) => {
+            // direct include in name/code/brand/category
+            if (name.includes(t) || code.includes(t) || brand.includes(t) || cat.includes(t)) return true;
+            // fuzzy match against name, brand, category or product code
+            if (fuzzyMatch(t, name)) return true;
+            if (brand && fuzzyMatch(t, brand)) return true;
+            if (cat && fuzzyMatch(t, cat)) return true;
+            if (code && fuzzyMatch(t, code)) return true;
+            return false;
+          });
+          if (!ok) return false;
+        }
+      }
+
+      // existing filters
       if (catSet.size   && !catSet.has(pCat))     return false;
       if (brandSet.size && !brandSet.has(pBrand)) return false;
       if (promoSet.size && !promoSet.has(pPromo)) return false;
@@ -345,7 +399,7 @@ export default function ShopPage() {
             <div className="p-price">฿ {Number(p.price).toFixed(2)}</div>
           </div>
 
-          <button
+        <button
             className={`p-wishline ${liked ? "on" : ""}`}
             type="button"
             aria-pressed={liked}
