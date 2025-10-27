@@ -289,14 +289,19 @@ export default function ShopPage() {
             return false;
           }
         } else {
+          // normalize searchable fields: name, code, brand, category
           const name = normalize(p.name || "");
+          const brand = normalize(p.brand || "");
+          const cat = normalize(p.cat || "");
           const code = String(p.productCode || "").toLowerCase();
           const terms = q.split(" ").filter(Boolean);
           const ok = terms.every((t) => {
-            // direct include
-            if (name.includes(t) || code.includes(t)) return true;
-            // fuzzy match against name tokens or product code
+            // direct include in name/code/brand/category
+            if (name.includes(t) || code.includes(t) || brand.includes(t) || cat.includes(t)) return true;
+            // fuzzy match against name, brand, category or product code
             if (fuzzyMatch(t, name)) return true;
+            if (brand && fuzzyMatch(t, brand)) return true;
+            if (cat && fuzzyMatch(t, cat)) return true;
             if (code && fuzzyMatch(t, code)) return true;
             return false;
           });

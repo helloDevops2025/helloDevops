@@ -149,7 +149,7 @@ export default function CartPage() {
                             <h2 className="section-title">Order summary</h2>
                             <div className="totals">
                                 <div className="line">
-                                    <span>Item(s) total</span>
+                                    <span>Subtotal</span>
                                     <span id="itemsTotal">{THB(subtotal)}</span>
                                 </div>
                                 <div className="line">
@@ -157,7 +157,7 @@ export default function CartPage() {
                                     <span id="discount">−{THB(discount)}</span>
                                 </div>
                                 <div className="line total">
-                                    <span>Total</span>
+                                    <span>Grand Total</span>
                                     <span id="grandTotal" className="price">{THB(grand)}</span>
                                 </div>
                             </div>

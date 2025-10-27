@@ -3,7 +3,7 @@ import "./TrackingUserPage.css";
 import "../components/header.css";
 import "./breadcrumb.css";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useLocation, useParams, Link } from "react-router-dom";
 import Header from "../components/header";
 import Footer from "../components/footer";
@@ -14,6 +14,36 @@ const THB = (n) =>
     style: "currency",
     currency: "THB",
   });
+
+// Format date in Gregorian (AD) as DD/MM/YYYY HH:mm:ss
+const formatDateAD = (input) => {
+  try {
+    const d = input ? new Date(input) : new Date();
+    if (isNaN(d)) return String(input);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(
+      d.getHours()
+    )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  } catch (e) {
+    return String(input || "");
+  }
+};
+
+// Format date in Buddhist Era (BE / พ.ศ.) as DD/MM/YYYY HH:mm:ss
+const formatDateBE = (input) => {
+  try {
+    const d = input ? new Date(input) : new Date();
+    if (isNaN(d)) return String(input);
+    const pad = (n) => String(n).padStart(2, "0");
+    // Buddhist Era year = Gregorian year + 543
+    const beYear = d.getFullYear() + 543;
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${beYear} ${pad(
+      d.getHours()
+    )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  } catch (e) {
+    return String(input || "");
+  }
+};
 
 /* ===== Components ===== */
 const Breadcrumb = ({ items = [] }) => {
@@ -80,10 +110,10 @@ const OrderBox = ({ items }) => {
     return (
       <section className="order-box">
         <div className="order-head">
-          <div>Product</div>
-          <div>Price</div>
-          <div>Quantity</div>
-          <div>Subtotal</div>
+         <div>Item</div>
+         <div>Unit Price</div>
+         <div>Qty</div>
+         <div>Total</div>
         </div>
         <div style={{ padding: 16, color: "#777" }}>ไม่มีรายการสินค้า</div>
       </section>
@@ -93,10 +123,10 @@ const OrderBox = ({ items }) => {
   return (
     <section className="order-box">
       <div className="order-head">
-        <div>Product</div>
-        <div>Price</div>
-        <div>Quantity</div>
-        <div>Subtotal</div>
+        <div>Item</div>
+        <div>Unit Price</div>
+        <div>Qty</div>
+        <div>Total</div>
       </div>
       <div id="orderBody">
         {items.map((it) => {
@@ -180,6 +210,10 @@ export default function TrackingUserPage() {
     return { subtotal, items, total: subtotal };
   }, [order.cart]);
 
+  const printRef = useRef(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState("");
+
   // If this page was reached via navigate(..., { state }) from PlaceOrder,
   // `location.state` will contain order info — treat that as 'fromPlaceOrder'.
   const fromPlaceOrder = !!(
@@ -208,6 +242,128 @@ export default function TrackingUserPage() {
   ];
   const steps = location.state?.steps || defaultSteps;
 
+  const openPreview = () => {
+    // Build a receipt-style HTML using order data (no reliance on DOM innerHTML)
+    const items = order.cart || [];
+  if (!items.length) return alert("No items to preview");
+
+    const styles = Array.from(
+      document.querySelectorAll('link[rel="stylesheet"], style')
+    )
+      .map((n) => n.outerHTML)
+      .join("\n");
+
+    const base = `<base href="${window.location.origin}" />`;
+
+    const rows = items
+      .map((it, idx) => {
+        const subtotal = (it.price || 0) * (it.qty || 0);
+        return `
+          <tr>
+            <td class="idx" style="width:40px">${idx + 1}</td>
+            <td class="desc">
+              <div style="font-weight:700;color:#0b2545">${it.name}</div>
+              ${it.desc ? `<div class="item-desc">${it.desc}</div>` : ""}
+            </td>
+            <td class="price" style="width:120px">${THB(it.price)}</td>
+            <td class="qty" style="width:80px;text-align:center">${it.qty}</td>
+            <td class="total" style="width:140px">${THB(subtotal)}</td>
+          </tr>
+        `;
+      })
+      .join("\n");
+
+  const orderDate = formatDateAD(order.createdAt);
+    const shippingText = order.address ? (order.address.text || "") : "-";
+    const paymentMethod = order.paymentMethod || "-";
+
+    const shippingFee = order.shippingFee || 0;
+    const tax = order.tax || 0;
+    const grandTotal = totals.total + shippingFee + tax;
+
+    const html = `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          ${base}
+          ${styles}
+        </head>
+        <body>
+          <div class="tracking-page">
+            <div class="receipt">
+            <header class="r-header">
+              <div class="left">
+                <img src="/assets/logo.png" class="logo" alt="Store logo" />
+              </div>
+              <div class="center">
+                <div class="company">Pure Mart</div>
+                <div class="meta">Pure Mart Co., Ltd.</div>
+                <div class="meta small">
+                  <div>xx/x Moo x, xxxxxxxx 1xxxx • Tel: 0xx-xxx-xxxx</div>
+                  <div>contact@puremart.example</div>
+                </div>
+              </div>
+              <div class="right">
+                <div class="order-title">Order Receipt</div>
+                <div class="order-id">${order.orderId || orderId || "-"}</div>
+                <div class="meta">Date: ${orderDate}</div>
+                <div class="meta">Payment: ${paymentMethod}</div>
+              </div>
+            </header>
+
+            <section style="margin-bottom:12px">
+              <strong>Ship to</strong>
+              <div style="color:#444;margin-top:6px">${order.address && order.address.name ? `<div>${order.address.name}</div>` : "-"}</div>
+              <div style="color:#666;margin-top:6px">${shippingText}</div>
+            </section>
+
+            <table class="items">
+              <thead>
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th>Item</th>
+                  <th style="width:120px;text-align:right">Unit Price</th>
+                  <th style="width:80px;text-align:center">Qty</th>
+                  <th style="width:140px;text-align:right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+
+            <div class="totals-wrap">
+              <div class="totals-card">
+                <div class="row"><div class="muted">Subtotal</div><div>${THB(totals.total)}</div></div>
+                <div class="row"><div class="muted">Shipping Fee</div><div>${THB(shippingFee)}</div></div>
+                <div class="row"><div class="muted">Tax / VAT</div><div>${THB(tax)}</div></div>
+                <div class="grand">Grand Total&nbsp;&nbsp;${THB(grandTotal)}</div>
+              </div>
+            </div>
+
+            <div style="margin-top:18px;color:#6b7280;font-size:13px">Thank you for ordering with Pure Mart — for questions contact contact@puremart.example</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    setPreviewSrc(html);
+    setPreviewOpen(true);
+  };
+
+  const printIframe = () => {
+    const iframe = document.getElementById("order-preview-iframe");
+    if (!iframe) return alert("Preview not available");
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch (e) {
+      console.error(e);
+      alert("ไม่สามารถเปิดหน้าพรีวิวการพิมพ์ได้ — กรุณาอนุญาตป๊อปอัพหรือลองอีกครั้ง");
+    }
+  };
+
   return (
     <div className="tracking-page">
       <div className="pm-topbar" />
@@ -215,16 +371,30 @@ export default function TrackingUserPage() {
 
       <main className="container tracking">
         <Breadcrumb items={breadcrumb} />
-        <h1 className="title">ORDER TRACKING</h1>
-        <p
-          style={{
-            margin: "-18px 0 28px",
-            color: "#111",
-            fontWeight: 600,
-          }}
-        >
-          ORDER ID : {order.orderId || orderId || "-"}
-        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <h1 className="title">ORDER TRACKING</h1>
+            <p
+              style={{
+                margin: "-18px 0 28px",
+                color: "#111",
+                fontWeight: 600,
+              }}
+            >
+              ORDER ID : {order.orderId || orderId || "-"}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button
+              type="button"
+              className="print-btn"
+              onClick={openPreview}
+            >
+              Print Order Receipt
+            </button>
+          </div>
+        </div>
 
         {/* (ทางเลือก) แสดงที่อยู่จัดส่งหากมี */}
         {order.address && (
@@ -236,21 +406,75 @@ export default function TrackingUserPage() {
         )}
 
         <ProgressCard steps={steps} />
-        <OrderBox items={order.cart} />
 
-        {/* สรุปยอดรวม */}
-        <section className="card" style={{ padding: 16, marginTop: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <div>Total {totals.items} items</div>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>
-              Total Amount {THB(totals.total)}
+        {/* Printable area */}
+        <div ref={printRef}>
+          <OrderBox items={order.cart} />
+
+          {/* สรุปยอดรวม */}
+          <section className="card" style={{ padding: 16, marginTop: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: 'center' }}>
+              <div>Grand Total ({totals.items} items)</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>
+                {THB(totals.total)}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
         <div style={{ marginTop: 24 }}>
           <Link to="/home" className="btn-primary">Back to Home</Link>
         </div>
+
+        {/* Preview modal (iframe) */}
+        {previewOpen && (
+          <div
+            className="preview-overlay"
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1200,
+              padding: 24,
+            }}
+            onClick={() => setPreviewOpen(false)}
+          >
+            <div
+              role="dialog"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "min(1100px, 96%)",
+                height: "80%",
+                background: "#fff",
+                borderRadius: 8,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div style={{ padding: 12, borderBottom: "1px solid #eee", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontWeight: 700 }}>Print preview</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="print-btn" onClick={printIframe} style={{ padding: '8px 12px' }}>
+                    Open Print Dialog
+                  </button>
+                  <button onClick={() => setPreviewOpen(false)} style={{ padding: '8px 12px' }}>
+                    Close
+                  </button>
+                </div>
+              </div>
+              <iframe
+                id="order-preview-iframe"
+                title="order-preview"
+                srcDoc={previewSrc}
+                style={{ flex: 1, border: 'none' }}
+              />
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />
