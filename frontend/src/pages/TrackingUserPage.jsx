@@ -6,7 +6,7 @@ import "./breadcrumb.css";
 import React, { useMemo } from "react";
 import { useLocation, useParams, Link } from "react-router-dom";
 import Header from "../components/header";
-import Footer from "../components/footer";
+import Footer from "./../components/Footer.jsx";
 
 /* ===== Utils ===== */
 const THB = (n) =>

@@ -1,55 +1,5 @@
-# services:
-#   mysql:
-#     image: mysql:8.0
-#     container_name: mysql
-#     restart: unless-stopped
-#     environment:
-#       MYSQL_ROOT_PASSWORD: 1234
-#       MYSQL_DATABASE: hellodevops
-#       MYSQL_USER: user_devops
-#       MYSQL_PASSWORD: user1234
-#     ports:
-#       - "3306:3306"   # ถ้าเครื่องคุณมี MySQL ชนพอร์ต ให้เปลี่ยนเป็น "3307:3306"
-#     volumes:
-#       - db:/var/lib/mysql
-#       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-#     healthcheck:
-#       test: ["CMD","mysqladmin","ping","-h","localhost","-p1234"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 10
+version: "3.9"
 
-#   backend:
-#     build:
-#       context: ./backend
-#       dockerfile: Dockerfile
-#     container_name: backend
-#     restart: unless-stopped
-#     environment:
-#       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/hellodevops?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-#       SPRING_DATASOURCE_USERNAME: user_devops
-#       SPRING_DATASOURCE_PASSWORD: user1234
-#     ports:
-#       - "8080:8080"
-#     depends_on:
-#       mysql:
-#         condition: service_healthy
-
-#   frontend:
-#     build:
-#       context: ./frontend
-#     container_name: frontend
-#     restart: unless-stopped
-#     environment:
-#       # VITE_API_URL: http://backend:8080   # สำคัญ! ให้ React ยิง API ใน network เดียวกัน
-#       VITE_API_URL: http://localhost:8080
-#     ports:
-#       - "5173:5173"
-#     depends_on:
-#       - backend
-
-# volumes:
-#   db:
 services:
   mysql:
     image: mysql:8.0
@@ -61,7 +11,7 @@ services:
       MYSQL_USER: user_devops
       MYSQL_PASSWORD: user1234
     ports:
-      - "3307:3306"   # ถ้าเครื่องคุณมี MySQL ชนพอร์ต ให้เปลี่ยนเป็น "3307:3306"
+      - "3307:3306"
     volumes:
       - db:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -87,11 +37,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/hellodevops?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: user_devops
       SPRING_DATASOURCE_PASSWORD: user1234
-
-      # 🔴 เพิ่ม 2 บรรทัดนี้เพื่อ "ปิด Flyway แบบเด็ดขาด"
-      SPRING_FLYWAY_ENABLED: "false"   # ปิด Flyway ด้วยสวิชต์ตรง ๆ
-      SPRING_AUTOCONFIGURE_EXCLUDE: "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"  # กัน Spring ไม่โหลด auto-config ของ Flyway เลย
-
+      SPRING_FLYWAY_ENABLED: "false"
+      SPRING_AUTOCONFIGURE_EXCLUDE: "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
     ports:
       - "8080:8080"
     depends_on:
@@ -101,20 +48,18 @@ services:
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # ให้ FE เรียกผ่าน proxy ตลอด (production-friendly)
+        VITE_API_URL: /api
     container_name: frontend
     restart: unless-stopped
-    environment:
-      # ถ้าให้เบราว์เซอร์เรียกผ่านเครื่องเรา ใช้ localhost ได้ (เพราะ backend เปิดพอร์ต 8080 ออกมา)
-      VITE_API_URL: http://localhost:8080
-      # ถ้าจะให้วิ่งในเครือข่าย docker ภายใน (เช่น SSR/ฝั่งเซิร์ฟเวอร์), ใช้:
-      # VITE_API_URL: http://backend:8080
     ports:
-      - "5173:5173"
+      - "5173:80"
     depends_on:
       - backend
 
-# ประกาศ named volume "db" เป็น mapping (ห้ามมี '-')
 volumes:
   db: {}
 
-
+# context: ./backend -ploy

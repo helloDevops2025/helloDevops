@@ -1,13 +1,19 @@
 // ShopPage.jsx
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import "./ShopPage.css";
-import Footer from "../components/footer";
+import Footer from "./../components/Footer.jsx";
 
 /* ===== Config & helpers ===== */
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
-const norm  = (s) => String(s ?? "").trim().toLowerCase(); // สำหรับเทียบค่า
-const clean = (s) => String(s ?? "").trim();                // สำหรับแสดงผล
+const norm  = (s) => String(s ?? "").trim().toLowerCase();
+const clean = (s) => String(s ?? "").trim();
+
+const MIN_ALLOWED = 0;
+const MAX_ALLOWED = 1_000_000;
+const STEP = 0.01;
+const PAGE_SIZE = 9;
+const LS_WISH = "pm_wishlist";
 
 /* ===== Placeholder ===== */
 const PLACEHOLDER_DATA =
@@ -20,8 +26,17 @@ const PLACEHOLDER_DATA =
       </g>
     </svg>`);
 
-const PAGE_SIZE = 9;
-const LS_WISH = "pm_wishlist";
+/* ===== Price helpers (เลี่ยง floating error) ===== */
+const toCents = (val) => {
+  if (val === "" || val === null || val === undefined) return null;
+  const num = Number(val);
+  if (Number.isNaN(num)) return NaN;
+  return Math.round((num + Number.EPSILON) * 100);
+};
+const fromCents = (cents) => (cents / 100).toFixed(2);
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+const priceToCents = (priceBaht) =>
+  Math.round((Number(priceBaht) + Number.EPSILON) * 100);
 
 /* ไอคอนหัวใจ */
 const HeartIcon = (props) => (
@@ -30,11 +45,11 @@ const HeartIcon = (props) => (
   </svg>
 );
 
-/* สร้าง URL รูปจากข้อมูลสินค้า (รองรับ coverImageUrl/nested/images) */
+/* รูป */
 const resolveImageUrl = (row) => {
   const id = row.id ?? row.productId ?? row.product_id;
   let u =
-    row.coverImageUrl || // จาก projection (ถ้ามี)
+    row.coverImageUrl ||
     row.imageUrl ||
     row.image_url ||
     (Array.isArray(row.images)
@@ -42,9 +57,9 @@ const resolveImageUrl = (row) => {
       : null);
 
   if (u) {
-    if (/^https?:\/\//i.test(u)) return u;     // URL เต็ม
+    if (/^https?:\/\//i.test(u)) return u;
     if (u.startsWith("/")) return `${API_URL}${u}`;
-    return `/${u}`;                             // พาธ public ฝั่ง FE
+    return `/${u}`;
   }
   return `${API_URL}/api/products/${encodeURIComponent(id)}/cover`;
 };
@@ -52,10 +67,9 @@ const resolveImageUrl = (row) => {
 export default function ShopPage() {
   const [searchParams] = useSearchParams();
 
-  /* ===== โหลดจาก DB ===== */
-  const [PRODUCTS, setPRODUCTS] = useState([]);      // [{id,name,price,cat,brand,promo,img,catId,brandId}]
-  const [CATEGORIES, setCATEGORIES] = useState([]);  // [{id,name}]
-  const [BRANDS_MASTER, setBRANDS_MASTER] = useState([]); // [{id,name}]
+  const [PRODUCTS, setPRODUCTS] = useState([]);
+  const [CATEGORIES, setCATEGORIES] = useState([]);
+  const [BRANDS_MASTER, setBRANDS_MASTER] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState("");
 
@@ -63,20 +77,14 @@ export default function ShopPage() {
     let alive = true;
 
     const safeJson = async (url) => {
-      try {
-        const r = await fetch(url, { headers: { Accept: "application/json" } });
-        if (!r.ok) return null;
-        return await r.json();
-      } catch {
-        return null;
-      }
+      try { const r = await fetch(url, { headers: { Accept: "application/json" } }); if (!r.ok) return null; return await r.json(); }
+      catch { return null; }
     };
 
     (async () => {
       setLoading(true);
       setLoadErr("");
       try {
-        // ดึงทีเดียว 3 endpoint
         const [rows, cats, brands] = await Promise.all([
           safeJson(`${API_URL}/api/products`),
           safeJson(`${API_URL}/api/categories`),
@@ -84,48 +92,36 @@ export default function ShopPage() {
         ]);
         if (!alive) return;
 
-        // เตรียม map id -> name (เผื่อเติมชื่อถ้าฝั่ง products ส่งมาไม่ครบ)
         const catById   = new Map((cats || []).map((c) => [Number(c.id), clean(c.name)]));
         const brandById = new Map((brands || []).map((b) => [Number(b.id), clean(b.name)]));
 
-        // helper: คืน key ตัวแรกที่พบใน object
-        const pick = (obj, ...keys) => {
-          for (const k of keys) if (obj && obj[k] != null) return obj[k];
-          return undefined;
-        };
+        const pick = (obj, ...keys) => { for (const k of keys) if (obj && obj[k] != null) return obj[k]; };
 
-        // map แถวสินค้า → structure ที่หน้า Shop ใช้
         const mapped = (rows || []).map((x) => {
           const catIdRaw   = pick(x, "categoryId", "category_id", "catId", "categoryIdFk", "category_id_fk");
           const brandIdRaw = pick(x, "brandId",    "brand_id",    "brandIdFk", "brand_id_fk");
-
           const catId   = catIdRaw   != null && !Number.isNaN(Number(catIdRaw))   ? Number(catIdRaw)   : undefined;
           const brandId = brandIdRaw != null && !Number.isNaN(Number(brandIdRaw)) ? Number(brandIdRaw) : undefined;
 
-          // รองรับคีย์ที่ backend ของคุณส่ง: category / brand (สตริง)
-          // และสำรองด้วยชื่อแบบอื่น ๆ + master map จาก /api/categories /api/brands
           const catName =
-            clean(pick(x, "category", "categoryName", "category_name")) || // << สำคัญ
+            clean(pick(x, "category", "categoryName", "category_name")) ||
             clean(x.category?.name) ||
             (typeof x.category === "string" ? clean(x.category) : "") ||
             (catId != null ? (catById.get(catId) || "") : "");
 
           const brandName =
-            clean(pick(x, "brand", "brandName", "brand_name")) || // << สำคัญ
+            clean(pick(x, "brand", "brandName", "brand_name")) ||
             clean(x.brand?.name) ||
             (typeof x.brand === "string" ? clean(x.brand) : "") ||
             (brandId != null ? (brandById.get(brandId) || "") : "");
 
           return {
             id: x.id ?? x.productId ?? x.product_id,
-            productCode: pick(x, "productCode", "productId", "product_id", "id"),
             name: clean(x.name),
             price: Number(x.price) || 0,
-            catId,
-            brandId,
-            cat: catName,
-            brand: brandName,
-            promo: "-", // เฟสโปรโมชันในอนาคต
+            catId, brandId,
+            cat: catName, brand: brandName,
+            promo: "-",
             img: resolveImageUrl(x),
           };
         });
@@ -143,19 +139,14 @@ export default function ShopPage() {
     return () => { alive = false; };
   }, []);
 
-  /* ===== สถานะ UI ===== */
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("featured");
   const [filters, setFilters] = useState({
-    cat: new Set(),     // เก็บ "ชื่อ" (ให้ทำงานทันที โดยไม่ refactor ไปใช้ id)
-    brand: new Set(),   // เก็บ "ชื่อ"
-    promo: new Set(),
-    priceMin: null,
-    priceMax: null,
+    cat: new Set(), brand: new Set(), promo: new Set(),
+    // เก็บช่วงราคาที่ยอมรับเป็น "cents"
+    priceMinC: null, priceMaxC: null,
   });
 
-  /* ===== ตัวเลือก Category/Brand =====
-     เอาจาก PRODUCTS ก่อน (การันตีว่ามีจริง) ถ้ายังไม่มีชื่อ → ตกไปใช้ master */
   const CAT_LIST = useMemo(() => {
     const fromProducts = Array.from(new Set(PRODUCTS.map((p) => clean(p.cat)).filter(Boolean)));
     if (fromProducts.length) return fromProducts.sort((a, b) => a.localeCompare(b));
@@ -170,82 +161,75 @@ export default function ShopPage() {
     return fromMaster.sort((a, b) => a.localeCompare(b));
   }, [PRODUCTS, BRANDS_MASTER]);
 
-  // รองรับ ?cat= แบบไม่แคร์ตัวเล็กใหญ่/เว้นวรรค โดยเทียบกับรายการที่ "เกิดจาก PRODUCTS/master"
   useEffect(() => {
     const catParam = searchParams.get("cat");
     if (catParam) {
       const target = CAT_LIST.find((c) => norm(c) === norm(catParam));
-      if (target) {
-        setFilters((prev) => ({ ...prev, cat: new Set([clean(target)]) }));
-        setPage(1);
-      }
+      if (target) { setFilters((prev) => ({ ...prev, cat: new Set([clean(target)]) })); setPage(1); }
     }
   }, [searchParams, CAT_LIST]);
 
-  // Promotions: ยังไม่มีใน DB — เตรียมโครงไว้ก่อน
-  const PROMOS = useMemo(() => [], []);
-
   const toggleSet = (key, v, on) => {
     const label = clean(v);
-    setFilters((prev) => {
-      const next = { ...prev, [key]: new Set(prev[key]) };
-      on ? next[key].add(label) : next[key].delete(label);
-      return next;
-    });
+    setFilters((prev) => { const next = { ...prev, [key]: new Set(prev[key]) }; on ? next[key].add(label) : next[key].delete(label); return next; });
     setPage(1);
   };
-  const applyPrice = (min, max) => {
-    setFilters((p) => ({ ...p, priceMin: min, priceMax: max }));
+
+  /* ====== Price state (UI เก็บเป็นสตริงสำหรับ input) ====== */
+  const [minValStr, setMinValStr] = useState("");
+  const [maxValStr, setMaxValStr] = useState("");
+  const [priceErr, setPriceErr] = useState("");
+
+  // sync chips -> inputs
+  useEffect(() => {
+    if (filters.priceMinC != null) setMinValStr(fromCents(filters.priceMinC)); else setMinValStr("");
+    if (filters.priceMaxC != null) setMaxValStr(fromCents(filters.priceMaxC)); else setMaxValStr("");
+  }, [filters.priceMinC, filters.priceMaxC]);
+
+  const applyPrice = () => {
+    setPriceErr("");
+
+    const rawMinC = minValStr === "" ? null : toCents(minValStr);
+    const rawMaxC = maxValStr === "" ? null : toCents(maxValStr);
+
+    // ว่างทั้งคู่ = เคลียร์
+    if (rawMinC === null && rawMaxC === null) {
+      setFilters((p) => ({ ...p, priceMinC: null, priceMaxC: null }));
+      setPage(1);
+      return;
+    }
+    // มีอย่างใดอย่างหนึ่งว่าง หรือ NaN → error
+    if (rawMinC === null || rawMaxC === null) {
+      setPriceErr("กรุณากรอกทั้ง Min และ Max");
+      return;
+    }
+    if (Number.isNaN(rawMinC) || Number.isNaN(rawMaxC)) {
+      setPriceErr("รูปแบบตัวเลขไม่ถูกต้อง");
+      return;
+    }
+
+    // clamp อยู่ใน [0, 1,000,000]
+    const minC = clamp(rawMinC, MIN_ALLOWED * 100, MAX_ALLOWED * 100);
+    const maxC = clamp(rawMaxC, MIN_ALLOWED * 100, MAX_ALLOWED * 100);
+
+    if (minC > maxC) {
+      setPriceErr("ช่วงราคาไม่ถูกต้อง: Min ต้องน้อยกว่าหรือเท่ากับ Max");
+      return;
+    }
+
+    // อัปเดต inputs ให้เป็นรูปแบบ 2 ตำแหน่ง และอัปเดตฟิลเตอร์
+    setMinValStr(fromCents(minC));
+    setMaxValStr(fromCents(maxC));
+    setFilters((p) => ({ ...p, priceMinC: minC, priceMaxC: maxC }));
     setPage(1);
   };
+
   const clearAll = () => {
-    setFilters({
-      cat: new Set(),
-      brand: new Set(),
-      promo: new Set(),
-      priceMin: null,
-      priceMax: null,
-    });
+    setFilters({ cat: new Set(), brand: new Set(), promo: new Set(), priceMinC: null, priceMaxC: null });
+    setMinValStr("");
+    setMaxValStr("");
+    setPriceErr("");
     setPage(1);
-  };
-
-  /* ===== กรองข้อมูลจริงแบบ normalize ===== */
-  // Levenshtein distance for tolerant (fuzzy) matching
-  const levenshtein = (a = "", b = "") => {
-    const m = a.length;
-    const n = b.length;
-    if (m === 0) return n;
-    if (n === 0) return m;
-    const v0 = new Array(n + 1).fill(0).map((_, i) => i);
-    const v1 = new Array(n + 1).fill(0);
-    for (let i = 0; i < m; i++) {
-      v1[0] = i + 1;
-      for (let j = 0; j < n; j++) {
-        const cost = a[i] === b[j] ? 0 : 1;
-        v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
-      }
-      for (let k = 0; k <= n; k++) v0[k] = v1[k];
-    }
-    return v1[n];
-  };
-
-  const fuzzyMatch = (q = "", text = "") => {
-    if (!q) return false;
-    const A = String(q).toLowerCase();
-    const B = String(text).toLowerCase();
-    if (B.includes(A)) return true;
-    // compare against tokens in text to allow matching short words within long product names
-    const tokens = B.split(/\s+/).filter(Boolean);
-    const qLen = A.length;
-    // choose threshold: short queries allow 1 typo, longer allow ~30% of length
-    const maxDist = qLen <= 4 ? 1 : Math.max(1, Math.floor(qLen * 0.3));
-    for (const t of tokens) {
-      const dist = levenshtein(A, t.slice(0, Math.max(A.length + 2, t.length)));
-      if (dist <= maxDist) return true;
-    }
-    // also check full text as fallback
-    const distFull = levenshtein(A, B.slice(0, Math.max(A.length + 2, B.length)));
-    return distFull <= maxDist;
   };
 
   const filtered = useMemo(() => {
@@ -254,66 +238,24 @@ export default function ShopPage() {
     const brandSet = new Set([...f.brand].map(norm));
     const promoSet = new Set([...f.promo].map(norm));
 
-    // normalize helper (strip diacritics for friendly matching)
-    const normalize = (s = "") =>
-      String(s ?? "")
-        .toLowerCase()
-        .normalize("NFKD")
-        .replace(/\p{Diacritic}/gu, "")
-        .replace(/\s+/g, " ")
-        .trim();
-
-    const searchQ = (searchParams.get("search") || "").trim();
-    const searchScope = (searchParams.get("scope") || "").toLowerCase();
-    const hasSearch = !!searchQ;
-
     return PRODUCTS.filter((p) => {
       const pCat   = norm(p.cat);
       const pBrand = norm(p.brand);
       const pPromo = norm(p.promo);
 
-      // Header-driven search (if present)
-      if (hasSearch) {
-        const q = normalize(searchQ).replace(/^#/, "");
-        if (searchScope === "productid" || searchScope === "product_id") {
-          if (!String(p.productCode || p.id || "").toLowerCase().includes(q)) return false;
-        } else if (searchScope === "category") {
-          if (!normalize(p.cat || "").includes(q)) return false;
-        } else if (searchScope === "stock") {
-          const sq = q.replace(/\s+/g, "");
-          if (/(in|instock|available)/.test(sq)) {
-            if (!(p.stock && Number(p.stock) > 0)) return false;
-          } else if (/(out|outofstock|soldout)/.test(sq)) {
-            if (p.stock && Number(p.stock) > 0) return false;
-          } else {
-            return false;
-          }
-        } else {
-          const name = normalize(p.name || "");
-          const code = String(p.productCode || "").toLowerCase();
-          const terms = q.split(" ").filter(Boolean);
-          const ok = terms.every((t) => {
-            // direct include
-            if (name.includes(t) || code.includes(t)) return true;
-            // fuzzy match against name tokens or product code
-            if (fuzzyMatch(t, name)) return true;
-            if (code && fuzzyMatch(t, code)) return true;
-            return false;
-          });
-          if (!ok) return false;
-        }
-      }
-
-      // existing filters
       if (catSet.size   && !catSet.has(pCat))     return false;
       if (brandSet.size && !brandSet.has(pBrand)) return false;
       if (promoSet.size && !promoSet.has(pPromo)) return false;
 
-      if (f.priceMin != null && Number(p.price) < Number(f.priceMin)) return false;
-      if (f.priceMax != null && Number(p.price) > Number(f.priceMax)) return false;
+      // เทียบช่วงราคาด้วยเซ็นต์แบบ inclusive
+      if (f.priceMinC != null || f.priceMaxC != null) {
+        const pc = priceToCents(p.price);
+        if (f.priceMinC != null && pc < f.priceMinC) return false;
+        if (f.priceMaxC != null && pc > f.priceMaxC) return false;
+      }
       return true;
     });
-  }, [filters, PRODUCTS, searchParams]);
+  }, [filters, PRODUCTS]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -328,55 +270,63 @@ export default function ShopPage() {
     return sorted.slice(start, start + PAGE_SIZE);
   }, [sorted, page]);
 
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [totalPages, page]);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
 
   const chips = useMemo(() => {
     const out = [];
     filters.cat.forEach((v) => out.push({ key: "cat", label: v }));
     filters.brand.forEach((v) => out.push({ key: "brand", label: v }));
     filters.promo.forEach((v) => out.push({ key: "promo", label: v }));
-    if (filters.priceMin != null || filters.priceMax != null)
-      out.push({ key: "price", label: `฿${filters.priceMin ?? 0}–${filters.priceMax ?? "∞"}` });
+    if (filters.priceMinC != null || filters.priceMaxC != null)
+      out.push({
+        key: "price",
+        label: `฿${filters.priceMinC != null ? fromCents(filters.priceMinC) : "0.00"}–${filters.priceMaxC != null ? fromCents(filters.priceMaxC) : "∞"}`
+      });
     return out;
   }, [filters]);
 
   const removeChip = (c) => {
-    if (c.key === "price")
-      setFilters((p) => ({ ...p, priceMin: null, priceMax: null }));
-    else
-      setFilters((p) => {
-        const s = new Set(p[c.key]);
-        s.delete(c.label);
-        return { ...p, [c.key]: s };
-      });
+    if (c.key === "price") {
+      setFilters((p) => ({ ...p, priceMinC: null, priceMaxC: null }));
+      setMinValStr("");
+      setMaxValStr("");
+      setPriceErr("");
+    } else {
+      setFilters((p) => { const s = new Set(p[c.key]); s.delete(c.label); return { ...p, [c.key]: s }; });
+    }
     setPage(1);
   };
 
-  const [minVal, setMinVal] = useState("");
-  const [maxVal, setMaxVal] = useState("");
-  useEffect(() => {
-    setMinVal(filters.priceMin ?? "");
-    setMaxVal(filters.priceMax ?? "");
-  }, [filters.priceMin, filters.priceMax]);
-
-  /* ===== Card สินค้า ===== */
+  /* ===== Card สินค้า (คงโครงสร้างเดิมทุก div/class และทำให้ทั้งการ์ดคลิกได้) ===== */
   const ProductCard = ({ p }) => {
+    const nav = useNavigate();
+
     const [wish, setWish] = useState(() => {
       try { return new Set(JSON.parse(localStorage.getItem(LS_WISH) || "[]")); }
       catch { return new Set(); }
     });
-    useEffect(() => {
-      localStorage.setItem(LS_WISH, JSON.stringify([...wish]));
-    }, [wish]);
+    useEffect(() => { localStorage.setItem(LS_WISH, JSON.stringify([...wish])); }, [wish]);
 
     const liked = wish.has(p.id);
     const [src, setSrc] = useState(p.img);
     const [loaded, setLoaded] = useState(false);
 
+    const to = `/detail/${encodeURIComponent(p.id)}`;
+    const stop = (e) => e.stopPropagation();
+
     return (
-      <article className="card" tabIndex={0}>
+      <article
+        className="card"
+        tabIndex={0}
+        onClick={() => nav(to)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            nav(to);
+          }
+        }}
+        style={{ cursor: "pointer" }}
+      >
         <div className="p-thumb">
           {p.promo && p.promo !== "-" ? <span className="p-badge">{p.promo}</span> : null}
           <img
@@ -392,26 +342,31 @@ export default function ShopPage() {
         <div className="p-body">
           <h3 className="p-title" title={p.name}>{p.name}</h3>
           <div className="p-price-row">
-            <div className="p-price">฿ {p.price.toFixed(2)}</div>
+            <div className="p-price">฿ {Number(p.price).toFixed(2)}</div>
           </div>
 
           <button
             className={`p-wishline ${liked ? "on" : ""}`}
             type="button"
             aria-pressed={liked}
-            onClick={() =>
+            onClick={(e) => {
+              stop(e);
               setWish((prev) => {
                 const n = new Set(prev);
                 n.has(p.id) ? n.delete(p.id) : n.add(p.id);
                 return n;
-              })
-            }
+              });
+            }}
           >
             <HeartIcon />
             <span>{liked ? "ADDED TO WISHLIST" : "ADD TO WISHLIST"}</span>
           </button>
 
-          <button className="btn btn--cta" type="button">
+          <button
+            className="btn btn--cta"
+            type="button"
+            onClick={stop}
+          >
             ADD TO CART
           </button>
         </div>
@@ -447,13 +402,8 @@ export default function ShopPage() {
             <h1 className="wl-title">SHOP</h1>
             <nav className="custom-breadcrumb" aria-label="Breadcrumb">
               <ol>
-                <li className="custom-breadcrumb__item">
-                  <a href="/home">HOME</a>
-                </li>
-                <li className="custom-breadcrumb__item">
-                  <span className="divider">›</span>
-                  <span className="current">SHOP</span>
-                </li>
+                <li className="custom-breadcrumb__item"><a href="/home">HOME</a></li>
+                <li className="custom-breadcrumb__item"><span className="divider">›</span><span className="current">SHOP</span></li>
               </ol>
             </nav>
           </div>
@@ -471,25 +421,17 @@ export default function ShopPage() {
                   </span>
                 ))}
               </div>
-              <button className="link" hidden={chips.length === 0} onClick={clearAll} type="button">
-                Clear All
-              </button>
+              <button className="link" hidden={chips.length === 0} onClick={clearAll} type="button">Clear All</button>
             </div>
 
             <div className="toolbar-row">
-              <p className="result-count">
-                {loading ? "Loading…" : `${filtered.length} items found`}
-              </p>
+              <p className="result-count">{loading ? "Loading…" : `${filtered.length} items found`}</p>
               <div className="sort-area">
                 <label className="sr-only" htmlFor="sort">Sort by</label>
-                <select
-                  id="sort"
-                  value={sort}
-                  onChange={(e) => { setSort(e.target.value); setPage(1); }}
-                >
-                  <option value="featured">แนะนำ</option>
-                  <option value="price-asc">ราคาน้อย → มาก</option>
-                  <option value="price-desc">ราคามาก → น้อย</option>
+                <select id="sort" value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }}>
+                  <option value="featured">Recommended</option>
+                  <option value="price-asc">Low → High</option>
+                  <option value="price-desc">High → Low</option>
                 </select>
               </div>
             </div>
@@ -502,14 +444,11 @@ export default function ShopPage() {
 
             <div className="filters__scroll">
               <section className="filter-block" aria-expanded="true">
-                <div
-                  className="filter-head"
-                  onClick={(e) => {
-                    const blk = e.currentTarget.parentElement;
-                    const now = blk.getAttribute("aria-expanded") !== "true";
-                    blk.setAttribute("aria-expanded", String(now));
-                  }}
-                >
+                <div className="filter-head" onClick={(e) => {
+                  const blk = e.currentTarget.parentElement;
+                  const now = blk.getAttribute("aria-expanded") !== "true";
+                  blk.setAttribute("aria-expanded", String(now));
+                }}>
                   <h3>Product Categories</h3>
                   <button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
@@ -519,47 +458,67 @@ export default function ShopPage() {
               </section>
 
               <section className="filter-block" aria-expanded="true">
-                <div
-                  className="filter-head"
-                  onClick={(e) => {
-                    const blk = e.currentTarget.parentElement;
-                    const now = blk.getAttribute("aria-expanded") !== "true";
-                    blk.setAttribute("aria-expanded", String(now));
-                  }}
-                >
+                <div className="filter-head" onClick={(e) => {
+                  const blk = e.currentTarget.parentElement;
+                  const now = blk.getAttribute("aria-expanded") !== "true";
+                  blk.setAttribute("aria-expanded", String(now));
+                }}>
                   <h3>Price (฿)</h3>
                   <button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
                 <div className="filter-body">
                   <div className="price-row">
                     <input
+                      data-cy="min-input"
                       type="number"
                       inputMode="decimal"
                       placeholder="min"
-                      value={minVal}
-                      onChange={(e) => setMinVal(e.target.value)}
-                      onKeyUp={(e) =>
-                        e.key === "Enter" &&
-                        applyPrice(minVal ? Number(minVal) : null, maxVal ? Number(maxVal) : null)
-                      }
+                      min={MIN_ALLOWED}
+                      max={MAX_ALLOWED}
+                      step={STEP}
+                      value={minValStr}
+                      onChange={(e) => setMinValStr(e.target.value)}
+                      onInput={(e) => {
+                        // clamp ทันทีใน UI
+                        const v = e.currentTarget.value;
+                        if (v === "") return;
+                        let num = Number(v);
+                        if (!Number.isNaN(num)) {
+                          num = clamp(num, MIN_ALLOWED, MAX_ALLOWED);
+                          if (String(num) !== v) e.currentTarget.value = String(num);
+                        }
+                      }}
+                      onKeyUp={(e) => e.key === "Enter" && applyPrice()}
                     />
                     <span>–</span>
                     <input
+                      data-cy="max-input"
                       type="number"
                       inputMode="decimal"
                       placeholder="max"
-                      value={maxVal}
-                      onChange={(e) => setMaxVal(e.target.value)}
-                      onKeyUp={(e) =>
-                        e.key === "Enter" &&
-                        applyPrice(minVal ? Number(minVal) : null, maxVal ? Number(maxVal) : null)
-                      }
+                      min={MIN_ALLOWED}
+                      max={MAX_ALLOWED}
+                      step={STEP}
+                      value={maxValStr}
+                      onChange={(e) => setMaxValStr(e.target.value)}
+                      onInput={(e) => {
+                        const v = e.currentTarget.value;
+                        if (v === "") return;
+                        let num = Number(v);
+                        if (!Number.isNaN(num)) {
+                          num = clamp(num, MIN_ALLOWED, MAX_ALLOWED);
+                          if (String(num) !== v) e.currentTarget.value = String(num);
+                        }
+                      }}
+                      onKeyUp={(e) => e.key === "Enter" && applyPrice()}
                     />
                   </div>
+                  {priceErr && <p className="price-error" role="alert">{priceErr}</p>}
                   <button
+                    data-cy="apply-btn"
                     className="btn btn--apply"
                     type="button"
-                    onClick={() => applyPrice(minVal ? Number(minVal) : null, maxVal ? Number(maxVal) : null)}
+                    onClick={applyPrice}
                   >
                     Apply
                   </button>
@@ -567,14 +526,11 @@ export default function ShopPage() {
               </section>
 
               <section className="filter-block" aria-expanded="true">
-                <div
-                  className="filter-head"
-                  onClick={(e) => {
-                    const blk = e.currentTarget.parentElement;
-                    const now = blk.getAttribute("aria-expanded") !== "true";
-                    blk.setAttribute("aria-expanded", String(now));
-                  }}
-                >
+                <div className="filter-head" onClick={(e) => {
+                  const blk = e.currentTarget.parentElement;
+                  const now = blk.getAttribute("aria-expanded") !== "true";
+                  blk.setAttribute("aria-expanded", String(now));
+                }}>
                   <h3>Brands</h3>
                   <button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
@@ -584,20 +540,15 @@ export default function ShopPage() {
               </section>
 
               <section className="filter-block" aria-expanded="true">
-                <div
-                  className="filter-head"
-                  onClick={(e) => {
-                    const blk = e.currentTarget.parentElement;
-                    const now = blk.getAttribute("aria-expanded") !== "true";
-                    blk.setAttribute("aria-expanded", String(now));
-                  }}
-                >
+                <div className="filter-head" onClick={(e) => {
+                  const blk = e.currentTarget.parentElement;
+                  const now = blk.getAttribute("aria-expanded") !== "true";
+                  blk.setAttribute("aria-expanded", String(now));
+                }}>
                   <h3>Promotions</h3>
                   <button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
-                <div className="filter-body">
-                  {/* ยังไม่มีใน DB — เฟสถัดไป */}
-                </div>
+                <div className="filter-body">{/* ยังไม่มีใน DB — เฟสถัดไป */}</div>
               </section>
             </div>
           </aside>
@@ -606,8 +557,7 @@ export default function ShopPage() {
             <div className="grid" aria-live="polite">
               {loading || loadErr
                 ? (loading ? <p className="no-result">Loading…</p> : <p className="no-result">No products found.</p>)
-                : pageItems.map((p) => (<ProductCard key={p.id} p={p} />))
-              }
+                : pageItems.map((p) => (<ProductCard key={p.id} p={p} />))}
               {!loading && !loadErr && pageItems.length === 0 && (<p className="no-result">No products found.</p>)}
             </div>
 
