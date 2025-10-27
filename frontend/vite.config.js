@@ -2,8 +2,16 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+  base: "/",           // ✅ ให้ไฟล์ static อ้างจากรากเสมอ
   plugins: [react()],
 });
+
+// import { defineConfig } from "vite";
+// import react from "@vitejs/plugin-react";
+
+// export default defineConfig({
+//   plugins: [react()],
+// });
 
 // import { defineConfig } from "vite";
 // import react from "@vitejs/plugin-react";

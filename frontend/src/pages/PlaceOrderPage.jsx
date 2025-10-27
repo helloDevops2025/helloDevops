@@ -1,11 +1,10 @@
 // src/pages/PlaceOrderPage.jsx
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/header";
-import Footer from "../components/footer";
+import Footer from "./../components/Footer.jsx";
 import "./PlaceOrderPage.css";
 import "./breadcrumb.css";
-import "./toast.css";
 
 /* ===== Utils ===== */
 function isValidThaiMobile(raw) {
@@ -75,9 +74,7 @@ function AddressForm({ initial, onCancel, onSave, onError }) {
   const [isDefault, setIsDefault] = useState(initial?.isDefault ?? false);
 
   const handlePhoneInput = (e) => setPhone(formatThaiMobile(e.target.value));
-
-  // ฟังก์ชันจัดการ Zip Code
-  const handleZipCodeInput = (e) => setZipcode(formatZipCode(e.target.value)); // จัดรูปแบบ Zip Code
+  const handleZipCodeInput = (e) => setZipcode(formatZipCode(e.target.value));
 
   const submit = (e) => {
     e.preventDefault();
@@ -93,7 +90,7 @@ function AddressForm({ initial, onCancel, onSave, onError }) {
     }
     if (!isValidZipCode(zipcode)) {
       if (onError) onError("Please enter a valid Zip Code (5 digits only)");
-      else alert("Please enter a valid Zip Code (5 digits only)"); // แจ้งเตือนหากรหัสไปรษณีย์ไม่ถูกต้อง
+      else alert("Please enter a valid Zip Code (5 digits only)");
       return;
     }
     const text = `${house} ${street ? street + ", " : ""}${subdistrict}, ${district}, ${province} ${zipcode} | Tel: ${phone}`;
@@ -203,7 +200,7 @@ function AddressForm({ initial, onCancel, onSave, onError }) {
           <input
             type="text"
             value={zipcode}
-            onChange={handleZipCodeInput}  // ใช้ฟังก์ชันจัดรูปแบบ Zip Code
+            onChange={handleZipCodeInput}
             required
             inputMode="numeric"
             maxLength={5}
@@ -362,7 +359,7 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
       <div className="summary-actions">
         <button
           className="btn-primary"
-          disabled={!canConfirm}  // disable ปุ่มถ้ายังไม่มีที่อยู่
+          disabled={!canConfirm}
           onClick={onConfirm}
           title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
         >
@@ -377,6 +374,7 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
 /* ===== Main Page ===== */
 export default function PlaceOrderPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Simple in-app toast
   const [toast, setToast] = useState(null);
@@ -390,16 +388,48 @@ export default function PlaceOrderPage() {
     return () => document.body.classList.remove("po-page");
   }, []);
 
-  const [cart] = useState([
+  // ✅ defaultCart: ใช้เป็น fallback เมื่อไม่ได้มากับ History
+  const defaultCart = [
     { id: '#00001' , name: "ข้าวขาวหอมมะลิใหม่100% 5กก.", price: 165.00, qty: 1, img: "/assets/products/001.jpg" },
     { id: '#00007', name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3", price: 180.00, qty: 4, img: "/assets/products/007.jpg" },
     { id: '#00018', name: "มะม่วงน้ำดอกไม้สุก", price: 120.00, qty: 2, img: "/assets/products/018.jpg" },
     { id: '#00011' , name: "ซีพี ชิคแชค เนื้อไก่ปรุงรสทอดกรอบแช่แข็ง 800 กรัม", price: 179.00, qty: 2, img: "/assets/products/011.jpg" },
     { id: '#00004', name: "โกกิแป้งทอดกรอบ 500ก.", price: 45.00, qty: 2, img: "/assets/products/004.jpg" },
-  ]);
+  ];
+
+  // 🔄 เปลี่ยนเป็น state ที่ตั้งค่าได้
+  const [cart, setCart] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [mode, setMode] = useState("list");
   const [editing, setEditing] = useState(null);
+
+  // ⛳ โหลดออเดอร์จาก History → cart (หรือ fallback เป็น defaultCart)
+  useEffect(() => {
+    let initialCart = null;
+
+    const fromHistory = location.state?.from === "history";
+    const raw = sessionStorage.getItem("pm_order_preview");
+
+    if (fromHistory && raw) {
+      try {
+        const order = JSON.parse(raw);
+        if (order && Array.isArray(order.items)) {
+          initialCart = order.items.map((it, idx) => ({
+            id: `${order.id}-${idx + 1}`,
+            name: it.name,
+            price: Number(it.price || 0),
+            qty: Number(it.qty || 1),
+            img: it.thumb || "/assets/products/placeholder.jpg",
+          }));
+        }
+      } catch {
+        // ignore and fallback
+      }
+    }
+
+    setCart(initialCart || defaultCart);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const breadcrumbItems = [
     { label: "Home", href: "/home" },
@@ -407,58 +437,55 @@ export default function PlaceOrderPage() {
     { label: "Checkout" },
   ];
 
-    const handleSetDefault = (id) =>
-        setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
-    const handleAddNew = () => {
-        setEditing(null);
-        setMode("add");
-    };
-    const handleEdit = (addr) => {
-        setEditing(addr);
-        setMode("edit");
-    };
-    const handleDelete = (id) => {
-        const target = addresses.find((a) => a.id === id);
-        if (!target) return;
-        if (!window.confirm(`Delete address of "${target.name}" ?`)) return;
-        setAddresses((prev) => {
-            const filtered = prev.filter((a) => a.id !== id);
-            if (target.isDefault && filtered.length > 0) {
-                filtered[0] = { ...filtered[0], isDefault: true };
-            }
-            return filtered;
-        });
-        if (editing?.id === id) {
-            setEditing(null);
-            setMode("list");
-        }
-    };
-    const handleSave = (payload) => {
-        setAddresses((prev) => {
-            let next = [...prev];
-            const willBeDefault = payload.isDefault || next.length === 0;
-            if (mode === "edit" && editing) {
-                const idx = next.findIndex((a) => a.id === editing.id);
-                if (idx !== -1) next[idx] = { ...payload };
-            } else {
-                next.push({ ...payload });
-            }
-            if (willBeDefault) {
-                next = next.map((a) => ({ ...a, isDefault: a.id === payload.id }));
-            } else if (!next.some((a) => a.isDefault) && next.length > 0) {
-                next[0] = { ...next[0], isDefault: true };
-            }
-            return next;
-        });
-        setEditing(null);
-        setMode("list");
-        // Force a tiny re-render tick to ensure derived states (like canConfirm)
-        // reflect the newly saved addresses immediately in all places (sticky bar)
-        setTimeout(() => {
-            // no-op update: use a global attribute on body to cause React to re-evaluate
-            document.body.dataset.po_tick = Date.now();
-        }, 0);
-    };
+  const handleSetDefault = (id) =>
+    setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
+  const handleAddNew = () => {
+    setEditing(null);
+    setMode("add");
+  };
+  const handleEdit = (addr) => {
+    setEditing(addr);
+    setMode("edit");
+  };
+  const handleDelete = (id) => {
+    const target = addresses.find((a) => a.id === id);
+    if (!target) return;
+    if (!window.confirm(`Delete address of "${target.name}" ?`)) return;
+    setAddresses((prev) => {
+      const filtered = prev.filter((a) => a.id !== id);
+      if (target.isDefault && filtered.length > 0) {
+        filtered[0] = { ...filtered[0], isDefault: true };
+      }
+      return filtered;
+    });
+    if (editing?.id === id) {
+      setEditing(null);
+      setMode("list");
+    }
+  };
+  const handleSave = (payload) => {
+    setAddresses((prev) => {
+      let next = [...prev];
+      const willBeDefault = payload.isDefault || next.length === 0;
+      if (mode === "edit" && editing) {
+        const idx = next.findIndex((a) => a.id === editing.id);
+        if (idx !== -1) next[idx] = { ...payload };
+      } else {
+        next.push({ ...payload });
+      }
+      if (willBeDefault) {
+        next = next.map((a) => ({ ...a, isDefault: a.id === payload.id }));
+      } else if (!next.some((a) => a.isDefault) && next.length > 0) {
+        next[0] = { ...next[0], isDefault: true };
+      }
+      return next;
+    });
+    setEditing(null);
+    setMode("list");
+    setTimeout(() => {
+      document.body.dataset.po_tick = Date.now();
+    }, 0);
+  };
 
   useEffect(() => {
     if (addresses.length === 0) setMode("add");
@@ -466,27 +493,25 @@ export default function PlaceOrderPage() {
     // eslint-disable-next-line
   }, [addresses.length]);
 
-  // ยังเก็บไว้ใช้โชว์ tooltip ได้
   const canConfirm = addresses.some(a => a.isDefault);
 
-  // ✅ แก้: ไม่บล็อกด้วย canConfirm แล้ว และทำ fallback address ให้เอง
   const handleConfirm = () => {
-  const orderId = Date.now(); // mock id
-  const selectedAddress =
-    addresses.find(a => a.isDefault) || addresses[0] || null;  // เลือกที่อยู่แรกถ้าไม่ได้เลือกที่อยู่เป็น default
+    const orderId = Date.now(); // mock id
+    const selectedAddress =
+      addresses.find(a => a.isDefault) || addresses[0] || null;
 
-  if (!selectedAddress) {
-    showToast("กรุณาเพิ่มที่อยู่ก่อนทำการสั่งซื้อ", "error");
-    return;
-  }
+    if (!selectedAddress) {
+      showToast("กรุณาเพิ่มที่อยู่ก่อนทำการสั่งซื้อ", "error");
+      return;
+    }
 
-  const orderPayload = { orderId, address: selectedAddress, cart };
-  try {
-    sessionStorage.setItem("pm_last_order", JSON.stringify(orderPayload));
-  } catch {}
+    const orderPayload = { orderId, address: selectedAddress, cart };
+    try {
+      sessionStorage.setItem("pm_last_order", JSON.stringify(orderPayload));
+    } catch {}
 
-  navigate(`/tracking-user/${orderId}`, { state: orderPayload });
-};
+    navigate(`/tracking-user/${orderId}`, { state: orderPayload });
+  };
 
   return (
     <div className="place-order-page">
@@ -555,7 +580,7 @@ export default function PlaceOrderPage() {
       <div className="sticky-checkout-bar">
         <button
           className="btn-primary"
-          disabled={false} // เดโม: เปิดปุ่มเสมอ
+          disabled={false}
           onClick={handleConfirm}
           title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
         >
