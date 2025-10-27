@@ -60,7 +60,7 @@ describe('PlaceOrder — e2e (updated)', () => {
             .and('contain.text', 'โกกิแป้งทอดกรอบ 500ก.');
 
         // บรรทัด total แสดงสกุลเงิน และตัวเลขถูกต้อง (รวม 1,573)
-        cy.get('.totals .line').contains('Item(s) total')
+        cy.get('.totals .line').contains('Subtotal')
             .siblings().last().should('contain.text', CURRENCY_SIGN);
 
         cy.get('.totals .line.total .price')
@@ -73,7 +73,7 @@ describe('PlaceOrder — e2e (updated)', () => {
 
         // จำนวนชิ้นรวม 11 ชิ้น
         cy.get('.totals .line.total')
-            .should('contain.text', 'Total (11 items)');
+            .should('contain.text', 'Grand Total (11 items)');
     });
 
     it('เริ่มต้นยังไม่มีที่อยู่ → โหมด add form, ปุ่มยืนยันถูก disable ทั้งสองตำแหน่ง', () => {

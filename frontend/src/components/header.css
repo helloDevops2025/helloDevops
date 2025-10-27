@@ -291,6 +291,38 @@ html{ overflow-y:scroll; }
   color: #aaa;
 }
 
+/* Hide browser-native search clear button so only our custom clear exists */
+.pm-search input[type="search"]::-webkit-search-decoration,
+.pm-search input[type="search"]::-webkit-search-cancel-button,
+.pm-search input[type="search"]::-webkit-search-results-button,
+.pm-search input[type="search"]::-webkit-search-results-decoration{
+  -webkit-appearance:none; display:none; }
+/* IE/Edge */
+.pm-search input[type="search"]::-ms-clear{ display:none; width:0; height:0; }
+
+/* Autocomplete suggestions under header search */
+.search-suggestions{
+  position:absolute; left:14px; right:14px; top:calc(100% + 8px);
+  background:#fff; border:1px solid #e6e6e6; border-radius:10px;
+  box-shadow:0 10px 30px rgba(15,23,42,0.08); z-index:1100;
+  max-height:320px; overflow:auto; padding:6px; display:flex; flex-direction:column; gap:6px;
+}
+.search-suggestion-item{
+  display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+  padding:8px 12px; border-radius:8px; background:transparent; border:0; text-align:left; cursor:pointer;
+}
+.search-suggestion-item:hover{ background:#f4f6ff; }
+.ss-main{ font-weight:600; color:#0b2545 }
+.ss-sub{ font-size:12px; color:#6b7280 }
+
+/* clear (x) button inside search */
+.pm-search .clear-btn{
+  appearance:none; border:0; background:transparent; color:#777; font-size:18px;
+  width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer; margin-left:6px; flex:0 0 30px;
+}
+.pm-search .clear-btn:hover{ background:#f4f6ff; color:var(--pm-primary); }
+
 /* dropdown scope */
 .pm-search-scope {
   appearance: none;

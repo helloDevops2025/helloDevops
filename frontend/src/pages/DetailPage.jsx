@@ -92,21 +92,14 @@ function Breadcrumb({ categorySlug, categoryName, currentTitle }) {
     <nav className="pm-breadcrumb" aria-label="Breadcrumb">
       <ol>
         <li>
-          {loading ? (
-            <span>Loading...</span>
-          ) : (
-            <Link to="/home">HOME</Link>
-          )}
+          <Link to="/home">HOME</Link>
         </li>
-        <li>
-          {loading ? (
-            <span>Loading...</span>
-          ) : (
-            <Link to={`/shop?category=${categorySlug}`}>
-              {(categoryName || "").toUpperCase()}
-            </Link>
-          )}
-        </li>
+            <li>
+              {/* Link to shop with category filter - /category route isn't defined in router */}
+              <Link to={`/shop?cat=${encodeURIComponent(categoryName)}`}>
+                {categoryName.toUpperCase()}
+              </Link>
+            </li>
         <li className="current" aria-current="page">
           <span title={currentTitle}>{currentTitle}</span>
         </li>

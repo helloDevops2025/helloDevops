@@ -455,7 +455,7 @@ const HomePage = () => {
       <main className="home">
         <div className="container">
           {/* ===== Hero banner (single framed banner keeps 3:1 ratio) ===== */}
-          <section className="hero-banner" aria-label="Main banner">
+          <section className="hero-banner hero-banner--main" aria-label="Main banner">
             <img
               className="hero-img hero-img--focus-right"
               src="/assets/user/image48.png"
@@ -474,6 +474,23 @@ const HomePage = () => {
 
           {/* ===== Best Sellers (DB) ===== */}
           <BestSellersSection />
+
+          {/* ===== Second banner: keep same 3:1 aspect ratio, add promo copy (bigger headline) ===== */}
+          <section className="hero-banner hero-banner--promo" aria-label="Promotional banner">
+            <img
+              className="hero-img hero-img--focus-right"
+              src="/assets/user/banner2.png"
+              alt="Seasonal produce — promo"
+              loading="lazy"
+            />
+            <div className="hero-content">
+              <h1>Fresh picks — 25% off</h1>
+              <p className="hero-sub">Seasonal produce & pantry essentials. Limited time only.</p>
+              <div className="hero-ctas">
+                <Link to="/shop" className="hero-btn">Shop the Sale</Link>
+              </div>
+            </div>
+          </section>
 
           {/* ===== Categories (DB) ===== */}
           <CategoriesSection />
