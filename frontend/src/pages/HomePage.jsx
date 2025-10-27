@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react"; 
 import { Link, useLocation } from "react-router-dom";
 import "./HomePage.css";
 import Header from "../components/header";
@@ -34,14 +34,15 @@ const resolveCoverUrl = (p) => {
       : undefined);
 
   if (raw) {
-    if (/^https?:\/\//i.test(raw)) return raw;        // URL เต็ม
-    if (raw.startsWith("/")) return `${API_URL}${raw}`; // พาธ backend
-    return `/${raw}`;                                  // พาธ public ฝั่ง FE
+    if (isAbs(raw)) return raw;                            // URL เต็ม
+    if (raw.startsWith("/api")) return join(API_URL, raw); // พาธ backend
+    // เหลือกรณีไฟล์ฝั่ง FE (public/dist)
+    return raw.startsWith("/") ? raw : `/${raw}`;
   }
 
   // ⬇⬇ NEW: ไม่มีรูปใน field → ใช้ GET /api/products/:id/cover
   const pid = p?.id ?? p?.productId ?? p?.product_id;
-  if (pid != null) return `${API_URL}/api/products/${encodeURIComponent(pid)}/cover`;
+  if (pid != null) return join(API_URL, `/api/products/${encodeURIComponent(pid)}/cover`);
 
   return "/assets/products/placeholder.png";
 };
@@ -59,8 +60,11 @@ const CAT_IMAGE_FALLBACKS = {
 const resolveCategoryImage = (cat) => {
   const raw = cat?.imageUrl || cat?.image_url || CAT_IMAGE_FALLBACKS[cat?.name] || "";
   if (!raw) return "/assets/products/placeholder.png";
-  if (isAbs(raw)) return encodeURI(raw);
-  return encodeURI(join(API_URL, raw));
+  if (isAbs(raw)) return encodeURI(raw);                   // URL เต็ม
+  if (raw.startsWith("/api")) return encodeURI(join(API_URL, raw)); // พาธ backend
+  // ไฟล์ฝั่ง FE (public)
+  const fePath = raw.startsWith("/") ? raw : `/${raw}`;
+  return encodeURI(fePath);
 };
 
 /* =========================================
