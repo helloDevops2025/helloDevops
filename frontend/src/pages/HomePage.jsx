@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./HomePage.css";
 import Header from "../components/header";
-import Footer from "../components/footer";
+import Footer from "./../components/Footer.jsx";
 
 /* =========================================
    1) CONSTANTS & HELPERS (ด้านบน)
@@ -36,6 +36,7 @@ const resolveCoverUrl = (p) => {
   if (raw) {
     if (isAbs(raw)) return raw;                            // URL เต็ม
     if (raw.startsWith("/api")) return join(API_URL, raw); // พาธ backend
+    if (raw.startsWith("/")) return join(API_URL, raw); 
     // เหลือกรณีไฟล์ฝั่ง FE (public/dist)
     return raw.startsWith("/") ? raw : `/${raw}`;
   }
