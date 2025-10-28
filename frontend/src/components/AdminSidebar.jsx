@@ -88,7 +88,7 @@ export default function AdminSidebar() {
         <div className="brand-logo">
           {/* ปรับ path ให้ตรงกับของคุณ (ดูจากโฟลเดอร์คุณอยู่ public/assets/user/logo.png) */}
           <img
-            src="/assets/logo.png"  
+            src="/assets/logo.png"
             alt="Admin Logo"
             style={{ width: 120, height: "auto" }}
           />
@@ -104,12 +104,13 @@ export default function AdminSidebar() {
       <div className="section-title">MAIN</div>
       <nav className="nav">
         {/* กลับหน้า Home (ฝั่ง user) หรือจะเปลี่ยนเป็น /admin/dashboard ก็ได้ถ้ามี */}
-        <NavLink to="/" className={mainItemClass}>
+        <NavLink to="/admin/dashboard" className={mainItemClass}>
           <span className="icon">
             <i className="fa-solid fa-house" />
           </span>
-          Home
+          Dashboard
         </NavLink>
+
       </nav>
 
       <div className="section-title">ALL PAGE</div>
