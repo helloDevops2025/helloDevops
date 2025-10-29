@@ -1,10 +1,10 @@
-// ShopPage.jsx
+// src/pages/ShopPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import "./ShopPage.css";
 import Footer from "./../components/Footer.jsx";
 
-/* ===== Config & helpers ===== */
+/*  Config & helpers  */
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 const norm  = (s) => String(s ?? "").trim().toLowerCase();
 const clean = (s) => String(s ?? "").trim();
@@ -14,8 +14,9 @@ const MAX_ALLOWED = 1_000_000;
 const STEP = 0.01;
 const PAGE_SIZE = 9;
 const LS_WISH = "pm_wishlist";
+const LS_CART = "pm_cart";
 
-/* ===== Placeholder ===== */
+/* Placeholder  */
 const PLACEHOLDER_DATA =
   "data:image/svg+xml;utf8," +
   encodeURIComponent(`
@@ -26,7 +27,7 @@ const PLACEHOLDER_DATA =
       </g>
     </svg>`);
 
-/* ===== Price helpers (เลี่ยง floating error) ===== */
+/* Price helpers */
 const toCents = (val) => {
   if (val === "" || val === null || val === undefined) return null;
   const num = Number(val);
@@ -37,6 +38,17 @@ const fromCents = (cents) => (cents / 100).toFixed(2);
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 const priceToCents = (priceBaht) =>
   Math.round((Number(priceBaht) + Number.EPSILON) * 100);
+
+/* Cart helpers (เหมือนหน้า Detail) */
+const readCart = () => {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]");
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+};
+const saveCart = (arr) => localStorage.setItem(LS_CART, JSON.stringify(arr));
 
 /* ไอคอนหัวใจ */
 const HeartIcon = (props) => (
@@ -130,7 +142,7 @@ export default function ShopPage() {
         setCATEGORIES((cats || []).map((c) => ({ id: Number(c.id), name: clean(c.name) })));
         setBRANDS_MASTER((brands || []).map((b) => ({ id: Number(b.id), name: clean(b.name) })));
       } catch (e) {
-        setLoadErr(e.message || "โหลดข้อมูลไม่สำเร็จ");
+        setLoadErr(e.message || "Failed to load data");
       } finally {
         if (alive) setLoading(false);
       }
@@ -143,7 +155,6 @@ export default function ShopPage() {
   const [sort, setSort] = useState("featured");
   const [filters, setFilters] = useState({
     cat: new Set(), brand: new Set(), promo: new Set(),
-    // เก็บช่วงราคาที่ยอมรับเป็น "cents"
     priceMinC: null, priceMaxC: null,
   });
 
@@ -175,7 +186,7 @@ export default function ShopPage() {
     setPage(1);
   };
 
-  /* ====== Price state (UI เก็บเป็นสตริงสำหรับ input) ====== */
+  /* Price state (UI เก็บเป็นสตริงสำหรับ input) */
   const [minValStr, setMinValStr] = useState("");
   const [maxValStr, setMaxValStr] = useState("");
   const [priceErr, setPriceErr] = useState("");
@@ -186,38 +197,32 @@ export default function ShopPage() {
     if (filters.priceMaxC != null) setMaxValStr(fromCents(filters.priceMaxC)); else setMaxValStr("");
   }, [filters.priceMinC, filters.priceMaxC]);
 
+  const INVALID_RANGE_MSG = "Invalid price range. Please enter a new range.";
+
   const applyPrice = () => {
     setPriceErr("");
 
     const rawMinC = minValStr === "" ? null : toCents(minValStr);
     const rawMaxC = maxValStr === "" ? null : toCents(maxValStr);
 
-    // ว่างทั้งคู่ = เคลียร์
     if (rawMinC === null && rawMaxC === null) {
       setFilters((p) => ({ ...p, priceMinC: null, priceMaxC: null }));
       setPage(1);
       return;
     }
-    // มีอย่างใดอย่างหนึ่งว่าง หรือ NaN → error
-    if (rawMinC === null || rawMaxC === null) {
-      setPriceErr("กรุณากรอกทั้ง Min และ Max");
-      return;
-    }
-    if (Number.isNaN(rawMinC) || Number.isNaN(rawMaxC)) {
-      setPriceErr("รูปแบบตัวเลขไม่ถูกต้อง");
+    if (rawMinC === null || rawMaxC === null || Number.isNaN(rawMinC) || Number.isNaN(rawMaxC)) {
+      setPriceErr(INVALID_RANGE_MSG);
       return;
     }
 
-    // clamp อยู่ใน [0, 1,000,000]
     const minC = clamp(rawMinC, MIN_ALLOWED * 100, MAX_ALLOWED * 100);
     const maxC = clamp(rawMaxC, MIN_ALLOWED * 100, MAX_ALLOWED * 100);
 
     if (minC > maxC) {
-      setPriceErr("ช่วงราคาไม่ถูกต้อง: Min ต้องน้อยกว่าหรือเท่ากับ Max");
+      setPriceErr(INVALID_RANGE_MSG);
       return;
     }
 
-    // อัปเดต inputs ให้เป็นรูปแบบ 2 ตำแหน่ง และอัปเดตฟิลเตอร์
     setMinValStr(fromCents(minC));
     setMaxValStr(fromCents(maxC));
     setFilters((p) => ({ ...p, priceMinC: minC, priceMaxC: maxC }));
@@ -232,8 +237,7 @@ export default function ShopPage() {
     setPage(1);
   };
 
-  /* ===== (ADD ONLY) No-op defaults for header-driven search to prevent ReferenceError ===== */
-  // ไม่เปลี่ยนพฤติกรรมเดิมของหน้า: แค่กำหนดค่าเริ่มต้นปิดฟีเจอร์ search ที่ส่วน filtered เรียกใช้
+  /* (ADD ONLY) No-op defaults for header-driven search */
   const hasSearch = false;
   const searchQ = "";
   const searchScope = "all";
@@ -246,7 +250,7 @@ export default function ShopPage() {
       .replace(/\s+/g, " ")
       .trim();
   const fuzzyMatch = () => false;
-  /* ===== END ADD ONLY ===== */
+  /* END */
 
   const filtered = useMemo(() => {
     const f = filters;
@@ -259,7 +263,6 @@ export default function ShopPage() {
       const pBrand = norm(p.brand);
       const pPromo = norm(p.promo);
 
-      // Header-driven search (if present)
       if (hasSearch) {
         const q = normalize(searchQ).replace(/^#/, "");
         if (searchScope === "productid" || searchScope === "product_id") {
@@ -276,16 +279,13 @@ export default function ShopPage() {
             return false;
           }
         } else {
-          // normalize searchable fields: name, code, brand, category
           const name = normalize(p.name || "");
           const brand = normalize(p.brand || "");
           const cat = normalize(p.cat || "");
           const code = String(p.productCode || "").toLowerCase();
-          const terms = q.split(" ").filter(Boolean);
+          const terms = (normalize(searchQ) || "").split(" ").filter(Boolean);
           const ok = terms.every((t) => {
-            // direct include in name/code/brand/category
             if (name.includes(t) || code.includes(t) || brand.includes(t) || cat.includes(t)) return true;
-            // fuzzy match against name, brand, category or product code
             if (fuzzyMatch(t, name)) return true;
             if (brand && fuzzyMatch(t, brand)) return true;
             if (cat && fuzzyMatch(t, cat)) return true;
@@ -296,12 +296,10 @@ export default function ShopPage() {
         }
       }
 
-      // existing filters
       if (catSet.size   && !catSet.has(pCat))     return false;
       if (brandSet.size && !brandSet.has(pBrand)) return false;
       if (promoSet.size && !promoSet.has(pPromo)) return false;
 
-      // เทียบช่วงราคาด้วยเซ็นต์แบบ inclusive
       if (f.priceMinC != null || f.priceMaxC != null) {
         const pc = priceToCents(p.price);
         if (f.priceMinC != null && pc < f.priceMinC) return false;
@@ -351,7 +349,10 @@ export default function ShopPage() {
     setPage(1);
   };
 
-  /* ===== Card สินค้า (คงโครงสร้างเดิมทุก div/class และทำให้ทั้งการ์ดคลิกได้) ===== */
+  const hasPriceFilter = filters.priceMinC != null || filters.priceMaxC != null;
+  const noProductsDueToPrice = !loading && !loadErr && sorted.length === 0 && hasPriceFilter;
+
+  /* Card สินค้า */
   const ProductCard = ({ p }) => {
     const nav = useNavigate();
 
@@ -364,9 +365,31 @@ export default function ShopPage() {
     const liked = wish.has(p.id);
     const [src, setSrc] = useState(p.img);
     const [loaded, setLoaded] = useState(false);
+    const [added, setAdded] = useState(false);
 
     const to = `/detail/${encodeURIComponent(p.id)}`;
     const stop = (e) => e.stopPropagation();
+
+    // เพิ่มลงตะกร้า (qty +1 ถ้ามีอยู่แล้ว)
+    const addToCart = () => {
+      const item = {
+        id: String(p.id),
+        name: p.name || "Unnamed product",
+        price: Number(p.price) || 0,
+        qty: 1,
+        img: src || PLACEHOLDER_DATA,
+      };
+      const cart = readCart();
+      const idx = cart.findIndex((x) => String(x.id) === String(item.id));
+      if (idx >= 0) {
+        cart[idx] = { ...cart[idx], qty: Math.max(1, (cart[idx].qty || 1) + 1) };
+      } else {
+        cart.push(item);
+      }
+      saveCart(cart);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 900);
+    };
 
     return (
       <article
@@ -399,7 +422,7 @@ export default function ShopPage() {
             <div className="p-price">฿ {Number(p.price).toFixed(2)}</div>
           </div>
 
-        <button
+          <button
             className={`p-wishline ${liked ? "on" : ""}`}
             type="button"
             aria-pressed={liked}
@@ -419,16 +442,17 @@ export default function ShopPage() {
           <button
             className="btn btn--cta"
             type="button"
-            onClick={stop}
+            onClick={(e) => { stop(e); addToCart(); }}
+            title="Add to cart"
           >
-            ADD TO CART
+            {added ? "ADDED ✓" : "ADD TO CART"}
           </button>
         </div>
       </article>
     );
   };
 
-  /* ===== Checklist ===== */
+  /* Checklist */
   const CheckList = ({ list, setKey, selected }) => (
     <div className={`checklist ${setKey === "brand" ? "scroll" : ""}`}>
       {list.map((val, idx) => {
@@ -533,7 +557,6 @@ export default function ShopPage() {
                       value={minValStr}
                       onChange={(e) => setMinValStr(e.target.value)}
                       onInput={(e) => {
-                        // clamp ทันทีใน UI
                         const v = e.currentTarget.value;
                         if (v === "") return;
                         let num = Number(v);
@@ -612,7 +635,11 @@ export default function ShopPage() {
               {loading || loadErr
                 ? (loading ? <p className="no-result">Loading…</p> : <p className="no-result">No products found.</p>)
                 : pageItems.map((p) => (<ProductCard key={p.id} p={p} />))}
-              {!loading && !loadErr && pageItems.length === 0 && (<p className="no-result">No products found.</p>)}
+              {!loading && !loadErr && pageItems.length === 0 && (
+                <p className="no-result">
+                  {noProductsDueToPrice ? "No products found in the selected price range." : "No products found."}
+                </p>
+              )}
             </div>
 
             <nav className="pagination" aria-label="Pagination">
