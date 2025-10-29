@@ -28,12 +28,11 @@ function formatThaiMobile(raw) {
 const currencyTHB = (n) =>
   n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
 
-// Zip code helper: keep digits only and limit to 5 characters
+// Zip code helper
 function formatZipCode(raw) {
   if (!raw) return "";
   return raw.replace(/\D/g, "").slice(0, 5);
 }
-
 function isValidZipCode(raw) {
   const d = (raw || "").replace(/\D/g, "");
   return /^\d{5}$/.test(d);
@@ -294,7 +293,7 @@ function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
   );
 }
 
-/* ===== Order Summary ===== */
+/* Order Summary  */
 function OrderSummary({ cart, canConfirm, onConfirm }) {
   const { subtotal, itemsCount } = useMemo(() => {
     let subtotal = 0, itemsCount = 0;
@@ -355,7 +354,6 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
         </div>
       </div>
 
-      {/* Primary action inside the summary card (desktop-first) */}
       <div className="summary-actions">
         <button
           className="btn-primary"
@@ -366,12 +364,11 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
           Place Order
         </button>
       </div>
-
     </aside>
   );
 }
 
-/* ===== Main Page ===== */
+/* Main Page  */
 export default function PlaceOrderPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -388,7 +385,7 @@ export default function PlaceOrderPage() {
     return () => document.body.classList.remove("po-page");
   }, []);
 
-  // ✅ defaultCart: ใช้เป็น fallback เมื่อไม่ได้มากับ History
+  // defaultCart: fallback
   const defaultCart = [
     { id: '#00001' , name: "ข้าวขาวหอมมะลิใหม่100% 5กก.", price: 165.00, qty: 1, img: "/assets/products/001.jpg" },
     { id: '#00007', name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3", price: 180.00, qty: 4, img: "/assets/products/007.jpg" },
@@ -397,36 +394,53 @@ export default function PlaceOrderPage() {
     { id: '#00004', name: "โกกิแป้งทอดกรอบ 500ก.", price: 45.00, qty: 2, img: "/assets/products/004.jpg" },
   ];
 
-  // 🔄 เปลี่ยนเป็น state ที่ตั้งค่าได้
   const [cart, setCart] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [mode, setMode] = useState("list");
   const [editing, setEditing] = useState(null);
 
-  // ⛳ โหลดออเดอร์จาก History → cart (หรือ fallback เป็น defaultCart)
+  // โหลดออเดอร์ตามลำดับความสำคัญ:
+  // 1) มาจาก BUY NOW → ใช้สินค้าเดียวที่ส่งมา
+  // 2) มาจาก history preview (sessionStorage)
+  // 3) อ่านจาก localStorage ตะกร้า
+  // 4) defaultCart
   useEffect(() => {
     let initialCart = null;
 
-    const fromHistory = location.state?.from === "history";
-    const raw = sessionStorage.getItem("pm_order_preview");
+    // 1) BUY NOW
+    if (location.state?.from === "buy-now" && location.state?.item) {
+      initialCart = [location.state.item];
+    }
 
-    if (fromHistory && raw) {
-      try {
-        const order = JSON.parse(raw);
-        if (order && Array.isArray(order.items)) {
-          initialCart = order.items.map((it, idx) => ({
-            id: `${order.id}-${idx + 1}`,
-            name: it.name,
-            price: Number(it.price || 0),
-            qty: Number(it.qty || 1),
-            img: it.thumb || "/assets/products/placeholder.jpg",
-          }));
-        }
-      } catch {
-        // ignore and fallback
+    // 2) HISTORY PREVIEW
+    if (!initialCart) {
+      const fromHistory = location.state?.from === "history";
+      const raw = sessionStorage.getItem("pm_order_preview");
+      if (fromHistory && raw) {
+        try {
+          const order = JSON.parse(raw);
+          if (order && Array.isArray(order.items)) {
+            initialCart = order.items.map((it, idx) => ({
+              id: `${order.id}-${idx + 1}`,
+              name: it.name,
+              price: Number(it.price || 0),
+              qty: Number(it.qty || 1),
+              img: it.thumb || "/assets/products/placeholder.jpg",
+            }));
+          }
+        } catch {}
       }
     }
 
+    // 3) LOCALSTORAGE CART
+    if (!initialCart) {
+      try {
+        const ls = JSON.parse(localStorage.getItem("pm_cart") || "[]");
+        if (Array.isArray(ls) && ls.length) initialCart = ls;
+      } catch {}
+    }
+
+    // 4) FALLBACK
     setCart(initialCart || defaultCart);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -516,7 +530,6 @@ export default function PlaceOrderPage() {
   return (
     <div className="place-order-page">
       <Header />
-      {/* Toast UI */}
       {toast && (
         <div className={`pm-toast pm-toast--${toast.type}`} role="status" aria-live="polite">
           <div className="pm-toast__body">
