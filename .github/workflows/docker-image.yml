@@ -104,27 +104,38 @@ jobs:
           if [ ! -f package-lock.json ]; then
             npm install
           fi
+      
+      # ตั้ง tag จาก commit SHA
+      - name: Set build tag
+        run: echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+        
+      # # 🐳 Build Docker image และเก็บ log
+      # - name: Build Docker image
+      #   run: |
+      #     pwd
+      #     ls
+      #     cd frontend
+      #     pwd
+      #     ls
+      #     docker build -t hello-devops-frontend:latest .
 
-      # 🐳 Build Docker image และเก็บ log
+      # Build Docker image
       - name: Build Docker image
         run: |
-          pwd
-          ls
           cd frontend
-          pwd
-          ls
-          docker build -t hello-devops-frontend:latest .
+          docker build -t u6687032/hello-devops-frontend:${{ env.TAG }} .
 
       # 🔐 Login Docker Hub
       - name: Login to Docker Hub
-        run: echo dckr_pat_VJu4lYTGkJU9meYspQ3U2XkUjW4 | docker login -u u6687032 --password-stdin
+        run: echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
       # 📦 Push image และเก็บ log
       - name: Push image to Docker Hub
         if: success()
         run: |
           echo "🚀 Pushing image to Docker Hub..." 
-          docker tag hello-devops-frontend:latest u6687032/hello-devops-frontend:latest
-          docker push u6687032/hello-devops-frontend:latest  
+          docker push u6687032/hello-devops-frontend:${{ env.TAG }}
+          docker tag u6687032/hello-devops-frontend:${{ env.TAG }} u6687032/hello-devops-frontend:latest
+          docker push u6687032/hello-devops-frontend:latest
 
 
