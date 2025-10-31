@@ -134,8 +134,26 @@ jobs:
    needs: Docker
    env:
       TAG: ${{ needs.Docker.outputs.TAG }}   # ✅ ดึงค่าจาก job build
+      PROJECT_ID: hellodevops-476816
+      CLUSTER_NAME: hello-devops-cluster
+      REGION: asia-northeast1
+      DEPLOYMENT_NAME: backend
       
    steps:
+      # 1️⃣ Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+  
+      # 2️⃣ Get GKE credentials (เชื่อมต่อกับ cluster)
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.CLUSTER_NAME }}
+          location: ${{ env.REGION }}
+          project_id: ${{ env.PROJECT_ID }}
+
       # Update image to specific version (ถ้ามี tag เฉพาะ)
       - name: Update Deployment images
         if: env.TAG != ''
