@@ -93,8 +93,10 @@ jobs:
   Docker:
    runs-on: ubuntu-latest
    needs: e2e-test
+   outputs:
+      TAG: ${{ steps.set_tag.outputs.TAG }}   # ✅ ส่งค่าออกไปให้ job ต่อไปใช้ได้
+      
    steps:
-   
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -108,16 +110,6 @@ jobs:
       # ตั้ง tag จาก commit SHA
       - name: Set build tag
         run: echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
-        
-      # # 🐳 Build Docker image และเก็บ log
-      # - name: Build Docker image
-      #   run: |
-      #     pwd
-      #     ls
-      #     cd frontend
-      #     pwd
-      #     ls
-      #     docker build -t hello-devops-frontend:latest .
 
       # Build Docker image
       - name: Build Docker image
@@ -137,5 +129,18 @@ jobs:
           docker push u6687032/hello-devops-frontend:${{ env.TAG }}
           docker tag u6687032/hello-devops-frontend:${{ env.TAG }} u6687032/hello-devops-frontend:latest
           docker push u6687032/hello-devops-frontend:latest
-
-
+  Deploy:
+   runs-on: ubuntu-latest
+   needs: Docker
+   env:
+      TAG: ${{ needs.build.outputs.TAG }}   # ✅ ดึงค่าจาก job build
+      
+   steps:
+      # Update image to specific version (ถ้ามี tag เฉพาะ)
+      - name: Update Deployment images
+        if: env.TAG != ''
+        run: |
+          echo "🔄 Updating deployments to tag: ${{ env.TAG }}"
+          kubectl set image deployment/frontend-deployment frontend=u6687032/hello-devops-frontend:${{ env.TAG }}
+          kubectl rollout status deployment/frontend-deployment
+  
