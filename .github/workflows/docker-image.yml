@@ -180,6 +180,7 @@ jobs:
         if: env.TAG != ''
         run: |
           echo "🔄 Updating deployments to tag: ${{ env.TAG }}"
-          kubectl set image deployment/frontend-deployment frontend=u6687032/hello-devops-frontend:${{ env.TAG }}
-          kubectl rollout status deployment/frontend-deployment
+          kubectl set image deployment/frontend frontend=u6687032/hello-devops-frontend:${{ env.TAG }}
+          kubectl rollout status deployment/frontend
+
   
