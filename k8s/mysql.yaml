@@ -14,12 +14,9 @@ kind: ConfigMap
 metadata:
   name: mysql-initdb
 data:
+  # ชื่อไฟล์ต้องตรงกับชื่อไฟล์จริงที่อยู่ในโปรเจกต์
   init.sql: |
-    -- ตัวอย่าง init.sql (คุณสามารถแทนที่ด้วยไฟล์จริงของคุณ)
-    CREATE TABLE IF NOT EXISTS test_table (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(100)
-    );
+    {{- (.Files.Get "init.sql") | nindent 4 }}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
