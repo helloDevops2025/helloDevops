@@ -110,8 +110,13 @@ jobs:
       # ตั้ง tag จาก commit SHA
       - name: Set build tag
         id: set_tag
-        run: echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
-             echo "TAG=$TAG" >> $GITHUB_OUTPUT
+        run: |
+          TAG=${GITHUB_SHA::7}
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Debug TAG before build
+        run: echo "TAG value is ${{ env.TAG }}"
 
       # Build Docker image
       - name: Build Docker image
