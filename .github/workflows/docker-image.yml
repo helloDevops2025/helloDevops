@@ -109,7 +109,9 @@ jobs:
       
       # ตั้ง tag จาก commit SHA
       - name: Set build tag
+        id: set_tag
         run: echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+             echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
       # Build Docker image
       - name: Build Docker image
@@ -153,9 +155,19 @@ jobs:
           cluster_name: ${{ env.CLUSTER_NAME }}
           location: ${{ env.REGION }}
           project_id: ${{ env.PROJECT_ID }}
+          
+      # ✅ 3. สร้าง/อัปเดต ConfigMap จาก init.sql (ฐานข้อมูล)
+      - name: Update MySQL init ConfigMap
+        run: |
+          kubectl delete configmap mysql-initdb --ignore-not-found
+          kubectl create configmap mysql-initdb --from-file=init.sql=./init.sql
+          kubectl get configmap mysql-initdb
 
+      - name: Debug TAG value
+        run: echo "🔎 Current TAG value: ${{ env.TAG }}"
+        
       # Update image to specific version (ถ้ามี tag เฉพาะ)
-      - name: Update Deployment images
+      - name: Update Deployment frontend images
         if: env.TAG != ''
         run: |
           echo "🔄 Updating deployments to tag: ${{ env.TAG }}"
