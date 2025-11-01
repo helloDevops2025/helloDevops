@@ -9,15 +9,6 @@ spec:
     requests:
       storage: 1Gi
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: mysql-initdb
-data:
-  # ชื่อไฟล์ต้องตรงกับชื่อไฟล์จริงที่อยู่ในโปรเจกต์
-  init.sql: |
-    {{- (.Files.Get "init.sql") | nindent 4 }}
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -34,36 +25,36 @@ spec:
         app: mysql
     spec:
       containers:
-      - name: mysql
-        image: mysql:8.0
-        ports:
-        - containerPort: 3306
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: "1234"
-        - name: MYSQL_DATABASE
-          value: "hellodevops"
-        - name: MYSQL_USER
-          value: "user_devops"
-        - name: MYSQL_PASSWORD
-          value: "user1234"
-        volumeMounts:
-        - name: mysql-persistent-storage
-          mountPath: /var/lib/mysql
-        - name: init-sql
-          mountPath: /docker-entrypoint-initdb.d
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "1234"
+            - name: MYSQL_DATABASE
+              value: "hellodevops"
+            - name: MYSQL_USER
+              value: "user_devops"
+            - name: MYSQL_PASSWORD
+              value: "user1234"
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
       volumes:
-      - name: init-sql
-        configMap:
-          name: mysql-initdb
+        - name: init-sql
+          configMap:
+            name: mysql-initdb
   volumeClaimTemplates:
-  - metadata:
-      name: mysql-persistent-storage
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      resources:
-        requests:
-          storage: 1Gi
+    - metadata:
+        name: mysql-persistent-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -73,6 +64,6 @@ spec:
   selector:
     app: mysql
   ports:
-  - port: 3306
-    targetPort: 3306
-  clusterIP: None   # headless service
+    - port: 3306
+      targetPort: 3306
+  clusterIP: None
