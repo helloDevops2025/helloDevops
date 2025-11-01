@@ -147,6 +147,10 @@ jobs:
       DEPLOYMENT_NAME: backend
       
    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       # 1️⃣ Authenticate to Google Cloud
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
