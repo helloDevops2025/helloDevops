@@ -164,7 +164,7 @@ jobs:
           kubectl get configmap mysql-initdb
 
       - name: Debug TAG value
-        run: echo "🔎 Current TAG value: ${{ env.TAG }}"
+        run: 'echo "🔎 Current TAG value: ${{ env.TAG }}"'
         
       # Update image to specific version (ถ้ามี tag เฉพาะ)
       - name: Update Deployment frontend images
