@@ -308,6 +308,77 @@ export default function DetailPage() {
     const next = checked ? addToWL(list, product) : removeFromWL(list, product.id);
     saveWL(next);
   };
+  // ===== Cart (LocalStorage) helpers =====
+const CART_KEY = "pm_cart";
+
+const readCart = () => {
+  try {
+    const v = JSON.parse(localStorage.getItem(CART_KEY) || "null");
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+};
+const writeCart = (arr) => localStorage.setItem(CART_KEY, JSON.stringify(arr));
+
+// สร้าง item สำหรับตะกร้า (ใช้ sku ถ้ามี เพื่อให้ตรง defaultCart ที่เป็น '#000xx')
+const toCartItem = (p, qty) => ({
+  id: String(p.sku || p.productId || p.id),
+  name: prettifyTitle(p.title || p.name || ""),
+  price: Number(p.price) || 0,
+  qty: Math.max(1, Math.floor(qty || 1)),
+  img: p.imgMain || p.cover || FALLBACK_IMG,
+});
+
+// รวมจำนวนชิ้นถ้าซ้ำ และลิมิตไม่ให้เกิน stock
+const upsertCart = (cart, item, maxStock) => {
+  const idx = cart.findIndex((x) => String(x.id) === String(item.id));
+  if (idx === -1) {
+    const capped = Math.min(item.qty, Math.max(1, Number(maxStock || item.qty)));
+    return [...cart, { ...item, qty: capped }];
+  }
+  const mergedQty = Math.min(
+    (cart[idx].qty || 0) + item.qty,
+    Number.isFinite(maxStock) ? Number(maxStock) : Infinity
+  );
+  const next = [...cart];
+  next[idx] = { ...next[idx], qty: Math.max(1, mergedQty) };
+  return next;
+};
+
+// ===== Event handlers =====
+const navigate = useNavigate();
+
+const handleAddToCart = () => {
+  const q = clampQty(Math.floor(Number(qty || 1)), stock);
+  const item = toCartItem(product, q);
+  const next = upsertCart(readCart(), item, stock);
+  writeCart(next);
+  navigate("/cart");
+};
+
+const handleBuyNow = () => {
+  const q = clampQty(Math.floor(Number(qty || 1)), stock);
+  const item = toCartItem(product, q);
+  const next = upsertCart(readCart(), item, stock);
+  writeCart(next);
+  navigate("/place-order"); // ถ้าอยากให้ไป /cart แทน ก็เปลี่ยนเป็น "/cart"
+};
+
+// ใช้กับสินค้าที่เกี่ยวข้อง (ข้อมูลมีแค่ id, title, price, cover)
+const quickAddRelated = (r) => {
+  const pseudoProduct = {
+    id: r.id,
+    sku: r.id,           // ให้ id ทำหน้าที่เป็น sku
+    title: r.title,
+    price: r.price,
+    imgMain: r.cover,
+  };
+  const item = toCartItem(pseudoProduct, 1);
+  const next = upsertCart(readCart(), item, Infinity);
+  writeCart(next);
+  navigate("/cart");
+};
 
   return (
     <>
@@ -431,8 +502,8 @@ export default function DetailPage() {
                       }
                     >
                       +
-                    </button>
-                  </div>
+                                      </button>
+                                    </div>
 
                   <button
                     className="btn btn--primary"
@@ -445,9 +516,11 @@ export default function DetailPage() {
                         ? "Quantity exceeds stock"
                         : "Add to cart"
                     }
+                    onClick={handleAddToCart}   // 👈 เพิ่มบรรทัดนี้
                   >
                     ADD TO CART
                   </button>
+
                   <button
                     className="btn btn--gradient"
                     type="button"
@@ -459,9 +532,11 @@ export default function DetailPage() {
                         ? "Quantity exceeds stock"
                         : "Buy now"
                     }
+                    onClick={handleBuyNow}      // 👈 เพิ่มบรรทัดนี้
                   >
                     BUY NOW
                   </button>
+
                 </div>
 
                 <label className="wish">
@@ -555,6 +630,7 @@ export default function DetailPage() {
                       <button
                         className="btn btn--primary btn--block"
                         type="button"
+                         onClick={() => quickAddRelated(r)}   // ADD onClick
                       >
                         ADD TO CART
                       </button>
