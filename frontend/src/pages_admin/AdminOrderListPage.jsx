@@ -6,6 +6,8 @@ export default function AdminOrderListPage() {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
+    const [confirmOrder, setConfirmOrder] = useState(null); // ✅ popup ยืนยัน
+    const [showSuccess, setShowSuccess] = useState(false); // ✅ popup สำเร็จ
 
     // ✅ ดึงข้อมูล order ทั้งหมดจาก backend
     useEffect(() => {
@@ -110,15 +112,20 @@ export default function AdminOrderListPage() {
     const getEditPath = (p) => `/admin/orders/${encodeURIComponent(p.id)}`;
 
     // ---------- DELETE ----------
-    async function handleDelete(p) {
-        if (!window.confirm(`ต้องการลบคำสั่งซื้อ #${p.orderCode} ใช่ไหม?`)) return;
+    async function confirmDelete(order) {
+        setConfirmOrder(order); // ✅ เปิด popup ยืนยัน
+    }
+
+    async function handleConfirmDelete() {
+        if (!confirmOrder) return;
         try {
-            const res = await fetch(`http://localhost:8080/api/orders/${p.id}`, {
+            const res = await fetch(`http://localhost:8080/api/orders/${confirmOrder.id}`, {
                 method: "DELETE",
             });
             if (!res.ok) throw new Error("ลบคำสั่งซื้อไม่สำเร็จ");
-            setItems((prev) => prev.filter((x) => x.id !== p.id));
-            alert("✅ ลบคำสั่งซื้อสำเร็จแล้ว");
+            setItems((prev) => prev.filter((x) => x.id !== confirmOrder.id));
+            setConfirmOrder(null);
+            setShowSuccess(true); // ✅ แสดง popup สำเร็จ
         } catch (error) {
             alert("❌ " + error.message);
         }
@@ -204,7 +211,7 @@ export default function AdminOrderListPage() {
                                             type="button"
                                             aria-label="Delete order"
                                             title="Delete"
-                                            onClick={() => handleDelete(p)}
+                                            onClick={() => setConfirmOrder(p)}
                                             style={{
                                                 background: "transparent",
                                                 border: 0,
@@ -233,6 +240,35 @@ export default function AdminOrderListPage() {
                     </div>
                 </div>
             </main>
+            {/* ✅ Popup ยืนยันการลบ */}
+            {confirmOrder && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <h3>ยืนยันการลบรายการสั่งซื้อนี้หรือไม่?</h3>
+                        <p>Order: {showOrderCode(confirmOrder.orderCode)}</p>
+                        <div className="modal-buttons">
+                            <button className="btn-cancel" onClick={() => setConfirmOrder(null)}>
+                                ยกเลิก
+                            </button>
+                            <button className="btn-confirm" onClick={handleConfirmDelete}>
+                                ยืนยัน
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ✅ Popup ลบสำเร็จ */}
+            {showSuccess && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <h3>✅ ลบรายการสั่งซื้อนี้แล้ว</h3>
+                        <button className="btn-ok" onClick={() => setShowSuccess(false)}>
+                            OK
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
