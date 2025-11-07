@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react"; 
+import React, { useRef, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./HomePage.css";
 import Header from "../components/header";
@@ -8,6 +8,7 @@ import Footer from "./../components/Footer.jsx";
    1) CONSTANTS & HELPERS (ด้านบน)
    ========================================= */
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+const LS_CART = "pm_cart";
 
 const formatTHB = (n) => {
   const v = Number(n ?? 0);
@@ -34,16 +35,17 @@ const resolveCoverUrl = (p) => {
       : undefined);
 
   if (raw) {
-    if (isAbs(raw)) return raw;                            // URL เต็ม
+    if (isAbs(raw)) return raw; // URL เต็ม
     if (raw.startsWith("/api")) return join(API_URL, raw); // พาธ backend
-    if (raw.startsWith("/")) return join(API_URL, raw); 
+    if (raw.startsWith("/")) return join(API_URL, raw);
     // เหลือกรณีไฟล์ฝั่ง FE (public/dist)
     return raw.startsWith("/") ? raw : `/${raw}`;
   }
 
-  // ⬇⬇ NEW: ไม่มีรูปใน field → ใช้ GET /api/products/:id/cover
+  // ⬇⬇ ไม่มีรูปใน field → ใช้ GET /api/products/:id/cover
   const pid = p?.id ?? p?.productId ?? p?.product_id;
-  if (pid != null) return join(API_URL, `/api/products/${encodeURIComponent(pid)}/cover`);
+  if (pid != null)
+    return join(API_URL, `/api/products/${encodeURIComponent(pid)}/cover`);
 
   return "/assets/products/placeholder.png";
 };
@@ -51,61 +53,125 @@ const resolveCoverUrl = (p) => {
 // fallback รูปหมวดหมู่หาก API ยังไม่มีรูป
 const CAT_IMAGE_FALLBACKS = {
   "Dried Foods": "/assets/user/cat-dried-food.jpg",
-  "Meats": "/assets/user/cat-meat.jpg",
+  Meats: "/assets/user/cat-meat.jpg",
   "Frozen Foods": "/assets/user/cat-frozen.jpg",
   "Fruits & Vegetables": "/assets/user/cat-fruits-veg.jpg",
-  "Beverage": "/assets/user/cat-beverage.jpg"
+  Beverage: "/assets/user/cat-beverage.jpg",
 };
 
 // URL รูปหมวดหมู่ — เหมือนหลักการสินค้า
 const resolveCategoryImage = (cat) => {
-  const raw = cat?.imageUrl || cat?.image_url || CAT_IMAGE_FALLBACKS[cat?.name] || "";
+  const raw =
+    cat?.imageUrl || cat?.image_url || CAT_IMAGE_FALLBACKS[cat?.name] || "";
   if (!raw) return "/assets/products/placeholder.png";
-  if (isAbs(raw)) return encodeURI(raw);                   // URL เต็ม
+  if (isAbs(raw)) return encodeURI(raw); // URL เต็ม
   if (raw.startsWith("/api")) return encodeURI(join(API_URL, raw)); // พาธ backend
   // ไฟล์ฝั่ง FE (public)
   const fePath = raw.startsWith("/") ? raw : `/${raw}`;
   return encodeURI(fePath);
 };
 
+/* ===== Cart helpers (localStorage) ===== */
+const readCart = () => {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]");
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+};
+const saveCart = (arr) => localStorage.setItem(LS_CART, JSON.stringify(arr));
+
+const addItemToCart = ({ id, name, price, qty = 1, img }) => {
+  const cart = readCart();
+  const key = String(id ?? "");
+  const i = cart.findIndex((x) => String(x.id) === key);
+  if (i >= 0) {
+    cart[i] = { ...cart[i], qty: Math.max(1, (cart[i].qty || 1) + qty) };
+  } else {
+    cart.push({
+      id: key,
+      name: name || "Unnamed product",
+      price: Number(price) || 0,
+      qty: Math.max(1, Number(qty) || 1),
+      img: img || "/assets/products/placeholder.png",
+    });
+  }
+  saveCart(cart);
+
+  // แจ้ง header ให้ badge อัปเดต
+  const count = cart.reduce((s, it) => s + (Number(it.qty) || 0), 0);
+  try {
+    window.dispatchEvent(new CustomEvent("pm_cart_updated", { detail: { count } }));
+  } catch {}
+};
+
 /* =========================================
-   2) DATA-FETCH SECTIONS (คอมโพเนนต์ดึงข้อมูล)
+   2) UI PARTS
    ========================================= */
 
-// ---------- Best Sellers (จาก DB) ----------
+/** ปุ่มลอย “Add to cart” ที่แสดง ✓ ชั่วครู่หลังเพิ่มลงตะกร้า */
+function ProductMiniCard({ id, name, price, img }) {
+  const [added, setAdded] = useState(false);
+
+  const onAdd = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItemToCart({ id: String(id), name, price: Number(price) || 0, qty: 1, img });
+    setAdded(true);
+    // กลับเป็นไอคอนรถเข็นใน ~1 วินาที
+    setTimeout(() => setAdded(false), 1000);
+  };
+
+  return (
+    <button
+      className={`add-to-cart${added ? " added" : ""}`}
+      type="button"
+      aria-label={added ? "Added" : "Add to cart"}
+      title={added ? "Added ✓" : "Add to cart"}
+      onClick={onAdd}
+      style={{
+        background: added ? "#16a34a" : "#3E40AE",
+        transition: "background-color .25s ease",
+      }}
+    >
+      <i className={added ? "fas fa-check" : "fas fa-shopping-cart"} />
+    </button>
+  );
+}
+
+/* ---------- Best Sellers (จาก DB) ---------- */
 function BestSellersSection() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  // adjust long titles so they don't flow under the floating add-to-cart button
+  // ปรับความยาว title ไม่ให้ชนปุ่มลอย
   useEffect(() => {
     if (loading) return;
     const el = document.getElementById("best-sellers");
     if (!el) return;
 
     const adjust = () => {
-      const products = el.querySelectorAll('.product');
+      const products = el.querySelectorAll(".product");
       products.forEach((p) => {
-        const title = p.querySelector('.product__title');
-        const fab = p.querySelector('.add-to-cart');
+        const title = p.querySelector(".product__title");
+        const fab = p.querySelector(".add-to-cart");
         if (!title) return;
-        title.classList.remove('title--shorten');
+        title.classList.remove("title--shorten");
         if (fab) {
           const titleRect = title.getBoundingClientRect();
           const fabRect = fab.getBoundingClientRect();
-          // if title's right edge would overlap the fab (with small padding), shorten it
           if (titleRect.right > fabRect.left - 8) {
-            title.classList.add('title--shorten');
+            title.classList.add("title--shorten");
           }
         }
       });
     };
 
-    // run after paint
     setTimeout(adjust, 0);
-    window.addEventListener('resize', adjust);
-    return () => window.removeEventListener('resize', adjust);
+    window.addEventListener("resize", adjust);
+    return () => window.removeEventListener("resize", adjust);
   }, [loading, items]);
 
   useEffect(() => {
@@ -167,7 +233,9 @@ function BestSellersSection() {
         </div>
       )}
 
-      {!loading && err && <div className="error">เกิดข้อผิดพลาดในการโหลดสินค้า: {err}</div>}
+      {!loading && err && (
+        <div className="error">เกิดข้อผิดพลาดในการโหลดสินค้า: {err}</div>
+      )}
 
       {!loading && !err && (
         <div className="products">
@@ -200,9 +268,9 @@ function BestSellersSection() {
                 <div className="product__body">
                   <h3 className="product__title">{name}</h3>
                   <div className="product__price">{formatTHB(price)}</div>
-                  <button className="add-to-cart" type="button" aria-label="Add to cart">
-                    <i className="fas fa-shopping-cart" />
-                  </button>
+
+                  {/* ปุ่มลอย: แก้ให้เปลี่ยนเป็น ✓ ชั่วครู่ */}
+                  <ProductMiniCard id={id} name={name} price={price} img={img} />
                 </div>
               </Link>
             );
@@ -213,7 +281,7 @@ function BestSellersSection() {
   );
 }
 
-// ---------- Categories (จาก DB) ----------
+/* ---------- Categories (จาก DB) ---------- */
 function CategoriesSection() {
   const [cats, setCats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -299,13 +367,13 @@ function CategoriesSection() {
   );
 }
 
-// ---------- All Products (จาก DB, แนวนอน) ----------
-function AllProductsSection({ listRef, onNext }) {
+/* ---------- All Products (จาก DB, แนวนอน) ---------- */
+function AllProductsSection({ listRef }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  // adjust titles in this list so they don't overlap fab
+  // ปรับ title ไม่ให้ชนปุ่มลอย
   useClampTitlesInList(listRef, [loading, items]);
 
   useEffect(() => {
@@ -386,9 +454,9 @@ function AllProductsSection({ listRef, onNext }) {
                 <div className="product__body">
                   <h3 className="product__title">{name}</h3>
                   <div className="product__price">{formatTHB(price)}</div>
-                  <button className="add-to-cart" type="button" aria-label="Add to cart">
-                    <i className="fas fa-shopping-cart" />
-                  </button>
+
+                  {/* ปุ่มลอย: แก้ให้เปลี่ยนเป็น ✓ ชั่วครู่ */}
+                  <ProductMiniCard id={id} name={name} price={price} img={img} />
                 </div>
               </Link>
             );
@@ -399,36 +467,35 @@ function AllProductsSection({ listRef, onNext }) {
   );
 }
 
-// mirror title adjustment for the All Products section (uses the ref passed in)
+// ปรับความยาว title ในลิสต์ All Products (ใช้ ref ที่ส่งมา)
 function useClampTitlesInList(listRef, deps = []) {
   useEffect(() => {
     const el = listRef?.current;
     if (!el) return;
 
     const adjust = () => {
-      const products = el.querySelectorAll('.product');
+      const products = el.querySelectorAll(".product");
       products.forEach((p) => {
-        const title = p.querySelector('.product__title');
-        const fab = p.querySelector('.add-to-cart');
+        const title = p.querySelector(".product__title");
+        const fab = p.querySelector(".add-to-cart");
         if (!title) return;
-        title.classList.remove('title--shorten');
+        title.classList.remove("title--shorten");
         if (fab) {
           const titleRect = title.getBoundingClientRect();
           const fabRect = fab.getBoundingClientRect();
-          if (titleRect.right > fabRect.left - 8) title.classList.add('title--shorten');
+          if (titleRect.right > fabRect.left - 8)
+            title.classList.add("title--shorten");
         }
       });
     };
 
     setTimeout(adjust, 0);
-    window.addEventListener('resize', adjust);
-    return () => window.removeEventListener('resize', adjust);
+    window.addEventListener("resize", adjust);
+    return () => window.removeEventListener("resize", adjust);
   }, deps);
 }
 
-/* =========================================
-   3) PAGE (JSX ทั้งหมดอยู่ล่าง)
-   ========================================= */
+/* 3) PAGE (JSX ทั้งหมดอยู่ล่าง) */
 const HomePage = () => {
   const allProductsRef = useRef(null);
 
@@ -440,12 +507,6 @@ const HomePage = () => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [hash]);
-
-  const handleScrollNext = () => {
-    if (allProductsRef.current) {
-      allProductsRef.current.scrollBy({ left: 320, behavior: "smooth" });
-    }
-  };
 
   return (
     <>
@@ -466,8 +527,12 @@ const HomePage = () => {
               <h1>Pure & Fresh for Every Meal</h1>
               <p className="hero-sub">Find your favorites — fast.</p>
               <div className="hero-ctas">
-                <Link to="/shop?best=1" className="hero-btn">Shop Best Sellers</Link>
-                <a href="#categories" className="hero-btn hero-btn--ghost">Browse Categories</a>
+                <Link to="/shop?best=1" className="hero-btn">
+                  Shop Best Sellers
+                </Link>
+                <a href="#categories" className="hero-btn hero-btn--ghost">
+                  Browse Categories
+                </a>
               </div>
             </div>
           </section>
@@ -475,7 +540,7 @@ const HomePage = () => {
           {/* ===== Best Sellers (DB) ===== */}
           <BestSellersSection />
 
-          {/* ===== Second banner: keep same 3:1 aspect ratio, add promo copy (bigger headline) ===== */}
+          {/* ===== Second banner ===== */}
           <section className="hero-banner hero-banner--promo" aria-label="Promotional banner">
             <img
               className="hero-img hero-img--focus-right"
@@ -485,9 +550,13 @@ const HomePage = () => {
             />
             <div className="hero-content">
               <h1>Fresh picks — 25% off</h1>
-              <p className="hero-sub">Seasonal produce & pantry essentials. Limited time only.</p>
+              <p className="hero-sub">
+                Seasonal produce & pantry essentials. Limited time only.
+              </p>
               <div className="hero-ctas">
-                <Link to="/shop" className="hero-btn">Shop the Sale</Link>
+                <Link to="/shop" className="hero-btn">
+                  Shop the Sale
+                </Link>
               </div>
             </div>
           </section>
@@ -496,7 +565,7 @@ const HomePage = () => {
           <CategoriesSection />
 
           {/* ===== All Products (DB) ===== */}
-          <AllProductsSection listRef={allProductsRef} onNext={handleScrollNext} />
+          <AllProductsSection listRef={allProductsRef} />
         </div>
       </main>
 
