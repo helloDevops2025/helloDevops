@@ -310,6 +310,19 @@ CREATE TABLE IF NOT EXISTS order_items (
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ===========================
+-- 5) Order status history (เก็บเวลาที่มีการเปลี่ยนแปลงสถานะ)
+-- ===========================
+
+CREATE TABLE order_status_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    status VARCHAR(50) NOT NULL,         -- เช่น 'PREPARING', 'READY', 'SHIPPING', 'DELIVERED'
+    changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    note VARCHAR(255),
+    FOREIGN KEY (order_id) REFERENCES orders(id)
+);
+
+-- ===========================
 -- SEED: Orders
 -- ===========================
 INSERT INTO orders (
@@ -348,3 +361,14 @@ ADD COLUMN ready_at DATETIME NULL,
 ADD COLUMN shipping_at DATETIME NULL,
 ADD COLUMN delivered_at DATETIME NULL,
 ADD COLUMN cancelled_at DATETIME NULL;
+
+-- ===========================
+-- SEED: Order status History (ของ Order #ORD001)
+-- ===========================
+INSERT INTO order_status_history (order_id, status, changed_at)
+VALUES
+    (1, 'PREPARING', '2025-11-05 10:30:00'),
+    (1, 'READY', '2025-11-05 11:15:00'),
+    (1, 'SHIPPING', '2025-11-05 13:00:00'),
+    (1, 'DELIVERED', '2025-11-05 15:20:00');
+
