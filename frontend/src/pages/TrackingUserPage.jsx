@@ -140,26 +140,28 @@ function normalizeStatus(s) {
 }
 
 /**
- * แปลงสถานะจากฐานข้อมูลให้เป็น progress steps บนหน้า Tracking
- * รองรับคีย์ทั่วไป: PENDING/CONFIRMED/PROCESSING/READY_TO_SHIP/SHIPPED/DELIVERED/CANCELLED
+ * แปลงสถานะจากฐานข้อมูลให้เป็น progress steps บนหน้า Tracking (User)
+ * รองรับคีย์: PENDING / PREPARING / CONFIRMED / PROCESSING / READY_TO_SHIP / SHIPPING / SHIPPED / ON_DELIVERY / DELIVERED / CANCELLED
  */
 function buildStepsFromStatus(rawStatus) {
   const st = normalizeStatus(rawStatus);
 
   // โครง step ตามดีไซน์เดิม
   const base = [
-    { label: "Preparing", sub: "", done: false },
-    { label: "Ready to Ship", sub: "", done: false },
-    { label: "Shipping", sub: "Processing", done: false },
-    { label: "Delivered", sub: "Pending", done: false },
+    { label: "Preparing",    sub: "",          done: false },
+    { label: "Ready to Ship",sub: "",          done: false },
+    { label: "Shipping",     sub: "Processing",done: false },
+    { label: "Delivered",    sub: "Pending",   done: false },
   ];
 
-  // เติมสถานะให้สอดคล้องกับ Admin
   switch (st) {
+    // เริ่มเตรียมของ
     case "PENDING":
+    case "PREPARING":
       base[0].done = true;
       break;
 
+    // พร้อมส่ง (หรือระหว่างดำเนินการก่อนส่ง)
     case "CONFIRMED":
     case "PROCESSING":
     case "READY_TO_SHIP":
@@ -167,35 +169,41 @@ function buildStepsFromStatus(rawStatus) {
       base[1].done = true;
       break;
 
+    // กำลังจัดส่ง (ครอบคลุม SHIPPING / SHIPPED / ON_DELIVERY)
+    case "SHIPPING":
     case "SHIPPED":
     case "ON_DELIVERY":
+    case "DELIVERING": // เผื่อบางที่ใช้คำนี้
       base[0].done = true;
       base[1].done = true;
       base[2].done = true;
       break;
 
+    // ส่งสำเร็จ
     case "DELIVERED":
       base.forEach((s) => (s.done = true));
       base[2].sub = "Delivered";
       base[3].sub = "Delivered";
       break;
 
+    // ยกเลิก
     case "CANCELLED":
-      // แสดงถึงจุดที่เตรียมของ/พร้อมส่ง แล้วแจ้งยกเลิก
+    case "CANCELED": // เผื่อสะกดแบบ US
       base[0].done = true;
       base[1].done = true;
       base[2].sub = "Cancelled";
       base[3].sub = "Cancelled";
       break;
 
+    // ไม่รู้จัก → ให้ถือว่าเริ่มต้นอย่างน้อย
     default:
-      // สถานะไม่รู้จัก: ให้เหมือน processing (อย่างน้อยไม่ว่างเปล่า)
       base[0].done = true;
       break;
   }
 
   return base;
 }
+
 
 /* ===== Main Page ===== */
 export default function TrackingUserPage() {
