@@ -1,3 +1,4 @@
+// src/pages_admin/AdminOrderDetailPage.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
@@ -14,6 +15,28 @@ const THB = (n) =>
     maximumFractionDigits: 2,
   });
 
+// ✅ ฟอร์แมตวันที่/เวลาเป็น ค.ศ. + AM/PM (เช่น 25 Jan 2025 • 01:45 PM)
+function fmtDateTime(isoLike) {
+  if (!isoLike) return "–";
+  try {
+    const d = new Date(isoLike);
+
+    const datePart = new Intl.DateTimeFormat(
+      "en-GB-u-ca-gregory",
+      { day: "2-digit", month: "short", year: "numeric" }
+    ).format(d);
+
+    const timePart = new Intl.DateTimeFormat(
+      "en-US-u-ca-gregory",
+      { hour: "2-digit", minute: "2-digit", hour12: true }
+    ).format(d);
+
+    return `${datePart} • ${timePart}`;
+  } catch {
+    return String(isoLike);
+  }
+}
+
 // แผนที่ label ที่โชว์ ↔ code ที่ backend ต้องการ
 const TITLE_BY_STATUS = {
   PENDING: "Pending",
@@ -29,20 +52,12 @@ const ALL_STATUS_CODES = Object.keys(TITLE_BY_STATUS);
 async function updateOrderStatusFlexible(orderId, code) {
   const s = String(code || "").trim().toUpperCase();
 
-  // payload ชื่อ field ยอดฮิต
-  const payloads = [
-    { status: s },
-    { orderStatus: s },
-    { order_status: s },
-  ];
-
-  // endpoint ที่เจอบ่อย
+  const payloads = [{ status: s }, { orderStatus: s }, { order_status: s }];
   const endpoints = [
     { url: `${API_URL}/api/orders/${encodeURIComponent(orderId)}/status`, methods: ["PUT", "PATCH"] },
     { url: `${API_URL}/api/orders/${encodeURIComponent(orderId)}`, methods: ["PUT", "PATCH"] },
   ];
 
-  // ลองทุก combination
   for (const ep of endpoints) {
     for (const method of ep.methods) {
       for (const body of payloads) {
@@ -51,30 +66,21 @@ async function updateOrderStatusFlexible(orderId, code) {
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify(body),
         }).catch(() => null);
-
-        if (res && res.ok) {
-          try { return await res.json(); } catch { return { ok: true }; }
-        } else if (res) {
-          // เก็บข้อความ error ไว้ช่วย debug
-          const txt = await res.text().catch(() => "");
-          console.warn(`[updateOrderStatusFlexible] ${method} ${ep.url}`, body, res.status, txt);
-        }
+        if (res && res.ok) { try { return await res.json(); } catch { return { ok: true }; } }
+        else if (res) { const txt = await res.text().catch(() => ""); console.warn(`[updateOrderStatusFlexible] ${method} ${ep.url}`, body, res.status, txt); }
       }
     }
   }
 
-  // fallback: form-urlencoded (บาง backend ต้องการ)
+  // fallback: form-urlencoded
   for (const ep of endpoints) {
-    const form = new URLSearchParams();
-    form.set("status", s);
+    const form = new URLSearchParams(); form.set("status", s);
     const res = await fetch(ep.url, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
       body: form.toString(),
     }).catch(() => null);
-    if (res && res.ok) {
-      try { return await res.json(); } catch { return { ok: true }; }
-    }
+    if (res && res.ok) { try { return await res.json(); } catch { return { ok: true }; } }
   }
 
   throw new Error("Backend rejected all payloads/endpoints");
@@ -110,8 +116,25 @@ export default function AdminOrderDetailPage() {
           ? data.items
           : [];
 
+        // ✅ รองรับหลายชื่อคีย์ของเวลา
+        const orderedAt =
+          data.orderedAt ??
+          data.ordered_at ??
+          data.createdAt ??
+          data.created_at ??
+          data.orderDate ??
+          data.order_date ??
+          null;
+
+        const updatedAt =
+          data.updatedAt ??
+          data.updated_at ??
+          null;
+
         const normalized = {
           ...data,
+          orderedAt,
+          updatedAt,
           orderItems: orderItems.map((it) => ({
             productName:
               it.productName ||
@@ -122,7 +145,7 @@ export default function AdminOrderDetailPage() {
             priceEach: Number(it.priceEach ?? it.price ?? it.unitPrice ?? 0),
             totalPrice: Number(
               it.totalPrice ??
-                (Number(it.priceEach ?? it.price ?? 0) * Number(it.quantity || 0))
+              (Number(it.priceEach ?? it.price ?? 0) * Number(it.quantity || 0))
             ),
             brandName: it.brandName || it?.product?.brandName || "",
           })),
@@ -133,7 +156,7 @@ export default function AdminOrderDetailPage() {
 
         if (!abort) {
           setOrder(normalized);
-          setStatusDraft(normalized.orderStatus); // ตั้งค่าเริ่มต้นเป็น code จริง
+          setStatusDraft(normalized.orderStatus);
         }
       } catch (e) {
         if (!abort) setError(e.message || "โหลดข้อมูลล้มเหลว");
@@ -143,9 +166,7 @@ export default function AdminOrderDetailPage() {
     }
 
     load();
-    return () => {
-      abort = true;
-    };
+    return () => { abort = true; };
   }, [id]);
 
   // ===== Derived totals =====
@@ -162,20 +183,12 @@ export default function AdminOrderDetailPage() {
   async function handleChangeStatus() {
     if (!order) return;
     const code = String(statusDraft || "").toUpperCase();
-    if (!code) {
-      alert("กรุณาเลือกสถานะก่อน");
-      return;
-    }
-    if (!ALL_STATUS_CODES.includes(code)) {
-      alert("รูปแบบสถานะไม่ถูกต้อง");
-      return;
-    }
+    if (!code) { alert("กรุณาเลือกสถานะก่อน"); return; }
+    if (!ALL_STATUS_CODES.includes(code)) { alert("รูปแบบสถานะไม่ถูกต้อง"); return; }
 
     try {
       setSaving(true);
-      const updated = await updateOrderStatusFlexible(order.id ?? id, code);
-
-      // อัปเดตสถานะในหน้าจอ
+      await updateOrderStatusFlexible(order.id ?? id, code);
       setOrder((prev) => (prev ? { ...prev, orderStatus: code } : prev));
       alert("อัปเดตสถานะเรียบร้อย");
     } catch (e) {
@@ -242,6 +255,18 @@ export default function AdminOrderDetailPage() {
               <p>Order Code :</p>
               <span>{order.orderCode || "-"}</span>
             </div>
+
+            {/* ✅ เพิ่มวัน-เวลา (อยู่ในกล่อง Summary เดิม, ไม่เปลี่ยนดีไซน์) */}
+            <div className="info">
+              <p>Ordered At :</p>
+              <span title={order.orderedAt || ""}>{fmtDateTime(order.orderedAt)}</span>
+            </div>
+
+            <div className="info">
+              <p>Last Update :</p>
+              <span title={order.updatedAt || ""}>{fmtDateTime(order.updatedAt)}</span>
+            </div>
+            {/* ✅ จบส่วนที่เพิ่ม */}
 
             <div className="info">
               <p>Customer :</p>
@@ -353,7 +378,6 @@ export default function AdminOrderDetailPage() {
               </div>
               <div className="status">
                 <div className="selection-wrapper">
-                  {/* ค่า value เป็น CODE (UPPERCASE) ที่ backend ต้องการ */}
                   <select
                     className="selection"
                     id="statusSelect"

@@ -34,6 +34,12 @@ const prettifyTitle = (s = "") =>
 
 const fmtPrice = (n) => Number(n || 0).toFixed(2);
 
+/* ===== (เพิ่ม) Helpers สำหรับ RELATED ===== */
+const norm = (v) => (v === null || v === undefined ? "" : String(v));
+const pickId = (p) => p?.id ?? p?.productId ?? p?.product_id;
+const pickCatId = (p) => p?.categoryId ?? p?.category_id ?? p?.category?.id;
+const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+
 /* ===== Wishlist (LocalStorage) helpers ===== */
 const loadWL = () => {
   try {
@@ -156,7 +162,7 @@ export default function DetailPage() {
         if (!p) throw new Error("ไม่พบสินค้า หรือเรียก API ไม่สำเร็จ");
 
         const catName = Array.isArray(cats)
-          ? cats.find((c) => c.id === p.categoryId)?.name || ""
+          ? cats.find((c) => c.id === (p.categoryId ?? p.category_id ?? p.category?.id))?.name || ""
           : "";
         const brandName = Array.isArray(brands)
           ? brands.find((b) => b.id === p.brandId)?.name || ""
@@ -180,7 +186,8 @@ export default function DetailPage() {
           stock: Number(p.quantity) || 0,
           imgMain: imgUrl || FALLBACK_IMG,
           imgDesc: imgUrl || FALLBACK_IMG,
-          categoryId: p.categoryId ?? null,
+          // (แก้) รองรับ categoryId หลายรูปแบบ
+          categoryId: (p.categoryId ?? p.category_id ?? p.category?.id) ?? null,
           categoryName: catName || "",
           categorySlug: toSlug(catName) || "all",
           excerpt: p.description || "",
@@ -200,44 +207,12 @@ export default function DetailPage() {
         // ตั้งค่า wish เริ่มต้นจาก localStorage (เทียบ id เป็น string)
         const list = loadWL();
         if (!cancelled) setWish(inWL(list, normId(mapped.id)));
-
-        /* โหลด Related หลังได้ categoryId */
-        if (mapped.categoryId) {
-          setRelLoading(true);
-          const withFilter =
-            (await safeJson(
-              `${API_URL}/api/products?categoryId=${encodeURIComponent(
-                mapped.categoryId
-              )}`
-            )) ?? (await safeJson(`${API_URL}/api/products`));
-
-          if (!cancelled && Array.isArray(withFilter)) {
-            const rel = withFilter
-              .filter((x) => x.id !== mapped.id)
-              .filter(
-                (x) =>
-                  !mapped.brandId ||
-                  x.brandId === mapped.brandId ||
-                  x.categoryId === mapped.categoryId
-              )
-              .slice(0, 8)
-              .map((x) => ({
-                id: x.id,
-                title: x.name,
-                price: Number(x.price) || 0,
-                cover: `${API_URL}/api/products/${encodeURIComponent(
-                  x.id
-                )}/cover`,
-              }));
-            setRelated(rel);
-          }
-        }
+        // การโหลด RELATED แยกออกไปอีก useEffect ด้านล่าง
       } catch (e) {
         setErr(e.message || "โหลดข้อมูลไม่สำเร็จ");
       } finally {
         if (!cancelled) {
           setLoading(false);
-          setRelLoading(false);
         }
       }
     })();
@@ -247,6 +222,73 @@ export default function DetailPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API_URL, id]);
+
+  /* ===== (เพิ่ม) useEffect แยกเพื่อโหลด RELATED ตาม category เดียวกัน ===== */
+  useEffect(() => {
+    let cancelled = false;
+
+    const safeJson = async (url) => {
+      try {
+        const r = await fetch(url, { headers: { Accept: "application/json" } });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch {
+        return null;
+      }
+    };
+
+    const loadRelated = async () => {
+      if (!product?.categoryId) {
+        setRelated([]);
+        return;
+      }
+      setRelLoading(true);
+
+      // พยายามเรียกด้วยพารามิเตอร์ categoryId ก่อน
+      const byParam = await safeJson(
+        `${API_URL}/api/products?categoryId=${encodeURIComponent(product.categoryId)}`
+      );
+
+      // ถ้า API ไม่รองรับ/ตอบไม่ตรง → fallback ดึงทั้งหมดแล้วฟิลเตอร์เอง
+      let pool = Array.isArray(byParam) ? byParam : await safeJson(`${API_URL}/api/products`);
+      if (!Array.isArray(pool)) pool = [];
+
+      // ฟิลเตอร์: category เดียวกัน และไม่ใช่สินค้าปัจจุบัน (normalize เป็น string)
+      const currentCat = norm(pickCatId(product));
+      const currentId = norm(pickId(product));
+
+      const sameCat = (Array.isArray(pool) ? pool : [])
+        .filter((x) => norm(pickCatId(x)) === currentCat)
+        .filter((x) => norm(pickId(x)) !== currentId);
+
+      // สุ่มเล็กน้อย และเลือก 8 รายการ
+      const picked = shuffle(sameCat)
+        .slice(0, 8)
+        .map((x) => {
+          const xid = pickId(x);
+          return {
+            id: xid,
+            title: x.name,
+            price: Number(x.price) || 0,
+            cover: `${API_URL}/api/products/${encodeURIComponent(xid)}/cover`,
+          };
+        });
+
+      if (!cancelled) setRelated(picked);
+    };
+
+    loadRelated()
+      .catch(() => {
+        if (!cancelled) setRelated([]);
+      })
+      .finally(() => {
+        if (!cancelled) setRelLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product.categoryId, product.id]);
 
   /*  Qty helpers (ล็อกไม่ให้เกิน stock) */
   const clampQty = (v, stock) => {
