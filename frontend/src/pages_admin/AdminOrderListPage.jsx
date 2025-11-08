@@ -1,238 +1,337 @@
+// src/pages_admin/AdminOrderListPage.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./AdminOrderListPage.css";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+// ช่วยคำนวณ total จากคีย์ที่อาจต่างกัน
+function computeTotal(x = {}) {
+  const subtotal =
+    Number(x.subtotal ?? x.subTotal ?? 0);
+  const ship =
+    Number(x.shipping_fee ?? x.shippingFee ?? x.shippingCost ?? 0);
+  const disc =
+    Number(x.discount_total ?? x.discountTotal ?? 0);
+  const tax =
+    Number(x.tax_total ?? x.taxTotal ?? 0);
+  const grand =
+    Number(x.grand_total ?? x.grandTotal ?? x.totalAmount ?? x.total ?? 0);
+
+  if (grand) return grand;
+  return subtotal + ship + tax - disc;
+}
+
+// แปลงรูปแบบออเดอร์ให้มีคีย์ที่หน้า UI ใช้ได้เสมอ
+function normalizeOrder(o) {
+  return {
+    id: o.id,
+    orderCode: o.orderCode ?? o.order_code ?? o.code ?? "-",
+    customerName: o.customerName ?? o.customer_name ?? "-",
+    customerPhone: o.customerPhone ?? o.customer_phone ?? "-",
+    shippingAddress: o.shippingAddress ?? o.shipping_address ?? "-",
+    orderStatus:
+      (o.orderStatus ?? o.order_status ?? "PENDING"),
+    totalAmount: computeTotal(o),
+  };
+}
+
+// ดึง list จากผลลัพธ์ที่อาจถูกห่อ (items/data/content/results)
+function extractList(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (!raw || typeof raw !== "object") return [];
+  return (
+    raw.items ||
+    raw.data ||
+    raw.content ||
+    raw.results ||
+    []
+  );
+}
+
 export default function AdminOrderListPage() {
-    const [items, setItems] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [err, setErr] = useState("");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const [confirmOrder, setConfirmOrder] = useState(null); // ✅ popup ยืนยัน
+  const [showSuccess, setShowSuccess] = useState(false);  // ✅ popup สำเร็จ
 
-    // ✅ ดึงข้อมูล order ทั้งหมดจาก backend
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const res = await fetch("http://localhost:8080/api/orders");
-                if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
-                const data = await res.json();
-                setItems(data);
-            } catch (error) {
-                setErr(error.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchOrders();
-    }, []);
-    // ---------- pagination ----------
+  // ------- โหลดออเดอร์ทั้งหมด (กัน cache + รองรับหลาย payload) -------
+  async function fetchOrders() {
+    setLoading(true);
+    setErr("");
+    try {
+      const res = await fetch(
+        `${API_URL}/api/orders?ts=${Date.now()}`, // กัน cache
+        { headers: { Accept: "application/json" }, cache: "no-store" }
+      );
+      if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
 
-    useEffect(() => {
-        function initTablePager({
-                                    container = ".table-card",
-                                    rowsPerPage = 10,
-                                    windowSize = 3,
-                                } = {}) {
-            const root = document.querySelector(container);
-            if (!root) return;
+      const raw = await res.json();
+      const list = extractList(raw);
 
-            const rows = Array.from(root.querySelectorAll(".table-row"));
-            const hint = root.querySelector(".hint");
-            const prev = root.querySelector("#prevBtn");
-            const next = root.querySelector("#nextBtn");
-            const nums = root.querySelector("#pagerNumbers");
-            if (!hint || !prev || !next || !nums) return;
+      // แปลงทุกรายการให้ฟิลด์สม่ำเสมอ
+      const normalized = list.map(normalizeOrder);
 
-            const totalItems = rows.length;
-            const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
-            let currentPage = 1;
+      setItems(Array.isArray(normalized) ? normalized : []);
+    } catch (e) {
+      setErr(e.message || "โหลดล้มเหลว");
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-            const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-            const pageRange = (page) => {
-                const start = (page - 1) * rowsPerPage;
-                const end = Math.min(start + rowsPerPage, totalItems);
-                return { start, end };
-            };
-            const windowRange = (page) => {
-                const lastStart = Math.max(1, totalPages - windowSize + 1);
-                const start = clamp(page, 1, lastStart);
-                const end = Math.min(totalPages, start + windowSize - 1);
-                return { start, end };
-            };
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
-            function renderRows(page) {
-                const { start, end } = pageRange(page);
-                rows.forEach((row, i) => {
-                    row.style.display = i >= start && i < end ? "grid" : "none";
-                });
-            }
-            function renderHint(page) {
-                const { start, end } = pageRange(page);
-                const a = totalItems ? start + 1 : 0;
-                const b = totalItems ? end : 0;
-                hint.textContent = `Showing ${a}–${b} of ${totalItems} entries`;
-            }
-            function renderPager(page) {
-                nums.innerHTML = "";
-                const { start, end } = windowRange(page);
-                for (let p = start; p <= end; p++) {
-                    const btn = document.createElement("button");
-                    btn.type = "button";
-                    btn.className = "pill" + (p === page ? " active" : "");
-                    btn.textContent = String(p);
-                    btn.setAttribute("aria-current", p === page ? "page" : "false");
-                    btn.addEventListener("click", () => goTo(p));
-                    nums.appendChild(btn);
-                }
-                prev.disabled = page === 1;
-                next.disabled = page === totalPages;
-            }
-            function goTo(page) {
-                currentPage = clamp(page, 1, totalPages);
-                renderRows(currentPage);
-                renderHint(currentPage);
-                renderPager(currentPage);
-            }
+  // ---------- pagination ----------
+  useEffect(() => {
+    function initTablePager({
+      container = ".table-card",
+      rowsPerPage = 10,
+      windowSize = 3,
+    } = {}) {
+      const root = document.querySelector(container);
+      if (!root) return;
 
-            prev.addEventListener("click", () => goTo(currentPage - 1));
-            next.addEventListener("click", () => goTo(currentPage + 1));
-            goTo(1);
+      const rows = Array.from(root.querySelectorAll(".table-row"));
+      const hint = root.querySelector(".hint");
+      const prev = root.querySelector("#prevBtn");
+      const next = root.querySelector("#nextBtn");
+      const nums = root.querySelector("#pagerNumbers");
+      if (!hint || !prev || !next || !nums) return;
+
+      const totalItems = rows.length;
+      const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+      let currentPage = 1;
+
+      const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+      const pageRange = (page) => {
+        const start = (page - 1) * rowsPerPage;
+        const end = Math.min(start + rowsPerPage, totalItems);
+        return { start, end };
+      };
+      const windowRange = (page) => {
+        const lastStart = Math.max(1, totalPages - windowSize + 1);
+        const start = clamp(page, 1, lastStart);
+        const end = Math.min(totalPages, start + windowSize - 1);
+        return { start, end };
+      };
+
+      function renderRows(page) {
+        const { start, end } = pageRange(page);
+        rows.forEach((row, i) => {
+          row.style.display = i >= start && i < end ? "grid" : "none";
+        });
+      }
+      function renderHint(page) {
+        const { start, end } = pageRange(page);
+        const a = totalItems ? start + 1 : 0;
+        const b = totalItems ? end : 0;
+        hint.textContent = `Showing ${a}–${b} of ${totalItems} entries`;
+      }
+      function renderPager(page) {
+        nums.innerHTML = "";
+        const { start, end } = windowRange(page);
+        for (let p = start; p <= end; p++) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "pill" + (p === page ? " active" : "");
+          btn.textContent = String(p);
+          btn.setAttribute("aria-current", p === page ? "page" : "false");
+          btn.addEventListener("click", () => goTo(p));
+          nums.appendChild(btn);
         }
+        prev.disabled = page === 1;
+        next.disabled = page === totalPages;
+      }
+      function goTo(page) {
+        currentPage = clamp(page, 1, totalPages);
+        renderRows(currentPage);
+        renderHint(currentPage);
+        renderPager(currentPage);
+      }
 
-        initTablePager({ container: ".table-card", rowsPerPage: 10, windowSize: 3 });
-    }, [items]);
-
-
-    // ---------- helpers ----------
-    const showOrderCode = (code) => {
-        if (!code) return "-";
-        return code.startsWith("#") ? code : `#${code}`;
-    };
-    const getKey = (p) => p.id ?? p.orderCode;
-    const getEditPath = (p) => `/admin/orders/${encodeURIComponent(p.id)}`;
-
-    // ---------- DELETE ----------
-    async function handleDelete(p) {
-        if (!window.confirm(`ต้องการลบคำสั่งซื้อ #${p.orderCode} ใช่ไหม?`)) return;
-        try {
-            const res = await fetch(`http://localhost:8080/api/orders/${p.id}`, {
-                method: "DELETE",
-            });
-            if (!res.ok) throw new Error("ลบคำสั่งซื้อไม่สำเร็จ");
-            setItems((prev) => prev.filter((x) => x.id !== p.id));
-            alert("✅ ลบคำสั่งซื้อสำเร็จแล้ว");
-        } catch (error) {
-            alert("❌ " + error.message);
-        }
+      prev.addEventListener("click", () => goTo(currentPage - 1));
+      next.addEventListener("click", () => goTo(currentPage + 1));
+      goTo(1);
     }
 
-    return (
-        <div className="app" data-page="AdminProductListPage">
-            <main className="main">
-                <div className="content">
-                    <div className="content-header">
-                        <h1 className="title">ORDER LIST</h1>
+    initTablePager({ container: ".table-card", rowsPerPage: 10, windowSize: 3 });
+  }, [items]);
 
-                        <div className="action-bar">
-                            <div className="search">
-                                <i className="fa-solid fa-magnifying-glass" />
-                                <select defaultValue="orderCode" aria-label="Search by">
-                                    <option value="orderCode">Order Code</option>
-                                    <option value="customerName">Customer</option>
-                                    <option value="orderStatus">Status</option>
-                                </select>
-                                <input type="text" placeholder="ค้นหาคำสั่งซื้อ…" />
-                            </div>
-                        </div>
-                    </div>
+  // ---------- helpers ----------
+  const showOrderCode = (code) => {
+    if (!code) return "-";
+    return String(code).startsWith("#") ? code : `#${code}`;
+  };
+  const getKey = (p) => p.id ?? p.orderCode;
+  const getEditPath = (p) => `/admin/orders/${encodeURIComponent(p.id)}`;
 
-                    <div className="table-card">
-                        <div className="table-header">
-                            <div>Order Code</div>
-                            <div>Customer Name</div>
-                            <div>Phone</div>
-                            <div>Shipping Address</div>
-                            <div>Total</div>
-                            <div>Status</div>
-                            <div>Action</div>
-                        </div>
+  // ---------- DELETE ----------
+  async function handleConfirmDelete() {
+    if (!confirmOrder) return;
+    try {
+      const res = await fetch(`${API_URL}/api/orders/${confirmOrder.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("ลบคำสั่งซื้อไม่สำเร็จ");
 
-                        {loading && (
-                            <div className="table-row" style={{ display: "grid" }}>
-                                <div style={{ gridColumn: "1 / -1" }}>Loading orders…</div>
-                            </div>
-                        )}
+      setConfirmOrder(null);
+      setShowSuccess(true); // ✅ แสดง popup สำเร็จ
+      // โหลดใหม่จากเซิร์ฟเวอร์ เพื่อให้ state ตรงกับฐานข้อมูลเสมอ
+      await fetchOrders();
+    } catch (error) {
+      alert("❌ " + error.message);
+    }
+  }
 
-                        {!loading && err && (
-                            <div className="table-row" style={{ display: "grid", color: "#c00" }}>
-                                <div style={{ gridColumn: "1 / -1" }}>Error: {err}</div>
-                            </div>
-                        )}
+  return (
+    <div className="app" data-page="AdminProductListPage">
+      <main className="main">
+        <div className="content">
+          <div className="content-header">
+            <h1 className="title">ORDER LIST</h1>
 
-                        {!loading && !err && items.length === 0 && (
-                            <div className="table-row" style={{ display: "grid" }}>
-                                <div style={{ gridColumn: "1 / -1" }}>No orders found.</div>
-                            </div>
-                        )}
+            <div className="action-bar">
+              <div className="search">
+                <i className="fa-solid fa-magnifying-glass" />
+                <select defaultValue="orderCode" aria-label="Search by">
+                  <option value="orderCode">Order Code</option>
+                  <option value="customerName">Customer</option>
+                  <option value="orderStatus">Status</option>
+                </select>
+                <input type="text" placeholder="ค้นหาคำสั่งซื้อ…" />
+              </div>
 
-                        {!loading &&
-                            !err &&
-                            items.length > 0 &&
-                            items.map((p) => (
-                                <div
-                                    className="table-row"
-                                    key={getKey(p)}
-                                    data-order-code={p.orderCode}
-                                    data-name={p.customerName}
-                                    data-status={p.orderStatus}
-                                >
-                                    <div>{showOrderCode(p.orderCode)}</div>
-                                    <div>{p.customerName ?? "-"}</div>
-                                    <div>{p.customerPhone ?? "-"}</div>
-                                    <div>{p.shippingAddress ?? "-"}</div>
-                                    <div>{Number(p.totalAmount ?? 0).toFixed(2)}</div>
-                                    <div>{p.orderStatus ?? "-"}</div>
+              {/* ปุ่มรีเฟรช แบบ manual กรณีอยากกดดูของใหม่ทันที */}
+              <button className="btn" onClick={fetchOrders} title="Reload">
+                Reload
+              </button>
+            </div>
+          </div>
 
-                                    <div className="act">
-                                        {/* ✅ ปุ่ม Edit ไปหน้า Detail */}
-                                        <Link
-                                            to={getEditPath(p)}
-                                            aria-label="Edit order"
-                                            title="Edit"
-                                        >
-                                            <i className="fa-solid fa-pen" />
-                                        </Link>
-                                        <button
-                                            type="button"
-                                            aria-label="Delete order"
-                                            title="Delete"
-                                            onClick={() => handleDelete(p)}
-                                            style={{
-                                                background: "transparent",
-                                                border: 0,
-                                                padding: 0,
-                                                cursor: "pointer",
-                                            }}
-                                        >
-                                            <i className="fa-solid fa-trash" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+          <div className="table-card">
+            <div className="table-header">
+              <div>Order Code</div>
+              <div>Customer Name</div>
+              <div>Phone</div>
+              <div>Shipping Address</div>
+              <div>Total</div>
+              <div>Status</div>
+              <div>Action</div>
+            </div>
 
-                        <div className="table-footer">
-                            <div className="hint">Showing entries</div>
-                            <div className="pager">
-                                <button className="circle" aria-label="Prev" id="prevBtn">
-                                    <i className="fa-solid fa-chevron-left" />
-                                </button>
-                                <div id="pagerNumbers" />
-                                <button className="circle" aria-label="Next" id="nextBtn">
-                                    <i className="fa-solid fa-chevron-right" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+            {loading && (
+              <div className="table-row" style={{ display: "grid" }}>
+                <div style={{ gridColumn: "1 / -1" }}>Loading orders…</div>
+              </div>
+            )}
+
+            {!loading && err && (
+              <div className="table-row" style={{ display: "grid", color: "#c00" }}>
+                <div style={{ gridColumn: "1 / -1" }}>Error: {err}</div>
+              </div>
+            )}
+
+            {!loading && !err && items.length === 0 && (
+              <div className="table-row" style={{ display: "grid" }}>
+                <div style={{ gridColumn: "1 / -1" }}>No orders found.</div>
+              </div>
+            )}
+
+            {!loading &&
+              !err &&
+              items.length > 0 &&
+              items.map((p) => (
+                <div
+                  className="table-row"
+                  key={getKey(p)}
+                  data-order-code={p.orderCode}
+                  data-name={p.customerName}
+                  data-status={p.orderStatus}
+                >
+                  <div>{showOrderCode(p.orderCode)}</div>
+                  <div>{p.customerName ?? "-"}</div>
+                  <div>{p.customerPhone ?? "-"}</div>
+                  <div>{p.shippingAddress ?? "-"}</div>
+                  <div>{Number(p.totalAmount ?? 0).toFixed(2)}</div>
+                  <div>{p.orderStatus ?? "-"}</div>
+
+                  <div className="act">
+                    {/* ✅ ปุ่ม Edit ไปหน้า Detail */}
+                    <Link
+                      to={getEditPath(p)}
+                      aria-label="Edit order"
+                      title="Edit"
+                    >
+                      <i className="fa-solid fa-pen" />
+                    </Link>
+                    <button
+                      type="button"
+                      aria-label="Delete order"
+                      title="Delete"
+                      onClick={() => setConfirmOrder(p)}
+                      style={{
+                        background: "transparent",
+                        border: 0,
+                        padding: 0,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <i className="fa-solid fa-trash" />
+                    </button>
+                  </div>
                 </div>
-            </main>
+              ))}
+
+            <div className="table-footer">
+              <div className="hint">Showing entries</div>
+              <div className="pager">
+                <button className="circle" aria-label="Prev" id="prevBtn">
+                  <i className="fa-solid fa-chevron-left" />
+                </button>
+                <div id="pagerNumbers" />
+                <button className="circle" aria-label="Next" id="nextBtn">
+                  <i className="fa-solid fa-chevron-right" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-    );
+      </main>
+
+      {/* ✅ Popup ยืนยันการลบ */}
+      {confirmOrder && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>ยืนยันการลบรายการสั่งซื้อนี้หรือไม่?</h3>
+            <p>Order: {showOrderCode(confirmOrder.orderCode)}</p>
+            <div className="modal-buttons">
+              <button className="btn-cancel" onClick={() => setConfirmOrder(null)}>
+                ยกเลิก
+              </button>
+              <button className="btn-confirm" onClick={handleConfirmDelete}>
+                ยืนยัน
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Popup ลบสำเร็จ */}
+      {showSuccess && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>✅ ลบรายการสั่งซื้อนี้แล้ว</h3>
+            <button className="btn-ok" onClick={() => setShowSuccess(false)}>
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
