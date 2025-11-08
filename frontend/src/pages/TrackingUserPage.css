@@ -332,3 +332,6 @@
   font-weight: 600;
   color: #444;
 }
+.progress-card .steps .step.cancel .dot { background:#d1d1d1; border-color:#ef4444; }
+.progress-card .steps .step.cancel .step-label small { color:#b91c1c; }
+.progress .line-fill.is-cancel { background:#fecaca; }

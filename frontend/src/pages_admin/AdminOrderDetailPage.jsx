@@ -14,6 +14,72 @@ const THB = (n) =>
     maximumFractionDigits: 2,
   });
 
+// แผนที่ label ที่โชว์ ↔ code ที่ backend ต้องการ
+const TITLE_BY_STATUS = {
+  PENDING: "Pending",
+  PREPARING: "Preparing",
+  READY_TO_SHIP: "Ready to Ship",
+  SHIPPING: "Shipping",
+  DELIVERED: "Delivered",
+  CANCELLED: "Cancelled",
+};
+const ALL_STATUS_CODES = Object.keys(TITLE_BY_STATUS);
+
+// ยิงอัปเดตแบบ “ยืดหยุ่น” ให้ครอบคลุม backend หลายสไตล์
+async function updateOrderStatusFlexible(orderId, code) {
+  const s = String(code || "").trim().toUpperCase();
+
+  // payload ชื่อ field ยอดฮิต
+  const payloads = [
+    { status: s },
+    { orderStatus: s },
+    { order_status: s },
+  ];
+
+  // endpoint ที่เจอบ่อย
+  const endpoints = [
+    { url: `${API_URL}/api/orders/${encodeURIComponent(orderId)}/status`, methods: ["PUT", "PATCH"] },
+    { url: `${API_URL}/api/orders/${encodeURIComponent(orderId)}`, methods: ["PUT", "PATCH"] },
+  ];
+
+  // ลองทุก combination
+  for (const ep of endpoints) {
+    for (const method of ep.methods) {
+      for (const body of payloads) {
+        const res = await fetch(ep.url, {
+          method,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(body),
+        }).catch(() => null);
+
+        if (res && res.ok) {
+          try { return await res.json(); } catch { return { ok: true }; }
+        } else if (res) {
+          // เก็บข้อความ error ไว้ช่วย debug
+          const txt = await res.text().catch(() => "");
+          console.warn(`[updateOrderStatusFlexible] ${method} ${ep.url}`, body, res.status, txt);
+        }
+      }
+    }
+  }
+
+  // fallback: form-urlencoded (บาง backend ต้องการ)
+  for (const ep of endpoints) {
+    const form = new URLSearchParams();
+    form.set("status", s);
+    const res = await fetch(ep.url, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+      body: form.toString(),
+    }).catch(() => null);
+    if (res && res.ok) {
+      try { return await res.json(); } catch { return { ok: true }; }
+    }
+  }
+
+  throw new Error("Backend rejected all payloads/endpoints");
+}
+
 export default function AdminOrderDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams(); // /admin/orders/:id
@@ -22,6 +88,7 @@ export default function AdminOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [statusDraft, setStatusDraft] = useState(""); // เก็บค่า code จาก select
 
   // ===== Load one order =====
   useEffect(() => {
@@ -37,14 +104,12 @@ export default function AdminOrderDetailPage() {
         if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
         const data = await res.json();
 
-        // รองรับทั้งกรณี backend ส่ง "orderItems" หรือ "items"
         const orderItems = Array.isArray(data.orderItems)
           ? data.orderItems
           : Array.isArray(data.items)
           ? data.items
           : [];
 
-        // ทำให้แน่ใจว่าตัวเลขเป็น number
         const normalized = {
           ...data,
           orderItems: orderItems.map((it) => ({
@@ -57,16 +122,19 @@ export default function AdminOrderDetailPage() {
             priceEach: Number(it.priceEach ?? it.price ?? it.unitPrice ?? 0),
             totalPrice: Number(
               it.totalPrice ??
-                (Number(it.priceEach ?? it.price ?? 0) *
-                  Number(it.quantity || 0))
+                (Number(it.priceEach ?? it.price ?? 0) * Number(it.quantity || 0))
             ),
             brandName: it.brandName || it?.product?.brandName || "",
           })),
           totalAmount: Number(data.totalAmount ?? data.total ?? 0),
           shippingCost: Number(data.shippingCost ?? 0),
+          orderStatus: String(data.orderStatus || data.status || "PENDING").toUpperCase(),
         };
 
-        if (!abort) setOrder(normalized);
+        if (!abort) {
+          setOrder(normalized);
+          setStatusDraft(normalized.orderStatus); // ตั้งค่าเริ่มต้นเป็น code จริง
+        }
       } catch (e) {
         if (!abort) setError(e.message || "โหลดข้อมูลล้มเหลว");
       } finally {
@@ -90,33 +158,29 @@ export default function AdminOrderDetailPage() {
   const totalAmount =
     Number(order?.totalAmount || 0) || Number(subtotal + (order?.shippingCost || 0));
 
-  // ===== Change status (PUT /api/orders/:id/status) =====
+  // ===== Change status =====
   async function handleChangeStatus() {
     if (!order) return;
-    const sel = document.getElementById("statusSelect");
-    const newStatus = sel?.value;
-    if (!newStatus) {
+    const code = String(statusDraft || "").toUpperCase();
+    if (!code) {
       alert("กรุณาเลือกสถานะก่อน");
+      return;
+    }
+    if (!ALL_STATUS_CODES.includes(code)) {
+      alert("รูปแบบสถานะไม่ถูกต้อง");
       return;
     }
 
     try {
       setSaving(true);
-      const res = await fetch(`${API_URL}/api/orders/${order.id}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error("อัปเดตสถานะไม่สำเร็จ");
-      const updated = await res.json();
-      // บาง backend อาจคืนทั้ง order บางที่คืนเฉพาะ fields — จัดการแบบยืดหยุ่น
-      setOrder((prev) => ({
-        ...prev,
-        orderStatus: updated.orderStatus || newStatus,
-      }));
+      const updated = await updateOrderStatusFlexible(order.id ?? id, code);
+
+      // อัปเดตสถานะในหน้าจอ
+      setOrder((prev) => (prev ? { ...prev, orderStatus: code } : prev));
       alert("อัปเดตสถานะเรียบร้อย");
     } catch (e) {
-      alert("❌ " + (e.message || "อัปเดตล้มเหลว"));
+      console.error(e);
+      alert("❌ อัปเดตสถานะไม่สำเร็จ — กรุณาตรวจสอบ log ใน Console/Network");
     } finally {
       setSaving(false);
     }
@@ -285,25 +349,23 @@ export default function AdminOrderDetailPage() {
             <div className="status-card">
               <div className="status-text">
                 <h3>Edit Status</h3>
-                <p>{order.orderStatus ?? "Pending"}</p>
+                <p>{TITLE_BY_STATUS[order.orderStatus] ?? order.orderStatus ?? "Pending"}</p>
               </div>
               <div className="status">
                 <div className="selection-wrapper">
+                  {/* ค่า value เป็น CODE (UPPERCASE) ที่ backend ต้องการ */}
                   <select
                     className="selection"
                     id="statusSelect"
-                    defaultValue=""
                     aria-label="Change order status"
+                    value={statusDraft}
+                    onChange={(e) => setStatusDraft(e.target.value)}
                   >
-                    <option value="" disabled>
-                      status
-                    </option>
-                    <option>Pending</option>
-                    <option>Preparing</option>
-                    <option>Ready to Ship</option>
-                    <option>Shipping</option>
-                    <option>Delivered</option>
-                    <option>Cancelled</option>
+                    {ALL_STATUS_CODES.map((code) => (
+                      <option key={code} value={code}>
+                        {TITLE_BY_STATUS[code]}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <button
@@ -323,7 +385,6 @@ export default function AdminOrderDetailPage() {
               <h2>Status Timeline</h2>
               <button
                 className="tracking-btn"
-                // onClick={() => navigate("/admin/orders/tracking")}
                 onClick={() => navigate(`/admin/orders/tracking/${order.id}`)}
               >
                 <i className="fa-solid fa-truck" id="icon-track"></i>
