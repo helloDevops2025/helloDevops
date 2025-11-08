@@ -72,7 +72,10 @@ export default function App() {
               <Route path="/admin/products/new" element={<AdminAddProductPage />} />
               <Route path="/admin/orders" element={<AdminOrderListPage />} />
               <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
-              <Route path="/admin/orders/tracking" element={<AdminOrderTrackingPage />} />
+              {/* <Route path="/admin/orders/tracking" element={<AdminOrderTrackingPage />} /> */}
+              <Route path="/admin/orders/tracking/:id" element={<AdminOrderTrackingPage />} />
+              <Route path="/admin/orders/tracking/:id" element={<AdminOrderTrackingPage />} />
+              <Route path="/admin/orders/tracking" element={<Navigate to="/admin/orders" replace />} />
               <Route path="/admin/products/:id/edit" element={<AdminEditProductPage />} />
               <Route path="/admin/dashboard/" element={<AdminDashboard />} />
             </Route>
