@@ -26,6 +26,7 @@ import AdminOrderDetailPage from "./pages_admin/AdminOrderDetailPage.jsx";
 import AdminOrderTrackingPage from "./pages_admin/AdminOrderTrackingPage.jsx";
 import AdminEditProductPage from "./pages_admin/AdminEditProductPage.jsx";
 import AdminDashboard from "./pages_admin/AdminDashboard.jsx";
+import AdminPromotion from "./pages_admin/AdminPromotion.jsx"; 
 
 // Guards (ตามโครงของ ploy)
 import { RequireAuth, RequireRole } from "./route-guards";
@@ -78,6 +79,7 @@ export default function App() {
               <Route path="/admin/orders/tracking" element={<Navigate to="/admin/orders" replace />} />
               <Route path="/admin/products/:id/edit" element={<AdminEditProductPage />} />
               <Route path="/admin/dashboard/" element={<AdminDashboard />} />
+              <Route path="/admin/promotions" element={<AdminPromotion />} />
             </Route>
           </Route>
         </Route>

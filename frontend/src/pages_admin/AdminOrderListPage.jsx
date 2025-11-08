@@ -7,32 +7,58 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 // ช่วยคำนวณ total จากคีย์ที่อาจต่างกัน
 function computeTotal(x = {}) {
-  const subtotal =
-    Number(x.subtotal ?? x.subTotal ?? 0);
-  const ship =
-    Number(x.shipping_fee ?? x.shippingFee ?? x.shippingCost ?? 0);
-  const disc =
-    Number(x.discount_total ?? x.discountTotal ?? 0);
-  const tax =
-    Number(x.tax_total ?? x.taxTotal ?? 0);
-  const grand =
-    Number(x.grand_total ?? x.grandTotal ?? x.totalAmount ?? x.total ?? 0);
+  const subtotal = Number(x.subtotal ?? x.subTotal ?? 0);
+  const ship = Number(x.shipping_fee ?? x.shippingFee ?? x.shippingCost ?? 0);
+  const disc = Number(x.discount_total ?? x.discountTotal ?? 0);
+  const tax = Number(x.tax_total ?? x.taxTotal ?? 0);
+  const grand = Number(x.grand_total ?? x.grandTotal ?? x.totalAmount ?? x.total ?? 0);
 
   if (grand) return grand;
   return subtotal + ship + tax - disc;
 }
 
-// แปลงรูปแบบออเดอร์ให้มีคีย์ที่หน้า UI ใช้ได้เสมอ
+// ✅ ฟอร์แมตวันที่/เวลาเป็น ค.ศ. + AM/PM  เช่น 25 Jan 2025 • 01:45 PM
+function fmtDateTime(isoLike) {
+  if (!isoLike) return "–";
+  try {
+    const d = new Date(isoLike);
+
+    const datePart = new Intl.DateTimeFormat(
+      "en-GB-u-ca-gregory",
+      { day: "2-digit", month: "short", year: "numeric" }
+    ).format(d);
+
+    const timePart = new Intl.DateTimeFormat(
+      "en-US-u-ca-gregory",
+      { hour: "2-digit", minute: "2-digit", hour12: true }
+    ).format(d);
+
+    return `${datePart} • ${timePart}`;
+  } catch {
+    return String(isoLike);
+  }
+}
+
+// แปลงรูปแบบออเดอร์ให้มีคีย์ที่หน้า UI ใช้ได้เสมอ (เพิ่ม orderedAt)
 function normalizeOrder(o) {
+  const orderedAt =
+    o.orderedAt ??
+    o.ordered_at ??
+    o.createdAt ??
+    o.created_at ??
+    o.orderDate ??
+    o.order_date ??
+    null;
+
   return {
     id: o.id,
     orderCode: o.orderCode ?? o.order_code ?? o.code ?? "-",
     customerName: o.customerName ?? o.customer_name ?? "-",
     customerPhone: o.customerPhone ?? o.customer_phone ?? "-",
     shippingAddress: o.shippingAddress ?? o.shipping_address ?? "-",
-    orderStatus:
-      (o.orderStatus ?? o.order_status ?? "PENDING"),
+    orderStatus: o.orderStatus ?? o.order_status ?? "PENDING",
     totalAmount: computeTotal(o),
+    orderedAt, // ✅ ใช้แสดงคอลัมน์ใหม่
   };
 }
 
@@ -40,13 +66,7 @@ function normalizeOrder(o) {
 function extractList(raw) {
   if (Array.isArray(raw)) return raw;
   if (!raw || typeof raw !== "object") return [];
-  return (
-    raw.items ||
-    raw.data ||
-    raw.content ||
-    raw.results ||
-    []
-  );
+  return raw.items || raw.data || raw.content || raw.results || [];
 }
 
 export default function AdminOrderListPage() {
@@ -216,6 +236,8 @@ export default function AdminOrderListPage() {
           <div className="table-card">
             <div className="table-header">
               <div>Order Code</div>
+              {/* ✅ เพิ่มคอลัมน์ Ordered At ระหว่าง Order Code และ Customer Name */}
+              <div>Ordered At</div>
               <div>Customer Name</div>
               <div>Phone</div>
               <div>Shipping Address</div>
@@ -254,6 +276,8 @@ export default function AdminOrderListPage() {
                   data-status={p.orderStatus}
                 >
                   <div>{showOrderCode(p.orderCode)}</div>
+                  {/* ✅ คอลัมน์ใหม่: แสดงวัน-เวลาแบบ ค.ศ. + AM/PM */}
+                  <div title={p.orderedAt || ""}>{fmtDateTime(p.orderedAt)}</div>
                   <div>{p.customerName ?? "-"}</div>
                   <div>{p.customerPhone ?? "-"}</div>
                   <div>{p.shippingAddress ?? "-"}</div>

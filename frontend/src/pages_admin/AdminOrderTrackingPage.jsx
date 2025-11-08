@@ -18,7 +18,7 @@ const TITLE_BY_STATUS = {
 
 export default function AdminOrderTrackingPage() {
   const navigate = useNavigate();
-  const { id } = useParams(); // ต้องมีเส้นทาง /admin/orders/tracking/:id
+  const { id } = useParams(); // /admin/orders/tracking/:id
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ export default function AdminOrderTrackingPage() {
           ? data.items
           : [];
 
-        // ✅ จุดสำคัญ: เก็บทั้ง productDbId (เลขจริง) และ productCode ('#00001')
+        // ✅ เก็บทั้ง productDbId (เลขจริง) และ productCode (#00001)
         const items = rawItems.map((it) => {
           const productDbId =
             it.product_id_fk ?? it.productIdFk ?? it?.product?.id ?? it.productIdNumeric;
@@ -60,8 +60,8 @@ export default function AdminOrderTrackingPage() {
           const qty = Number(it.quantity || 0);
           const priceEach = Number(it.priceEach ?? it.price ?? it.unitPrice ?? 0);
           return {
-            productDbId,              // ใช้ตัวนี้ยิง /api/products/:id/cover
-            productCode,              // เก็บไว้เผื่อแสดงผล/ดีบัก
+            productDbId,
+            productCode,
             productName:
               it.productName || it?.product?.name || it.name || `#${productCode ?? ""}`,
             qty,
@@ -95,7 +95,7 @@ export default function AdminOrderTrackingPage() {
   const { stepIndex, cancelled } = useMemo(() => {
     const st = (order?.orderStatus || "").toUpperCase();
     if (st === "CANCELLED") return { stepIndex: -1, cancelled: true };
-    const i = STATUS_STEPS.indexOf(st); // ถ้าไม่เจอ = -1 (ยังไม่เริ่ม)
+    const i = STATUS_STEPS.indexOf(st);
     return { stepIndex: i, cancelled: false };
   }, [order]);
 
@@ -105,18 +105,6 @@ export default function AdminOrderTrackingPage() {
     const idx = Math.min(stepIndex, denom);
     return Math.round((idx / denom) * 100);
   }, [stepIndex, cancelled]);
-
-  // ใช้สินค้าชิ้นแรกเป็นการ์ดโชว์
-  const mainItem =
-    Array.isArray(order?.orderItems) && order.orderItems.length > 0
-      ? order.orderItems[0]
-      : null;
-
-  // ✅ ใช้ productDbId (เลขจริง) เพื่อดึงรูป cover จาก backend
-  const productDbId = mainItem?.productDbId;
-  const mainCover = productDbId
-    ? `${API_URL}/api/products/${encodeURIComponent(productDbId)}/cover`
-    : "/assets/products/p1.png";
 
   // ===== UI guard =====
   if (loading) {
@@ -150,14 +138,17 @@ export default function AdminOrderTrackingPage() {
     );
   }
 
+  // helper: สร้าง URL รูป cover ต่อ item
+  const coverOf = (it) =>
+    it?.productDbId
+      ? `${API_URL}/api/products/${encodeURIComponent(it.productDbId)}/cover`
+      : "/assets/products/p1.png";
+
   return (
     <div className="admin-order-tracking">
-      {/* Main Content */}
       <main className="content">
         <header className="header">
-          <div>
-            <h1>ORDER TRACKING</h1>
-          </div>
+          <div><h1>ORDER TRACKING</h1></div>
         </header>
 
         {/* Detail / Timeline */}
@@ -194,50 +185,73 @@ export default function AdminOrderTrackingPage() {
             </div>
           </section>
 
-          {/* Product Card */}
-          <section className="card product-card">
-            <div className="product-media">
-              <img
-                src={mainCover}
-                alt={mainItem?.productName || "Product"}
-                onError={(e) => {
-                  // ถ้า backend ไม่มีรูป → fallback mock
-                  e.currentTarget.src = "/assets/products/p1.png";
-                }}
-              />
-            </div>
+          {/* ===== Product Cards: แสดงทุกชิ้นที่ลูกค้าสั่ง ===== */}
+          {Array.isArray(order.orderItems) && order.orderItems.length > 0 ? (
+            order.orderItems.map((it, idx) => {
+              const cover = coverOf(it);
+              return (
+                <section className="card product-card" key={`${it.productDbId || it.productCode || idx}`}>
+                  <div className="product-media">
+                    <img
+                      src={cover}
+                      alt={it.productName || "Product"}
+                      onError={(e) => {
+                        e.currentTarget.src = "/assets/products/p1.png";
+                      }}
+                    />
+                  </div>
 
-            <div className="product-info">
-              <h2>{mainItem?.productName || "-"}</h2>
-              <div className="kv-list">
-                <div className="kv">
-                  <span>Order ID</span>
-                  <span>#{order.id}</span>
-                </div>
-                <div className="kv">
-                  <span>Order Code</span>
-                  <span>{order.orderCode || "-"}</span>
-                </div>
-                <div className="kv">
-                  <span>Status</span>
-                  <span>{TITLE_BY_STATUS[order.orderStatus] || order.orderStatus}</span>
-                </div>
-                <div className="kv">
-                  <span>Quantity</span>
-                  <span>{mainItem?.qty ?? "-"}</span>
-                </div>
-              </div>
-              <div>
-                {/* ไปหน้า Order Detail ของออเดอร์นี้ */}
-                <button
-                  className="btn view-btn"
-                  onClick={() => navigate(`/admin/orders/${order.id}`)}
-                >
-                  View Order
-                </button>
-              </div>
-            </div>
-          </section>
+                  <div className="product-info">
+                    <h2>{it.productName || "-"}</h2>
+                    <div className="kv-list">
+                      <div className="kv">
+                        <span>Order ID</span>
+                        <span>#{order.id}</span>
+                      </div>
+                      <div className="kv">
+                        <span>Order Code</span>
+                        <span>{order.orderCode || "-"}</span>
+                      </div>
+                      <div className="kv">
+                        <span>Status</span>
+                        <span>{TITLE_BY_STATUS[order.orderStatus] || order.orderStatus}</span>
+                      </div>
+                      <div className="kv">
+                        <span>Quantity</span>
+                        <span>{it.qty ?? "-"}</span>
+                      </div>
+                      {/* ตัวเลือก: โชว์ราคา/ยอดรวมถ้ามี */}
+                      {Number.isFinite(it.priceEach) ? (
+                        <div className="kv">
+                          <span>Price Each</span>
+                          <span>{it.priceEach.toLocaleString("en-US", { style: "currency", currency: "USD" })}</span>
+                        </div>
+                      ) : null}
+                      {Number.isFinite(it.totalPrice) ? (
+                        <div className="kv">
+                          <span>Total</span>
+                          <span>{it.totalPrice.toLocaleString("en-US", { style: "currency", currency: "USD" })}</span>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div>
+                      <button
+                        className="btn view-btn"
+                        onClick={() => navigate(`/admin/orders/${order.id}`)}
+                      >
+                        View Order
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              );
+            })
+          ) : (
+            <section className="card">
+              <p style={{ margin: 0 }}>ไม่มีสินค้าในคำสั่งซื้อนี้</p>
+            </section>
+          )}
         </div>
       </main>
     </div>

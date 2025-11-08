@@ -50,9 +50,11 @@ const Breadcrumb = ({ items = [] }) => {
   );
 };
 
-/* ===== Progress Card (คงดีไซน์) ===== */
-const ProgressCard = ({ steps }) => {
+/* ===== Progress Card ===== */
+const ProgressCard = ({ steps, cancelled }) => {
   const { percent } = useMemo(() => {
+    // ถ้ายกเลิก → ให้ 0%
+    if (cancelled) return { percent: 0 };
     const total = steps.length || 1;
     const done = steps.filter((s) => s.done).length;
     let pct = 0;
@@ -60,18 +62,18 @@ const ProgressCard = ({ steps }) => {
     else if (done === total) pct = 100;
     else pct = ((done - 0.5) / total) * 100;
     return { percent: Math.max(0, Math.min(100, pct)) };
-  }, [steps]);
+  }, [steps, cancelled]);
 
   return (
     <section className="progress-card">
       <div className="card-title">Detail</div>
       <div className="progress">
         <div className="progress-line">
-          <span className="line-fill" style={{ width: `${percent}%` }} />
+          <span className={`line-fill ${cancelled ? "is-cancel" : ""}`} style={{ width: `${percent}%` }} />
         </div>
         <div className="steps">
           {steps.map((s, i) => (
-            <div key={i} className={`step ${s.done ? "done" : ""}`}>
+            <div key={i} className={`step ${s.done ? "done" : ""} ${cancelled ? "cancel" : ""}`}>
               <div className="dot" />
               <div className="step-label">
                 <strong>{s.label}</strong>
@@ -85,7 +87,7 @@ const ProgressCard = ({ steps }) => {
   );
 };
 
-/* ===== Order Box (คงดีไซน์) ===== */
+/* ===== Order Box ===== */
 const OrderBox = ({ items }) => {
   if (!items?.length) {
     return (
@@ -134,34 +136,44 @@ const OrderBox = ({ items }) => {
   );
 };
 
-/* ===== Helpers: map สถานะจาก Admin → ขั้นตอนบนแถบ Tracking ===== */
+/* ===== Helpers ===== */
 function normalizeStatus(s) {
   return String(s || "").trim().toUpperCase();
 }
 
 /**
- * แปลงสถานะจากฐานข้อมูลให้เป็น progress steps บนหน้า Tracking (User)
- * รองรับคีย์: PENDING / PREPARING / CONFIRMED / PROCESSING / READY_TO_SHIP / SHIPPING / SHIPPED / ON_DELIVERY / DELIVERED / CANCELLED
+ * แปลงสถานะจากฐานข้อมูลให้เป็น steps ที่หน้า User ใช้
+ * นโยบายเหมือน Admin:
+ * - ถ้า CANCELLED → ไม่ติ๊กขั้นใด ๆ และติดป้าย "Cancelled" ทุกขั้น
+ * - คำนิยามขั้น: PREPARING → READY_TO_SHIP → SHIPPING → DELIVERED
  */
 function buildStepsFromStatus(rawStatus) {
   const st = normalizeStatus(rawStatus);
 
-  // โครง step ตามดีไซน์เดิม
+  // โครงตามลำดับเดียวกับ Admin
   const base = [
-    { label: "Preparing",    sub: "",          done: false },
-    { label: "Ready to Ship",sub: "",          done: false },
-    { label: "Shipping",     sub: "Processing",done: false },
-    { label: "Delivered",    sub: "Pending",   done: false },
+    { label: "Preparing",     sub: "",           done: false },
+    { label: "Ready to Ship", sub: "",           done: false },
+    { label: "Shipping",      sub: "Processing", done: false },
+    { label: "Delivered",     sub: "Pending",    done: false },
   ];
 
+  // ยกเลิก = ไม่ติ๊ก และปัก "Cancelled" ทุกขั้น
+  if (st === "CANCELLED" || st === "CANCELED") {
+    base.forEach((s) => {
+      s.done = false;
+      s.sub = "Cancelled";
+    });
+    return { steps: base, cancelled: true };
+  }
+
+  // เดินหน้าแบบปกติ
   switch (st) {
-    // เริ่มเตรียมของ
     case "PENDING":
     case "PREPARING":
       base[0].done = true;
       break;
 
-    // พร้อมส่ง (หรือระหว่างดำเนินการก่อนส่ง)
     case "CONFIRMED":
     case "PROCESSING":
     case "READY_TO_SHIP":
@@ -169,41 +181,29 @@ function buildStepsFromStatus(rawStatus) {
       base[1].done = true;
       break;
 
-    // กำลังจัดส่ง (ครอบคลุม SHIPPING / SHIPPED / ON_DELIVERY)
     case "SHIPPING":
     case "SHIPPED":
     case "ON_DELIVERY":
-    case "DELIVERING": // เผื่อบางที่ใช้คำนี้
+    case "DELIVERING":
       base[0].done = true;
       base[1].done = true;
       base[2].done = true;
       break;
 
-    // ส่งสำเร็จ
     case "DELIVERED":
       base.forEach((s) => (s.done = true));
       base[2].sub = "Delivered";
       base[3].sub = "Delivered";
       break;
 
-    // ยกเลิก
-    case "CANCELLED":
-    case "CANCELED": // เผื่อสะกดแบบ US
-      base[0].done = true;
-      base[1].done = true;
-      base[2].sub = "Cancelled";
-      base[3].sub = "Cancelled";
-      break;
-
-    // ไม่รู้จัก → ให้ถือว่าเริ่มต้นอย่างน้อย
     default:
+      // ไม่รู้จัก → ให้เริ่มอย่างน้อยที่ Preparing
       base[0].done = true;
       break;
   }
 
-  return base;
+  return { steps: base, cancelled: false };
 }
-
 
 /* ===== Main Page ===== */
 export default function TrackingUserPage() {
@@ -335,6 +335,7 @@ export default function TrackingUserPage() {
     const paymentMethod = order.paymentMethod || "-";
 
     const shippingFee = order.shippingFee || 0;
+    the
     const tax = order.tax || 0;
     const grandTotal = totals.total;
 
@@ -450,8 +451,8 @@ export default function TrackingUserPage() {
     );
   }
 
-  // ✅ ใช้สถานะจริงจาก Admin เพื่อสร้างขั้นตอนแสดงผล
-  const steps = buildStepsFromStatus(order.status);
+  // ✅ แปลงสถานะจริงจาก Admin เพื่อสร้างขั้นตอน + ธงยกเลิก
+  const { steps, cancelled } = buildStepsFromStatus(order.status);
 
   return (
     <div className="tracking-page">
@@ -460,6 +461,23 @@ export default function TrackingUserPage() {
 
       <main className="container tracking">
         <Breadcrumb items={breadcrumb} />
+
+        {/* ป้ายแจ้งยกเลิก ชัดเจนแบบเดียวกับฝั่ง Admin */}
+        {cancelled && (
+          <section
+            className="card"
+            style={{
+              padding: 12,
+              marginBottom: 12,
+              color: "#b91c1c",
+              background: "#fee2e2",
+              border: "1px solid #fecaca",
+            }}
+          >
+            คำสั่งซื้อนี้ถูกยกเลิกแล้ว
+          </section>
+        )}
+
         <div
           style={{
             display: "flex",
@@ -499,8 +517,8 @@ export default function TrackingUserPage() {
           </section>
         )}
 
-        {/* แสดงขั้นตอนที่แมปจากสถานะจริง */}
-        <ProgressCard steps={steps} />
+        {/* แสดงขั้นตอนที่แมปจากสถานะจริง + ธงยกเลิก */}
+        <ProgressCard steps={steps} cancelled={cancelled} />
 
         <OrderBox items={order.cart} />
 

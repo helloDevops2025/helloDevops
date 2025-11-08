@@ -12,14 +12,26 @@ const THB = (n) =>
     currency: "THB",
     maximumFractionDigits: 0,
   });
-const fDateTime = (iso) =>
-  new Date(iso).toLocaleString("th-TH", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+
+// ✅ ฟอร์แมตเป็น ค.ศ. + AM/PM  เช่น 25 Jan 2025 • 01:45 PM
+const fDateTime = (iso) => {
+  if (!iso) return "–";
+  try {
+    const d = new Date(iso);
+    const datePart = new Intl.DateTimeFormat(
+      "en-GB-u-ca-gregory",
+      { day: "2-digit", month: "short", year: "numeric" }
+    ).format(d);
+    const timePart = new Intl.DateTimeFormat(
+      "en-US-u-ca-gregory",
+      { hour: "2-digit", minute: "2-digit", hour12: true }
+    ).format(d);
+    return `${datePart} • ${timePart}`;
+  } catch {
+    return String(iso);
+  }
+};
+
 function useDebounce(v, d = 400) {
   const [x, setX] = useState(v);
   useEffect(() => {
@@ -185,15 +197,27 @@ export default function HistoryPage() {
       Number(o.totalAmount ?? 0) ||
       items.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
 
+    // ✅ เลือกฟิลด์วันที่ให้ครอบคลุม แล้วค่อยฟอร์แมตด้วย fDateTime
+    const dateRaw =
+      o.orderedAt ??
+      o.ordered_at ??
+      o.orderDate ??
+      o.order_date ??
+      o.createdAt ??
+      o.created_at ??
+      o.updatedAt ??
+      o.updated_at ??
+      new Date().toISOString();
+
     return {
       id: String(o.id ?? o.orderCode ?? ""),
-      date: o.createdAt || o.updatedAt || new Date().toISOString(),
+      date: dateRaw,
       status: toUiStatus(o.orderStatus || o.status),
       items,
       total,
       address: o.shippingAddress || "-",
       _oid: o.id,
-      _raw: o, // เก็บ object จริงไปใช้หน้า details (ถ้าต้องการ)
+      _raw: o,
     };
   };
 
