@@ -9,7 +9,7 @@ COPY . .
 
 # ✅ ใช้ ARG เพื่อเลือก mode
 ARG MODE=production
-RUN npm run build --mode $MODE
+RUN npm run build -- --mode $MODE
 
 # --- Serve phase ---
 FROM nginx:alpine
