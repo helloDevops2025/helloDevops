@@ -365,6 +365,7 @@
     /* flex-wrap: wrap; */
     width: 100%;
     justify-content: center;
-    height: auto; /* ปล่อยให้ขยายเองถ้าลงหลายบรรทัด */
+    height: auto; 
   }
 }
+
