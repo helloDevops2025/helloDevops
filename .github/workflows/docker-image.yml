@@ -122,7 +122,7 @@ jobs:
       - name: Build Docker image
         run: |
           cd frontend
-          docker build -t u6687032/hello-devops-frontend:${{ env.TAG }} . --build-arg MODE=production 
+          docker build -t u6687032/hello-devops-frontend:${{ env.TAG }} --build-arg MODE=production  . 
 
       # 🔐 Login Docker Hub
       - name: Login to Docker Hub
