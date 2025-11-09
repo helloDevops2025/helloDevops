@@ -7,7 +7,7 @@ spec:
     - host: 34.153.194.53.nip.io   # หรือใช้โดเมนจริงถ้ามี
       http:
         paths:
-          - path: /api/api
+          - path: /api/*
             pathType: Prefix
             backend:
               service:
