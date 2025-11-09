@@ -298,30 +298,58 @@ export default function AdminProductListPage() {
     const n = parseInt(String(v ?? "").replace(/[^\d-]/g, ""), 10);
     return Number.isFinite(n) ? n : 0;
   };
-  const isInStock = (p) => toInt(p.quantity) > 0;
-  const stockLabelOf = (p) => (isInStock(p) ? "In Stock" : "Out of stock");
-  const stockStyleOf = (p) =>
-    isInStock(p)
-      ? {
-          display: "inline-block",
-          padding: "4px 10px",
-          borderRadius: "999px",
-          fontSize: 12,
-          lineHeight: 1,
-          border: "1px solid #a7f3d0",
-          background: "#ecfdf5",
-          color: "#065f46",
-        }
-      : {
-          display: "inline-block",
-          padding: "4px 10px",
-          borderRadius: "999px",
-          fontSize: 12,
-          lineHeight: 1,
-          border: "1px solid #fecaca",
-          background: "#fef2f2",
-          color: "#7f1d1d",
-        };
+ // ใช้ threshold สำหรับ "Low Stock"
+const LOW_STOCK_THRESHOLD = 10;
+
+const qtyOf = (p) => {
+  const n = parseInt(String(p.quantity ?? 0).replace(/[^\d-]/g, ""), 10);
+  return Number.isFinite(n) ? n : 0;
+};
+
+// ฟังก์ชันกำหนด label
+const stockLabelOf = (p) => {
+  const qty = qtyOf(p);
+  if (qty === 0) return "Out of Stock";
+  if (qty <= LOW_STOCK_THRESHOLD) return "Low Stock";
+  return "In Stock";
+};
+
+// ฟังก์ชันกำหนดสีป้าย
+const stockStyleOf = (p) => {
+  const qty = qtyOf(p);
+  if (qty === 0)
+    return {
+      display: "inline-block",
+      padding: "4px 10px",
+      borderRadius: "999px",
+      fontSize: 12,
+      lineHeight: 1,
+      border: "1px solid #fecaca",
+      background: "#fef2f2",
+      color: "#7f1d1d",
+    };
+  if (qty <= LOW_STOCK_THRESHOLD)
+    return {
+      display: "inline-block",
+      padding: "4px 10px",
+      borderRadius: "999px",
+      fontSize: 12,
+      lineHeight: 1,
+      border: "1px solid #fde68a",
+      background: "#fffbeb",
+      color: "#92400e",
+    };
+  return {
+    display: "inline-block",
+    padding: "4px 10px",
+    borderRadius: "999px",
+    fontSize: 12,
+    lineHeight: 1,
+    border: "1px solid #a7f3d0",
+    background: "#ecfdf5",
+    color: "#065f46",
+  };
+};
 
   // ---------- DELETE ----------
   // ช่วยฟอร์แมตรหัสสินค้าให้เป็น #00001

@@ -436,7 +436,8 @@ export default function AdminDashboard() {
   );
 }
 
-// ===== Small Components ======================================================
+// ----------------------------------------------------------
+// Small component: KPI card
 function KpiCard({ title, value, note, tone }) {
   return (
     <div className={`card kpi ${tone || ""}`}>
