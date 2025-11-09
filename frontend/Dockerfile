@@ -3,8 +3,13 @@ FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
+
+# คัดลอก source code ทั้งหมด
 COPY . .
-RUN npm run build
+
+# ✅ ใช้ ARG เพื่อเลือก mode
+ARG MODE=production
+RUN npm run build --mode $MODE
 
 # --- Serve phase ---
 FROM nginx:alpine
