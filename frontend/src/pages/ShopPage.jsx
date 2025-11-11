@@ -1,22 +1,38 @@
-// src/pages/ShopPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import "./ShopPage.css";
 import Footer from "./../components/Footer.jsx";
 
-/*  Config & helpers  */
+/* ===== Config & helpers ===== */
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
-const norm  = (s) => String(s ?? "").trim().toLowerCase();
+const norm = (s) => String(s ?? "").trim().toLowerCase();
 const clean = (s) => String(s ?? "").trim();
 
 const MIN_ALLOWED = 0;
 const MAX_ALLOWED = 1_000_000;
 const STEP = 0.01;
 const PAGE_SIZE = 9;
+
+/* ===== LocalStorage keys & cart helpers ===== */
 const LS_WISH = "pm_wishlist";
 const LS_CART = "pm_cart";
+const readCart = () => {
+  try { const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]"); return Array.isArray(arr) ? arr : []; }
+  catch { return []; }
+};
+const saveCart = (arr) => localStorage.setItem(LS_CART, JSON.stringify(arr));
+const addItemToCart = ({ id, name, price, qty = 1, img }) => {
+  const cart = readCart();
+  const key = String(id ?? "");
+  const i = cart.findIndex((x) => String(x.id) === key);
+  if (i >= 0) cart[i] = { ...cart[i], qty: Math.max(1, (cart[i].qty || 1) + qty) };
+  else cart.push({ id: key, name: name || "Unnamed product", price: Number(price) || 0, qty: Math.max(1, Number(qty) || 1), img: img || "/assets/products/placeholder.png" });
+  saveCart(cart);
+  const count = cart.reduce((s, it) => s + (Number(it.qty) || 0), 0);
+  try { window.dispatchEvent(new CustomEvent("pm_cart_updated", { detail: { count } })); } catch {}
+};
 
-/* Placeholder  */
+/* ===== Placeholder image ===== */
 const PLACEHOLDER_DATA =
   "data:image/svg+xml;utf8," +
   encodeURIComponent(`
@@ -27,7 +43,7 @@ const PLACEHOLDER_DATA =
       </g>
     </svg>`);
 
-/* Price helpers */
+/* ===== Price helpers ===== */
 const toCents = (val) => {
   if (val === "" || val === null || val === undefined) return null;
   const num = Number(val);
@@ -36,28 +52,9 @@ const toCents = (val) => {
 };
 const fromCents = (cents) => (cents / 100).toFixed(2);
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
-const priceToCents = (priceBaht) =>
-  Math.round((Number(priceBaht) + Number.EPSILON) * 100);
+const priceToCents = (priceBaht) => Math.round((Number(priceBaht) + Number.EPSILON) * 100);
 
-/* Cart helpers (เหมือนหน้า Detail) */
-const readCart = () => {
-  try {
-    const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]");
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-};
-const saveCart = (arr) => localStorage.setItem(LS_CART, JSON.stringify(arr));
-
-/* ไอคอนหัวใจ */
-const HeartIcon = (props) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="heart" {...props}>
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
-  </svg>
-);
-
-/* รูป */
+/* ===== Image resolve ===== */
 const resolveImageUrl = (row) => {
   const id = row.id ?? row.productId ?? row.product_id;
   let u =
@@ -65,7 +62,7 @@ const resolveImageUrl = (row) => {
     row.imageUrl ||
     row.image_url ||
     (Array.isArray(row.images)
-      ? (row.images.find((i) => i.is_cover)?.image_url || row.images[0]?.image_url)
+      ? (row.images.find((i) => i.is_cover || i.isCover)?.image_url || row.images[0]?.image_url)
       : null);
 
   if (u) {
@@ -87,15 +84,13 @@ export default function ShopPage() {
 
   useEffect(() => {
     let alive = true;
-
     const safeJson = async (url) => {
       try { const r = await fetch(url, { headers: { Accept: "application/json" } }); if (!r.ok) return null; return await r.json(); }
       catch { return null; }
     };
 
     (async () => {
-      setLoading(true);
-      setLoadErr("");
+      setLoading(true); setLoadErr("");
       try {
         const [rows, cats, brands] = await Promise.all([
           safeJson(`${API_URL}/api/products`),
@@ -104,15 +99,15 @@ export default function ShopPage() {
         ]);
         if (!alive) return;
 
-        const catById   = new Map((cats || []).map((c) => [Number(c.id), clean(c.name)]));
+        const catById = new Map((cats || []).map((c) => [Number(c.id), clean(c.name)]));
         const brandById = new Map((brands || []).map((b) => [Number(b.id), clean(b.name)]));
 
         const pick = (obj, ...keys) => { for (const k of keys) if (obj && obj[k] != null) return obj[k]; };
 
         const mapped = (rows || []).map((x) => {
-          const catIdRaw   = pick(x, "categoryId", "category_id", "catId", "categoryIdFk", "category_id_fk");
-          const brandIdRaw = pick(x, "brandId",    "brand_id",    "brandIdFk", "brand_id_fk");
-          const catId   = catIdRaw   != null && !Number.isNaN(Number(catIdRaw))   ? Number(catIdRaw)   : undefined;
+          const catIdRaw = pick(x, "categoryId", "category_id", "catId", "categoryIdFk", "category_id_fk");
+          const brandIdRaw = pick(x, "brandId", "brand_id", "brandIdFk", "brand_id_fk");
+          const catId = catIdRaw != null && !Number.isNaN(Number(catIdRaw)) ? Number(catIdRaw) : undefined;
           const brandId = brandIdRaw != null && !Number.isNaN(Number(brandIdRaw)) ? Number(brandIdRaw) : undefined;
 
           const catName =
@@ -153,10 +148,7 @@ export default function ShopPage() {
 
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("featured");
-  const [filters, setFilters] = useState({
-    cat: new Set(), brand: new Set(), promo: new Set(),
-    priceMinC: null, priceMaxC: null,
-  });
+  const [filters, setFilters] = useState({ cat: new Set(), brand: new Set(), promo: new Set(), priceMinC: null, priceMaxC: null });
 
   const CAT_LIST = useMemo(() => {
     const fromProducts = Array.from(new Set(PRODUCTS.map((p) => clean(p.cat)).filter(Boolean)));
@@ -186,12 +178,11 @@ export default function ShopPage() {
     setPage(1);
   };
 
-  /* Price state (UI เก็บเป็นสตริงสำหรับ input) */
+  /* ===== Price input state ===== */
   const [minValStr, setMinValStr] = useState("");
   const [maxValStr, setMaxValStr] = useState("");
   const [priceErr, setPriceErr] = useState("");
 
-  // sync chips -> inputs
   useEffect(() => {
     if (filters.priceMinC != null) setMinValStr(fromCents(filters.priceMinC)); else setMinValStr("");
     if (filters.priceMaxC != null) setMaxValStr(fromCents(filters.priceMaxC)); else setMaxValStr("");
@@ -201,43 +192,31 @@ export default function ShopPage() {
 
   const applyPrice = () => {
     setPriceErr("");
-
     const rawMinC = minValStr === "" ? null : toCents(minValStr);
     const rawMaxC = maxValStr === "" ? null : toCents(maxValStr);
 
     if (rawMinC === null && rawMaxC === null) {
-      setFilters((p) => ({ ...p, priceMinC: null, priceMaxC: null }));
-      setPage(1);
-      return;
+      setFilters((p) => ({ ...p, priceMinC: null, priceMaxC: null })); setPage(1); return;
     }
     if (rawMinC === null || rawMaxC === null || Number.isNaN(rawMinC) || Number.isNaN(rawMaxC)) {
-      setPriceErr(INVALID_RANGE_MSG);
-      return;
+      setPriceErr(INVALID_RANGE_MSG); return;
     }
 
     const minC = clamp(rawMinC, MIN_ALLOWED * 100, MAX_ALLOWED * 100);
     const maxC = clamp(rawMaxC, MIN_ALLOWED * 100, MAX_ALLOWED * 100);
+    if (minC > maxC) { setPriceErr(INVALID_RANGE_MSG); return; }
 
-    if (minC > maxC) {
-      setPriceErr(INVALID_RANGE_MSG);
-      return;
-    }
-
-    setMinValStr(fromCents(minC));
-    setMaxValStr(fromCents(maxC));
+    setMinValStr(fromCents(minC)); setMaxValStr(fromCents(maxC));
     setFilters((p) => ({ ...p, priceMinC: minC, priceMaxC: maxC }));
     setPage(1);
   };
 
   const clearAll = () => {
     setFilters({ cat: new Set(), brand: new Set(), promo: new Set(), priceMinC: null, priceMaxC: null });
-    setMinValStr("");
-    setMaxValStr("");
-    setPriceErr("");
-    setPage(1);
+    setMinValStr(""); setMaxValStr(""); setPriceErr(""); setPage(1);
   };
 
-  /* (ADD ONLY) No-op defaults for header-driven search */
+  /* ===== Searching placeholders (not used now) ===== */
   const hasSearch = false;
   const searchQ = "";
   const searchScope = "all";
@@ -250,16 +229,16 @@ export default function ShopPage() {
       .replace(/\s+/g, " ")
       .trim();
   const fuzzyMatch = () => false;
-  /* END */
 
+  /* ===== Filter, sort, paginate ===== */
   const filtered = useMemo(() => {
     const f = filters;
-    const catSet   = new Set([...f.cat].map(norm));
+    const catSet = new Set([...f.cat].map(norm));
     const brandSet = new Set([...f.brand].map(norm));
     const promoSet = new Set([...f.promo].map(norm));
 
     return PRODUCTS.filter((p) => {
-      const pCat   = norm(p.cat);
+      const pCat = norm(p.cat);
       const pBrand = norm(p.brand);
       const pPromo = norm(p.promo);
 
@@ -271,13 +250,9 @@ export default function ShopPage() {
           if (!normalize(p.cat || "").includes(q)) return false;
         } else if (searchScope === "stock") {
           const sq = q.replace(/\s+/g, "");
-          if (/(in|instock|available)/.test(sq)) {
-            if (!(p.stock && Number(p.stock) > 0)) return false;
-          } else if (/(out|outofstock|soldout)/.test(sq)) {
-            if (p.stock && Number(p.stock) > 0) return false;
-          } else {
-            return false;
-          }
+          if (/(in|instock|available)/.test(sq)) { if (!(p.stock && Number(p.stock) > 0)) return false; }
+          else if (/(out|outofstock|soldout)/.test(sq)) { if (p.stock && Number(p.stock) > 0) return false; }
+          else { return false; }
         } else {
           const name = normalize(p.name || "");
           const brand = normalize(p.brand || "");
@@ -296,7 +271,7 @@ export default function ShopPage() {
         }
       }
 
-      if (catSet.size   && !catSet.has(pCat))     return false;
+      if (catSet.size && !catSet.has(pCat)) return false;
       if (brandSet.size && !brandSet.has(pBrand)) return false;
       if (promoSet.size && !promoSet.has(pPromo)) return false;
 
@@ -330,19 +305,14 @@ export default function ShopPage() {
     filters.brand.forEach((v) => out.push({ key: "brand", label: v }));
     filters.promo.forEach((v) => out.push({ key: "promo", label: v }));
     if (filters.priceMinC != null || filters.priceMaxC != null)
-      out.push({
-        key: "price",
-        label: `฿${filters.priceMinC != null ? fromCents(filters.priceMinC) : "0.00"}–${filters.priceMaxC != null ? fromCents(filters.priceMaxC) : "∞"}`
-      });
+      out.push({ key: "price", label: `฿${filters.priceMinC != null ? fromCents(filters.priceMinC) : "0.00"}–${filters.priceMaxC != null ? fromCents(filters.priceMaxC) : "∞"}` });
     return out;
   }, [filters]);
 
   const removeChip = (c) => {
     if (c.key === "price") {
       setFilters((p) => ({ ...p, priceMinC: null, priceMaxC: null }));
-      setMinValStr("");
-      setMaxValStr("");
-      setPriceErr("");
+      setMinValStr(""); setMaxValStr(""); setPriceErr("");
     } else {
       setFilters((p) => { const s = new Set(p[c.key]); s.delete(c.label); return { ...p, [c.key]: s }; });
     }
@@ -352,10 +322,9 @@ export default function ShopPage() {
   const hasPriceFilter = filters.priceMinC != null || filters.priceMaxC != null;
   const noProductsDueToPrice = !loading && !loadErr && sorted.length === 0 && hasPriceFilter;
 
-  /* Card สินค้า */
+  /* ===== Product card ===== */
   const ProductCard = ({ p }) => {
     const nav = useNavigate();
-
     const [wish, setWish] = useState(() => {
       try { return new Set(JSON.parse(localStorage.getItem(LS_WISH) || "[]")); }
       catch { return new Set(); }
@@ -370,25 +339,9 @@ export default function ShopPage() {
     const to = `/detail/${encodeURIComponent(p.id)}`;
     const stop = (e) => e.stopPropagation();
 
-    // เพิ่มลงตะกร้า (qty +1 ถ้ามีอยู่แล้ว)
-    const addToCart = () => {
-      const item = {
-        id: String(p.id),
-        name: p.name || "Unnamed product",
-        price: Number(p.price) || 0,
-        qty: 1,
-        img: src || PLACEHOLDER_DATA,
-      };
-      const cart = readCart();
-      const idx = cart.findIndex((x) => String(x.id) === String(item.id));
-      if (idx >= 0) {
-        cart[idx] = { ...cart[idx], qty: Math.max(1, (cart[idx].qty || 1) + 1) };
-      } else {
-        cart.push(item);
-      }
-      saveCart(cart);
-      setAdded(true);
-      setTimeout(() => setAdded(false), 900);
+    const onAdd = () => {
+      addItemToCart({ id: String(p.id), name: p.name || "Unnamed product", price: Number(p.price) || 0, qty: 1, img: src || PLACEHOLDER_DATA });
+      setAdded(true); setTimeout(() => setAdded(false), 900);
     };
 
     return (
@@ -396,12 +349,7 @@ export default function ShopPage() {
         className="card"
         tabIndex={0}
         onClick={() => nav(to)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            nav(to);
-          }
-        }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); nav(to); } }}
         style={{ cursor: "pointer" }}
       >
         <div className="p-thumb">
@@ -418,33 +366,21 @@ export default function ShopPage() {
 
         <div className="p-body">
           <h3 className="p-title" title={p.name}>{p.name}</h3>
-          <div className="p-price-row">
-            <div className="p-price">฿ {Number(p.price).toFixed(2)}</div>
-          </div>
+          <div className="p-price-row"><div className="p-price">฿ {Number(p.price).toFixed(2)}</div></div>
 
           <button
             className={`p-wishline ${liked ? "on" : ""}`}
             type="button"
             aria-pressed={liked}
-            onClick={(e) => {
-              stop(e);
-              setWish((prev) => {
-                const n = new Set(prev);
-                n.has(p.id) ? n.delete(p.id) : n.add(p.id);
-                return n;
-              });
-            }}
+            onClick={(e) => { stop(e); setWish((prev) => { const n = new Set(prev); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; }); }}
           >
-            <HeartIcon />
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="heart">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
             <span>{liked ? "ADDED TO WISHLIST" : "ADD TO WISHLIST"}</span>
           </button>
 
-          <button
-            className="btn btn--cta"
-            type="button"
-            onClick={(e) => { stop(e); addToCart(); }}
-            title="Add to cart"
-          >
+          <button className="btn btn--cta" type="button" onClick={(e) => { stop(e); onAdd(); }} title="Add to cart">
             {added ? "ADDED ✓" : "ADD TO CART"}
           </button>
         </div>
@@ -452,19 +388,14 @@ export default function ShopPage() {
     );
   };
 
-  /* Checklist */
+  /* ===== Checklist ===== */
   const CheckList = ({ list, setKey, selected }) => (
     <div className={`checklist ${setKey === "brand" ? "scroll" : ""}`}>
       {list.map((val, idx) => {
         const id = `${setKey}-${val}-${idx}`;
         return (
           <label key={id} htmlFor={id}>
-            <input
-              id={id}
-              type="checkbox"
-              checked={selected.has(clean(val))}
-              onChange={(e) => toggleSet(setKey, val, e.target.checked)}
-            />
+            <input id={id} type="checkbox" checked={selected.has(clean(val))} onChange={(e) => toggleSet(setKey, val, e.target.checked)} />
             <span>{val}</span>
           </label>
         );
@@ -522,110 +453,51 @@ export default function ShopPage() {
 
             <div className="filters__scroll">
               <section className="filter-block" aria-expanded="true">
-                <div className="filter-head" onClick={(e) => {
-                  const blk = e.currentTarget.parentElement;
-                  const now = blk.getAttribute("aria-expanded") !== "true";
-                  blk.setAttribute("aria-expanded", String(now));
-                }}>
-                  <h3>Product Categories</h3>
-                  <button className="acc-btn" type="button" aria-label="Toggle"></button>
+                <div className="filter-head" onClick={(e) => { const blk = e.currentTarget.parentElement; const now = blk.getAttribute("aria-expanded") !== "true"; blk.setAttribute("aria-expanded", String(now)); }}>
+                  <h3>Product Categories</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
-                <div className="filter-body">
-                  <CheckList list={CAT_LIST} setKey="cat" selected={filters.cat} />
-                </div>
+                <div className="filter-body"><CheckList list={CAT_LIST} setKey="cat" selected={filters.cat} /></div>
               </section>
 
               <section className="filter-block" aria-expanded="true">
-                <div className="filter-head" onClick={(e) => {
-                  const blk = e.currentTarget.parentElement;
-                  const now = blk.getAttribute("aria-expanded") !== "true";
-                  blk.setAttribute("aria-expanded", String(now));
-                }}>
-                  <h3>Price (฿)</h3>
-                  <button className="acc-btn" type="button" aria-label="Toggle"></button>
+                <div className="filter-head" onClick={(e) => { const blk = e.currentTarget.parentElement; const now = blk.getAttribute("aria-expanded") !== "true"; blk.setAttribute("aria-expanded", String(now)); }}>
+                  <h3>Price (฿)</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
                 <div className="filter-body">
                   <div className="price-row">
                     <input
-                      data-cy="min-input"
-                      type="number"
-                      inputMode="decimal"
-                      placeholder="min"
-                      min={MIN_ALLOWED}
-                      max={MAX_ALLOWED}
-                      step={STEP}
-                      value={minValStr}
-                      onChange={(e) => setMinValStr(e.target.value)}
-                      onInput={(e) => {
-                        const v = e.currentTarget.value;
-                        if (v === "") return;
-                        let num = Number(v);
-                        if (!Number.isNaN(num)) {
-                          num = clamp(num, MIN_ALLOWED, MAX_ALLOWED);
-                          if (String(num) !== v) e.currentTarget.value = String(num);
-                        }
-                      }}
+                      data-cy="min-input" type="number" inputMode="decimal" placeholder="min"
+                      min={MIN_ALLOWED} max={MAX_ALLOWED} step={STEP}
+                      value={minValStr} onChange={(e) => setMinValStr(e.target.value)}
+                      onInput={(e) => { const v = e.currentTarget.value; if (v === "") return; let num = Number(v); if (!Number.isNaN(num)) { num = clamp(num, MIN_ALLOWED, MAX_ALLOWED); if (String(num) !== v) e.currentTarget.value = String(num); } }}
                       onKeyUp={(e) => e.key === "Enter" && applyPrice()}
                     />
                     <span>–</span>
                     <input
-                      data-cy="max-input"
-                      type="number"
-                      inputMode="decimal"
-                      placeholder="max"
-                      min={MIN_ALLOWED}
-                      max={MAX_ALLOWED}
-                      step={STEP}
-                      value={maxValStr}
-                      onChange={(e) => setMaxValStr(e.target.value)}
-                      onInput={(e) => {
-                        const v = e.currentTarget.value;
-                        if (v === "") return;
-                        let num = Number(v);
-                        if (!Number.isNaN(num)) {
-                          num = clamp(num, MIN_ALLOWED, MAX_ALLOWED);
-                          if (String(num) !== v) e.currentTarget.value = String(num);
-                        }
-                      }}
+                      data-cy="max-input" type="number" inputMode="decimal" placeholder="max"
+                      min={MIN_ALLOWED} max={MAX_ALLOWED} step={STEP}
+                      value={maxValStr} onChange={(e) => setMaxValStr(e.target.value)}
+                      onInput={(e) => { const v = e.currentTarget.value; if (v === "") return; let num = Number(v); if (!Number.isNaN(num)) { num = clamp(num, MIN_ALLOWED, MAX_ALLOWED); if (String(num) !== v) e.currentTarget.value = String(num); } }}
                       onKeyUp={(e) => e.key === "Enter" && applyPrice()}
                     />
                   </div>
                   {priceErr && <p className="price-error" role="alert">{priceErr}</p>}
-                  <button
-                    data-cy="apply-btn"
-                    className="btn btn--apply"
-                    type="button"
-                    onClick={applyPrice}
-                  >
-                    Apply
-                  </button>
+                  <button data-cy="apply-btn" className="btn btn--apply" type="button" onClick={applyPrice}>Apply</button>
                 </div>
               </section>
 
               <section className="filter-block" aria-expanded="true">
-                <div className="filter-head" onClick={(e) => {
-                  const blk = e.currentTarget.parentElement;
-                  const now = blk.getAttribute("aria-expanded") !== "true";
-                  blk.setAttribute("aria-expanded", String(now));
-                }}>
-                  <h3>Brands</h3>
-                  <button className="acc-btn" type="button" aria-label="Toggle"></button>
+                <div className="filter-head" onClick={(e) => { const blk = e.currentTarget.parentElement; const now = blk.getAttribute("aria-expanded") !== "true"; blk.setAttribute("aria-expanded", String(now)); }}>
+                  <h3>Brands</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
-                <div className="filter-body">
-                  <CheckList list={BRANDS} setKey="brand" selected={filters.brand} />
-                </div>
+                <div className="filter-body"><CheckList list={BRANDS} setKey="brand" selected={filters.brand} /></div>
               </section>
 
               <section className="filter-block" aria-expanded="true">
-                <div className="filter-head" onClick={(e) => {
-                  const blk = e.currentTarget.parentElement;
-                  const now = blk.getAttribute("aria-expanded") !== "true";
-                  blk.setAttribute("aria-expanded", String(now));
-                }}>
-                  <h3>Promotions</h3>
-                  <button className="acc-btn" type="button" aria-label="Toggle"></button>
+                <div className="filter-head" onClick={(e) => { const blk = e.currentTarget.parentElement; const now = blk.getAttribute("aria-expanded") !== "true"; blk.setAttribute("aria-expanded", String(now)); }}>
+                  <h3>Promotions</h3><button className="acc-btn" type="button" aria-label="Toggle"></button>
                 </div>
-                <div className="filter-body">{/* ยังไม่มีใน DB — เฟสถัดไป */}</div>
+                <div className="filter-body">{/* future feature */}</div>
               </section>
             </div>
           </aside>
@@ -636,9 +508,7 @@ export default function ShopPage() {
                 ? (loading ? <p className="no-result">Loading…</p> : <p className="no-result">No products found.</p>)
                 : pageItems.map((p) => (<ProductCard key={p.id} p={p} />))}
               {!loading && !loadErr && pageItems.length === 0 && (
-                <p className="no-result">
-                  {noProductsDueToPrice ? "No products found in the selected price range." : "No products found."}
-                </p>
+                <p className="no-result">{noProductsDueToPrice ? "No products found in the selected price range." : "No products found."}</p>
               )}
             </div>
 
