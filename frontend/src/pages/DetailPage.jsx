@@ -1,17 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { isAuthed } from "../auth";
-import "./DetailPage.css";
 import Footer from "./../components/Footer.jsx";
+import "./DetailPage.css";
 
-/* Config & helpers */
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
-
-/* ===== Storage keys */
-const LS_WISHLIST = "pm_wishlist";
-const LS_CART = "pm_cart";
-
-const normId = (v) => String(v ?? "");
+const LS = { WISHLIST: "pm_wishlist", CART: "pm_cart" };
 
 const FALLBACK_IMG = `data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='640'>
@@ -19,81 +12,157 @@ const FALLBACK_IMG = `data:image/svg+xml;utf8,${encodeURIComponent(
    </svg>`
 )}`;
 
-const toSlug = (s) =>
-  String(s || "")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-
-/* ฟังก์ชันปรับแต่งชื่อให้ดูดี */
-const prettifyTitle = (s = "") =>
-  s
-    .replace(/(\d+)\s*(กก\.?)/g, "$1 $2")
-    .replace(/\s*(\d+\s*กก\.?)\s*$/i, " ($1)");
-
+/* ---------- utils ---------- */
+const normId = (v) => String(v ?? "");
+const toSlug = (s = "") =>
+  s.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 const fmtPrice = (n) => Number(n || 0).toFixed(2);
+const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
-/* ===== (เพิ่ม) Helpers สำหรับ RELATED ===== */
-const norm = (v) => (v === null || v === undefined ? "" : String(v));
-const pickId = (p) => p?.id ?? p?.productId ?? p?.product_id;
-const pickCatId = (p) => p?.categoryId ?? p?.category_id ?? p?.category?.id;
-const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+const jsonLS = {
+  get(key, fallback) {
+    try {
+      const v = JSON.parse(localStorage.getItem(key) || "null");
+      return v ?? fallback;
+    } catch {
+      return fallback;
+    }
+  },
+  set(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  },
+};
 
-/* ===== Wishlist (LocalStorage) helpers ===== */
-const loadWL = () => {
+const cart = {
+  read: () => jsonLS.get(LS.CART, []),
+  write: (arr) => jsonLS.set(LS.CART, arr),
+  upsert(item) {
+    const items = cart.read();
+    const id = String(item.id);
+    const i = items.findIndex((x) => String(x.id) === id);
+    if (i >= 0) items[i] = { ...items[i], qty: Math.max(1, (items[i].qty || 1) + (item.qty || 1)) };
+    else items.push(item);
+    cart.write(items);
+  },
+};
+
+const wishlist = {
+  read: () => jsonLS.get(LS.WISHLIST, []),
+  write: (arr) => jsonLS.set(LS.WISHLIST, arr),
+  has(id) {
+    return wishlist.read().some((x) => normId(x.id ?? x) === normId(id));
+  },
+  add(p) {
+    const w = wishlist.read();
+    if (wishlist.has(p.id)) return;
+    w.push({ id: normId(p.id), title: p.title, price: p.price, cover: p.imgMain });
+    wishlist.write(w);
+  },
+  remove(id) {
+    wishlist.write(wishlist.read().filter((x) => normId(x.id ?? x) !== normId(id)));
+  },
+};
+
+/* ---------- data hooks ---------- */
+async function safeJson(url) {
   try {
-    const raw = localStorage.getItem(LS_WISHLIST);
-    const v = JSON.parse(raw);
-    return Array.isArray(v) ? v : [];
+    const r = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!r.ok) return null;
+    return await r.json();
   } catch {
-    return [];
+    return null;
   }
-};
-const saveWL = (arr) => localStorage.setItem(LS_WISHLIST, JSON.stringify(arr));
-const entryId = (x) => (typeof x === "object" && x !== null ? normId(x.id) : normId(x));
-const inWL = (arr, id) => arr.some((x) => entryId(x) === normId(id));
-const toEntry = (p) => ({
-  id: normId(p.id),
-  title: p.title,
-  price: p.price,
-  cover: p.imgMain || `${API_URL}/api/products/${encodeURIComponent(p.id)}/cover`,
-});
-const addToWL = (arr, p) => {
-  if (inWL(arr, p.id)) return arr;
-  const hasObject = arr.some((x) => typeof x === "object" && x !== null);
-  if (hasObject || arr.length === 0) return [...arr, toEntry(p)];
-  return [...arr, normId(p.id)];
-};
-const removeFromWL = (arr, id) => arr.filter((x) => entryId(x) !== normId(id));
+}
 
-/* Cart helpers */
-const readCart = () => {
-  try {
-    const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]");
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-};
-const saveCart = (arr) => localStorage.setItem(LS_CART, JSON.stringify(arr));
+function useProductAndRelated(id) {
+  const [data, setData] = useState({ product: null, related: [], loading: true, error: "" });
 
-/* Breadcrumb */
-function Breadcrumb({ categorySlug, categoryName, currentTitle }) {
+  useEffect(() => {
+    let off = false;
+    (async () => {
+      setData((d) => ({ ...d, loading: true, error: "" }));
+      try {
+        const [p, imgs, cats, brands] = await Promise.all([
+          safeJson(`${API_URL}/api/products/${encodeURIComponent(id)}`),
+          safeJson(`${API_URL}/api/products/${encodeURIComponent(id)}/images`),
+          safeJson(`${API_URL}/api/categories`),
+          safeJson(`${API_URL}/api/brands`),
+        ]);
+        if (off) return;
+        if (!p) throw new Error("ไม่พบสินค้า หรือเรียก API ไม่สำเร็จ");
+
+        const catName = Array.isArray(cats) ? cats.find((c) => c.id === p.categoryId)?.name || "" : "";
+        const brandName = Array.isArray(brands) ? brands.find((b) => b.id === p.brandId)?.name || "" : "";
+
+        let imgUrl = `${API_URL}/api/products/${encodeURIComponent(p.id ?? id)}/cover`;
+        if (Array.isArray(imgs) && imgs.length) {
+          const cover = imgs.find((x) => x.isCover) || imgs[0];
+          if (cover?.imageUrl) imgUrl = cover.imageUrl;
+        }
+
+        const product = {
+          id: p.id ?? id,
+          title: p.name || "",
+          brand: brandName || "",
+          brandId: p.brandId ?? null,
+          sku: p.productId || "",
+          price: Number(p.price) || 0,
+          stock: Math.max(0, Number(p.quantity) || 0),
+          imgMain: imgUrl || FALLBACK_IMG,
+          imgDesc: imgUrl || FALLBACK_IMG,
+          categoryId: p.categoryId ?? null,
+          categoryName: catName || "",
+          categorySlug: toSlug(catName) || "all",
+          excerpt: p.description || "",
+        };
+
+        // related: เน้นหมวดเดียวกัน > แบรนด์เดียวกัน > อื่นๆ
+        const all = (await safeJson(`${API_URL}/api/products`)) || [];
+        const notSelf = (x) => normId(x.id) !== normId(product.id);
+        const sameCat = all.filter(notSelf).filter((x) => String(x.categoryId) === String(product.categoryId));
+        const sameBrand = all.filter(notSelf).filter((x) => String(x.brandId) === String(product.brandId));
+        const others = all.filter(notSelf);
+
+        const pick = [];
+        for (const group of [sameCat, sameBrand, others]) {
+          for (const it of group) {
+            if (pick.find((p) => normId(p.id) === normId(it.id))) continue;
+            pick.push(it);
+            if (pick.length >= 4) break;
+          }
+          if (pick.length >= 4) break;
+        }
+        const related = pick.map((x) => ({
+          id: x.id,
+          title: x.name,
+          price: Number(x.price) || 0,
+          cover: `${API_URL}/api/products/${encodeURIComponent(x.id)}/cover`,
+        }));
+
+        setData({ product, related, loading: false, error: "" });
+        document.title = product.title ? `${product.title} – Pure Mart` : "Details Page";
+      } catch (e) {
+        if (!off) setData({ product: null, related: [], loading: false, error: e.message || "โหลดข้อมูลไม่สำเร็จ" });
+      }
+    })();
+    return () => { off = true; };
+  }, [id]);
+
+  return data;
+}
+
+/* ---------- UI ---------- */
+function Breadcrumb({ categoryName, currentTitle }) {
   return (
     <nav className="pm-breadcrumb" aria-label="Breadcrumb">
       <ol>
+        <li><Link to="/home">HOME</Link></li>
         <li>
-          <Link to="/home">HOME</Link>
-        </li>
-        <li>
-          <Link to={`/shop?cat=${encodeURIComponent(categoryName)}`}>
-            {categoryName.toUpperCase()}
+          <Link to={`/shop?cat=${encodeURIComponent(categoryName || "")}`}>
+            {String(categoryName || "").toUpperCase()}
           </Link>
         </li>
-        <li className="current" aria-current="page">
-          <span title={currentTitle}>{currentTitle}</span>
-        </li>
+        <li className="current" aria-current="page"><span title={currentTitle}>{currentTitle}</span></li>
       </ol>
     </nav>
   );
@@ -102,557 +171,208 @@ function Breadcrumb({ categorySlug, categoryName, currentTitle }) {
 export default function DetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { product, related, loading, error } = useProductAndRelated(id);
 
-  /* Main product */
-  const [product, setProduct] = useState({
-    id: "",
-    title: "",
-    brand: "",
-    sku: "",
-    price: 0,
-    stock: 0,
-    imgMain: FALLBACK_IMG,
-    imgDesc: FALLBACK_IMG,
-    categoryId: null,
-    brandId: null,
-    categoryName: "",
-    categorySlug: "all",
-    excerpt: "",
-  });
-
-  // เก็บ qty เป็น string เพื่อผูกกับ input แต่จะ clamp เป็นตัวเลขทุกครั้งก่อนใช้
   const [qty, setQty] = useState("1");
+  const [added, setAdded] = useState(false);
   const [wish, setWish] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [added, setAdded] = useState(false); // สถานะเพิ่มตะกร้าสำเร็จ
-
-  /* Related products */
-  const [related, setRelated] = useState([]);
-  const [relLoading, setRelLoading] = useState(false);
 
   useEffect(() => {
-    document.title = "Details Page";
-  }, []);
+    if (product) setWish(wishlist.has(product.id));
+  }, [product]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const safeJson = async (url) => {
-      try {
-        const r = await fetch(url, { headers: { Accept: "application/json" } });
-        if (!r.ok) return null;
-        return await r.json();
-      } catch {
-        return null;
-      }
-    };
-
-    (async () => {
-      setLoading(true);
-      setErr("");
-      try {
-        const [p, imgs, cats, brands] = await Promise.all([
-          safeJson(`${API_URL}/api/products/${encodeURIComponent(id)}`),
-          safeJson(`${API_URL}/api/products/${encodeURIComponent(id)}/images`),
-          safeJson(`${API_URL}/api/categories`),
-          safeJson(`${API_URL}/api/brands`),
-        ]);
-
-        if (cancelled) return;
-        if (!p) throw new Error("ไม่พบสินค้า หรือเรียก API ไม่สำเร็จ");
-
-        const catName = Array.isArray(cats)
-          ? cats.find((c) => c.id === (p.categoryId ?? p.category_id ?? p.category?.id))?.name || ""
-          : "";
-        const brandName = Array.isArray(brands)
-          ? brands.find((b) => b.id === p.brandId)?.name || ""
-          : "";
-
-        let imgUrl = `${API_URL}/api/products/${encodeURIComponent(
-          p.id ?? id
-        )}/cover`;
-        if (Array.isArray(imgs) && imgs.length) {
-          const cover = imgs.find((x) => x.isCover) || imgs[0];
-          if (cover?.imageUrl) imgUrl = cover.imageUrl;
-        }
-
-        const mapped = {
-          id: p.id ?? id,
-          title: p.name || "",
-          brand: brandName || "",
-          brandId: p.brandId ?? null,
-          sku: p.productId || "",
-          price: Number(p.price) || 0,
-          stock: Number(p.quantity) || 0,
-          imgMain: imgUrl || FALLBACK_IMG,
-          imgDesc: imgUrl || FALLBACK_IMG,
-          // (แก้) รองรับ categoryId หลายรูปแบบ
-          categoryId: (p.categoryId ?? p.category_id ?? p.category?.id) ?? null,
-          categoryName: catName || "",
-          categorySlug: toSlug(catName) || "all",
-          excerpt: p.description || "",
-        };
-
-        setProduct(mapped);
-        document.title = mapped.title
-          ? `${mapped.title} – Pure Mart`
-          : "Details Page";
-
-        // ปรับ qty ให้ไม่เกิน stock เมื่อโหลดสินค้าเสร็จ
-        setQty((prev) => {
-          const n = clampQty(Number(prev || 1), mapped.stock);
-          return String(n < 1 && mapped.stock > 0 ? 1 : n || (mapped.stock > 0 ? 1 : 1));
-        });
-
-        // ตั้งค่า wish เริ่มต้นจาก localStorage (เทียบ id เป็น string)
-        const list = loadWL();
-        if (!cancelled) setWish(inWL(list, normId(mapped.id)));
-        // การโหลด RELATED แยกออกไปอีก useEffect ด้านล่าง
-      } catch (e) {
-        setErr(e.message || "โหลดข้อมูลไม่สำเร็จ");
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API_URL, id]);
-
-  /* ===== (เพิ่ม) useEffect แยกเพื่อโหลด RELATED ตาม category เดียวกัน ===== */
-  useEffect(() => {
-    let cancelled = false;
-
-    const safeJson = async (url) => {
-      try {
-        const r = await fetch(url, { headers: { Accept: "application/json" } });
-        if (!r.ok) return null;
-        return await r.json();
-      } catch {
-        return null;
-      }
-    };
-
-    const loadRelated = async () => {
-      if (!product?.categoryId) {
-        setRelated([]);
-        return;
-      }
-      setRelLoading(true);
-
-      // พยายามเรียกด้วยพารามิเตอร์ categoryId ก่อน
-      const byParam = await safeJson(
-        `${API_URL}/api/products?categoryId=${encodeURIComponent(product.categoryId)}`
-      );
-
-      // ถ้า API ไม่รองรับ/ตอบไม่ตรง → fallback ดึงทั้งหมดแล้วฟิลเตอร์เอง
-      let pool = Array.isArray(byParam) ? byParam : await safeJson(`${API_URL}/api/products`);
-      if (!Array.isArray(pool)) pool = [];
-
-      // ฟิลเตอร์: category เดียวกัน และไม่ใช่สินค้าปัจจุบัน (normalize เป็น string)
-      const currentCat = norm(pickCatId(product));
-      const currentId = norm(pickId(product));
-
-      const sameCat = (Array.isArray(pool) ? pool : [])
-        .filter((x) => norm(pickCatId(x)) === currentCat)
-        .filter((x) => norm(pickId(x)) !== currentId);
-
-      // สุ่มเล็กน้อย และเลือก 8 รายการ
-      const picked = shuffle(sameCat)
-        .slice(0, 8)
-        .map((x) => {
-          const xid = pickId(x);
-          return {
-            id: xid,
-            title: x.name,
-            price: Number(x.price) || 0,
-            cover: `${API_URL}/api/products/${encodeURIComponent(xid)}/cover`,
-          };
-        });
-
-      if (!cancelled) setRelated(picked);
-    };
-
-    loadRelated()
-      .catch(() => {
-        if (!cancelled) setRelated([]);
-      })
-      .finally(() => {
-        if (!cancelled) setRelLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [product.categoryId, product.id]);
-
-  /*  Qty helpers (ล็อกไม่ให้เกิน stock) */
-  const clampQty = (v, stock) => {
-    const s = Math.max(0, Number(stock || 0));
-    const n = Math.floor(Number.isFinite(v) ? v : 1);
-    if (s <= 0) return 1; // แสดงผล 1 แต่ปุ่มซื้อจะ disabled อยู่แล้ว
-    return Math.min(Math.max(n, 1), s);
-  };
-
-  const stock = Math.max(0, Number(product.stock || 0));
-  const disabled = stock <= 0;
-
-  const dec = () => {
-    setQty((prev) => String(Math.max(1, Math.floor(Number(prev || 1) - 1))));
-  };
-  const inc = () => {
-    setQty((prev) => {
-      const next = Math.floor(Number(prev || 1) + 1);
-      return String(clampQty(next, stock));
-    });
-  };
-  const onQtyChange = (e) => {
-    const raw = e.target.value;
-    if (raw === "") return setQty("");
-    const num = Math.floor(Number(raw));
-    if (!Number.isFinite(num)) return;
-    setQty(String(clampQty(num, stock)));
-  };
-  const onQtyBlur = () => {
-    setQty((prev) => {
-      const num = Math.floor(Number(prev || 1));
-      return String(clampQty(num, stock));
-    });
-  };
+  const stock = product?.stock ?? 0;
+  const disabledQty = stock <= 0;
 
   const handleImgError = (e) => {
     if (e.currentTarget.src !== FALLBACK_IMG) e.currentTarget.src = FALLBACK_IMG;
   };
 
-  /* Wishlist: sync checkbox ↔ localStorage */
-  const toggleWish = (checked) => {
-    setWish(checked);
-    const list = loadWL();
-    const next = checked ? addToWL(list, product) : removeFromWL(list, product.id);
-    saveWL(next);
+  const onQtyInput = (v) => {
+    if (v === "") return setQty("");
+    const n = Math.floor(Number(v));
+    if (!Number.isFinite(n)) return;
+    setQty(String(clamp(n, 1, Math.max(1, stock))));
   };
 
-  /* Cart: Add & Buy */
-  const buildCartItem = () => {
-    const pid = normId(product.sku) || normId(product.id) || "#UNKNOWN";
-    return {
-      id: pid,
-      name: product.title || "Unnamed product",
-      price: Number(product.price) || 0,
-      qty: clampQty(Number(qty || 1), stock),
-      img: product.imgMain || FALLBACK_IMG,
-    };
+  const buildCartItem = () => ({
+    id: String(product?.id ?? product?.productId ?? product?.sku ?? ""),
+    name: product?.title || "Unnamed product",
+    price: Number(product?.price) || 0,
+    qty: clamp(Number(qty || 1), 1, Math.max(1, stock)),
+    img: product?.imgMain || FALLBACK_IMG,
+  });
+
+  const ensureStock = (need) => {
+    if (stock <= 0) { window.alert("This item is currently out of stock."); return false; }
+    if (need > stock) { window.alert(`Only ${stock} left in stock. Please reduce the quantity.`); return false; }
+    return true;
   };
 
   const addToCart = () => {
-    const item = buildCartItem();
-    const cart = readCart();
-    const idx = cart.findIndex((x) => normId(x.id) === normId(item.id));
-    if (idx >= 0) {
-      const nextQty = Math.min(
-        stock || Infinity,
-        Math.max(1, (cart[idx].qty || 1) + (item.qty || 1))
-      );
-      cart[idx] = { ...cart[idx], qty: nextQty };
-    } else {
-      cart.push(item);
-    }
-    saveCart(cart);
+    const need = Number(qty || 1);
+    if (!ensureStock(need)) return;
+    cart.upsert(buildCartItem());
     setAdded(true);
-    setTimeout(() => setAdded(false), 1000);
+    setTimeout(() => setAdded(false), 900);
   };
 
-  // กด BUY NOW -> ส่ง item ไปหน้า PlaceOrder โดยตรง
   const buyNow = () => {
-    const item = buildCartItem();
-    navigate("/place-order", { state: { from: "buy-now", item } });
+    const need = Number(qty || 1);
+    if (!ensureStock(need)) return;
+    navigate("/place-order", { state: { from: "buy-now", item: buildCartItem() } });
   };
 
-  // ใช้กับสินค้าที่เกี่ยวข้อง (ข้อมูลมีแค่ id, title, price, cover)
-  const quickAddRelated = (r) => {
-    const cart = readCart();
-    const idStr = normId(r.id);
-    const idx = cart.findIndex((x) => normId(x.id) === idStr);
-    if (idx >= 0) {
-      cart[idx] = { ...cart[idx], qty: Math.max(1, (cart[idx].qty || 1) + 1) };
-    } else {
-      cart.push({
-        id: idStr,
-        name: r.title,
-        price: Number(r.price) || 0,
-        qty: 1,
-        img: r.cover || FALLBACK_IMG,
-      });
-    }
-    saveCart(cart);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 800);
+  const toggleWish = (checked) => {
+    setWish(checked);
+    if (!product) return;
+    checked ? wishlist.add(product) : wishlist.remove(product.id);
   };
+
+  if (loading) {
+    return (
+      <>
+        <main className="page container detail-page">
+          <section className="product card" style={{ padding: 24 }}>Loading product...</section>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <>
+        <main className="page container detail-page">
+          <section className="product card" style={{ padding: 24, color: "#b91c1c" }}>
+            เกิดข้อผิดพลาด: {error || "โหลดข้อมูลไม่สำเร็จ"}
+          </section>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
       <main className="page container detail-page">
-        {loading ? (
-          <section className="product card" style={{ padding: 24 }}>
-            Loading product...
-          </section>
-        ) : err ? (
-          <section
-            className="product card"
-            style={{ padding: 24, color: "#b91c1c" }}
-          >
-            เกิดข้อผิดพลาด: {err}
-          </section>
-        ) : (
-          <>
-            <Breadcrumb
-              categorySlug={product.categorySlug}
-              categoryName={product.categoryName}
-              currentTitle={product.title}
-            />
+        <Breadcrumb categoryName={product.categoryName} currentTitle={product.title} />
 
-            {/* Product hero */}
-            <section className="product card">
-              <div className="product__media">
-                <div className="product__img">
-                  <img
-                    src={product.imgMain}
-                    alt={product.title}
-                    loading="lazy"
-                    onError={handleImgError}
-                  />
-                </div>
+        {/* Product hero */}
+        <section className="product card">
+          <div className="product__media">
+            <div className="product__img">
+              <img src={product.imgMain} alt={product.title} loading="lazy" onError={handleImgError} />
+            </div>
+          </div>
+
+          <div className="product__info">
+            <div className="product__header">
+              <h1 className="product__title">{product.title}</h1>
+              <div className="meta">
+                <span>Brand: <span className="link">{product.brand || "-"}</span></span>
+                <span>SKU: {product.sku || "-"}</span>
+              </div>
+            </div>
+
+            <div className="price">
+              <span className="currency">฿</span>
+              <span className="amount">{fmtPrice(product.price)}</span>
+            </div>
+
+            <div className="stock">
+              <span
+                className="dot" aria-hidden="true"
+                style={{
+                  display: "inline-block", width: 10, height: 10, borderRadius: 9999, marginRight: 8,
+                  backgroundColor: stock > 0 ? "#22c55e" : "#ef4444",
+                  boxShadow: `0 0 0 3px ${stock > 0 ? "#dcfce7" : "#fee2e2"}`
+                }}
+              />
+              {stock > 0 ? <>Availability: <b>{stock} in stock</b></> : <b style={{ color: "#b91c1c" }}>Out of stock</b>}
+            </div>
+
+            <p className="excerpt">{product.excerpt || "—"}</p>
+
+            <div className="buy-row">
+              <div className="qty" data-qty="">
+                <button className="qty__btn" type="button" aria-label="decrease"
+                  onClick={() => onQtyInput(String(Math.max(1, (Number(qty || 1) | 0) - 1)))}
+                  disabled={disabledQty || Number(qty || 1) <= 1}>−</button>
+
+                <input
+                  className="qty__input" type="number" min={1} max={Math.max(1, stock)} inputMode="numeric"
+                  value={qty} onChange={(e) => onQtyInput(e.target.value)}
+                  onBlur={() => onQtyInput(String(qty || 1))} onWheel={(e) => e.currentTarget.blur()}
+                  disabled={disabledQty} aria-label="Quantity"
+                />
+
+                <button className="qty__btn" type="button" aria-label="increase"
+                  onClick={() => onQtyInput(String((Number(qty || 1) | 0) + 1))}
+                  disabled={disabledQty || Number(qty || 1) >= stock}>+</button>
               </div>
 
-              <div className="product__info">
-                {/* Header */}
-                <div className="product__header">
-                  <h1 className="product__title">
-                    {prettifyTitle(product.title)}
-                  </h1>
-                  <div className="meta">
-                    <span>
-                      Brand:{" "}
-                      <a
-                        href="#"
-                        className="link"
-                        aria-label={`Brand ${product.brand}`}
-                      >
-                        {product.brand || "-"}
-                      </a>
-                    </span>
-                    <span>SKU: {product.sku || "-"}</span>
-                  </div>
-                </div>
+              <button className="btn btn--primary" type="button" onClick={addToCart}>
+                {added ? "ADDED ✓" : "ADD TO CART"}
+              </button>
 
-                {/* Price */}
-                <div className="price">
-                  <span className="currency">฿</span>
-                  <span className="amount">{fmtPrice(product.price)}</span>
-                </div>
+              <button className="btn btn--gradient" type="button" onClick={buyNow}>
+                BUY NOW
+              </button>
+            </div>
 
-                <div className="stock">
-                  <span className="dot" aria-hidden="true" />
-                  {stock > 0 ? (
-                    <>
-                      Availability: <b>{stock} in stock</b>
-                    </>
-                  ) : (
-                    <b style={{ color: "#b91c1c" }}>Out of stock</b>
-                  )}
-                </div>
+            <label className="wish">
+              <input type="checkbox" className="heart-toggle" checked={wish} onChange={(e) => toggleWish(e.target.checked)} />
+              <span className="heart-label">{wish ? "In wishlist" : "Add to wishlist"}</span>
+            </label>
 
-                <p className="excerpt">{product.excerpt || "—"}</p>
+            <div className="cat">
+              Category:{" "}
+              <Link to={`/shop?cat=${encodeURIComponent(product.categoryName || "")}`} className="link">
+                {product.categoryName || "-"}
+              </Link>
+            </div>
+          </div>
+        </section>
 
-                <div className="buy-row">
-                  <div className="qty" data-qty="">
-                    <button
-                      className="qty__btn"
-                      type="button"
-                      aria-label="decrease"
-                      onClick={dec}
-                      disabled={disabled || Number(qty || 1) <= 1}
-                      title={disabled ? "Out of stock" : "Decrease quantity"}
-                    >
-                      −
-                    </button>
+        {/* Description */}
+        <section className="section card">
+          <h2 className="section__title">DESCRIPTION</h2>
+          <div className="desc">
+            <div className="desc__text">
+              <p><b>Product Detail</b><br />{product.excerpt || "No description."}</p>
+            </div>
+            <div className="desc__img">
+              <img src={product.imgDesc} alt={product.title} loading="lazy" onError={handleImgError} />
+            </div>
+          </div>
+        </section>
 
-                    <input
-                      className="qty__input"
-                      type="number"
-                      min={1}
-                      max={Math.max(1, stock)}
-                      inputMode="numeric"
-                      value={qty}
-                      onChange={onQtyChange}
-                      onBlur={onQtyBlur}
-                      onWheel={(e) => e.currentTarget.blur()}
-                      disabled={disabled}
-                      aria-label="Quantity"
-                      title={
-                        disabled
-                          ? "Out of stock"
-                          : `Max ${stock} piece${stock > 1 ? "s" : ""}`
-                      }
-                    />
-
-                    <button
-                      className="qty__btn"
-                      type="button"
-                      aria-label="increase"
-                      onClick={inc}
-                      disabled={disabled || Number(qty || 1) >= stock}
-                      title={
-                        disabled
-                          ? "Out of stock"
-                          : Number(qty || 1) >= stock
-                          ? "Reached available stock"
-                          : "Increase quantity"
-                      }
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <button
-                    className="btn btn--primary"
-                    type="button"
-                    onClick={addToCart}
-                    disabled={disabled || Number(qty || 1) > stock}
-                    title={
-                      disabled
-                        ? "Out of stock"
-                        : Number(qty || 1) > stock
-                        ? "Quantity exceeds stock"
-                        : "Add to cart"
-                    }
-                  >
-                    {added ? "ADDED ✓" : "ADD TO CART"}
-                  </button>
-
-                  <button
-                    className="btn btn--gradient"
-                    type="button"
-                    onClick={buyNow}
-                    disabled={disabled || Number(qty || 1) > stock}
-                    title={
-                      disabled
-                        ? "Out of stock"
-                        : Number(qty || 1) > stock
-                        ? "Quantity exceeds stock"
-                        : "Buy now"
-                    }
-                  >
-                    BUY NOW
-                  </button>
-                </div>
-
-                <label className="wish">
-                  <input
-                    type="checkbox"
-                    className="heart-toggle"
-                    checked={wish}
-                    onChange={(e) => toggleWish(e.target.checked)}
-                    disabled={false}
-                  />
-                  <span className="heart-label">
-                    {wish ? "In wishlist" : "Add to wishlist"}
-                  </span>
-                </label>
-
-                <div className="cat">
-                  Category:{" "}
-                  <Link
-                    to={`/shop?cat=${encodeURIComponent(product.categoryName || "")}`}
-                    className="link"
-                  >
-                    {product.categoryName || "-"}
+        {/* Related */}
+        <section className="section card">
+          <h2 className="section__title">RELATED PRODUCTS</h2>
+          {related.length === 0 ? (
+            <div style={{ padding: 12, color: "#6b7280" }}>ไม่พบสินค้าที่เกี่ยวข้อง</div>
+          ) : (
+            <div className="grid">
+              {related.map((r) => (
+                <article key={r.id} className="product-card">
+                  <Link className="thumb" to={`/detail/${r.id}`} aria-label={r.title} title={r.title}>
+                    <img src={r.cover} alt={r.title} loading="lazy" onError={handleImgError} />
                   </Link>
-                </div>
-              </div>
-            </section>
-
-            {/* Description */}
-            <section className="section card">
-              <h2 className="section__title">DESCRIPTION</h2>
-              <div className="desc">
-                <div className="desc__text">
-                  <p>
-                    <b>รายละเอียดสินค้า</b>
-                    <br />
-                    {product.excerpt || "No description."}
-                  </p>
-                </div>
-                <div className="desc__img">
-                  <img
-                    src={product.imgDesc}
-                    alt={product.title}
-                    loading="lazy"
-                    onError={handleImgError}
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Related products */}
-            <section className="section card">
-              <h2 className="section__title">RELATED PRODUCTS</h2>
-
-              {relLoading ? (
-                <div style={{ padding: 12, color: "#6b7280" }}>
-                  กำลังโหลดสินค้าแนะนำ...
-                </div>
-              ) : related.length === 0 ? (
-                <div style={{ padding: 12, color: "#6b7280" }}>
-                  ไม่พบสินค้าที่เกี่ยวข้อง
-                </div>
-              ) : (
-                <div className="grid">
-                  {related.map((r) => (
-                    <article key={r.id} className="product-card">
-                      <Link
-                        className="thumb"
-                        to={`/detail/${r.id}`}
-                        aria-label={r.title}
-                        title={r.title}
-                      >
-                        <img
-                          src={r.cover}
-                          alt={r.title}
-                          loading="lazy"
-                          onError={handleImgError}
-                        />
-                      </Link>
-
-                      <h3 className="product-card__title">{r.title}</h3>
-
-                      <div className="product-card__price">
-                        ฿ {fmtPrice(r.price)}
-                      </div>
-
-                      <label className="wish" style={{ marginTop: 4 }}>
-                        <input type="checkbox" className="heart-toggle" />
-                        <span className="heart-label">Add to wishlist</span>
-                      </label>
-
-                      <button
-                        className="btn btn--primary btn--block"
-                        type="button"
-                        onClick={() => quickAddRelated(r)}
-                      >
-                        ADD TO CART
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          </>
-        )}
+                  <h3 className="product-card__title">{r.title}</h3>
+                  <div className="product-card__price">฿ {fmtPrice(r.price)}</div>
+                  <button
+                    className="btn btn--primary btn--block" type="button"
+                    onClick={() => cart.upsert({ id: normId(r.id), name: r.title, price: Number(r.price) || 0, qty: 1, img: r.cover || FALLBACK_IMG })}
+                  >
+                    ADD TO CART
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </main>
 
       <Footer />

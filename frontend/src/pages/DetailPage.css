@@ -503,6 +503,111 @@
   border-radius: 12px;
 }
 
+/* ---------- Modal (Popup) ---------- */
+.pm-modal__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45); /* #111827 */
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 60;
+  animation: pm-fade-in .18s ease-out;
+}
+
+.pm-modal {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.25);
+  padding: 22px 22px 18px;
+  animation: pm-scale-in .18s ease-out;
+}
+
+.pm-modal__header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.pm-modal__icon {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #fee2e2;      /* red-100 */
+  color: #b91c1c;           /* red-700 */
+}
+
+.pm-modal__title {
+  font-weight: 700;
+  font-size: 18px;
+  color: #111827;
+  margin-top: 2px;
+}
+
+.pm-modal__body {
+  color: #374151;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.pm-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pm-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pm-btn--dark {
+  background: #111827;
+  color: #fff;
+}
+.pm-btn--ghost {
+  background: transparent;
+  color: #111827;
+}
+
+/* Animations */
+@keyframes pm-fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes pm-scale-in {
+  from { transform: translateY(2px) scale(.98); opacity: 0 }
+  to   { transform: translateY(0) scale(1); opacity: 1 }
+}
+
+/* ---------- Stock dot (green/red) ---------- */
+.stock .dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  margin-right: 8px;
+  vertical-align: middle;
+  box-shadow: 0 0 0 3px var(--dot-ring, #dcfce7);
+}
+.stock .dot--green {
+  background: #22c55e;                
+  --dot-ring: #dcfce7;                 
+}
+.stock .dot--red {
+  background: #ef4444;                 
+  --dot-ring: #fee2e2;                
+}
+
+
 /* ===== Responsive ===== */
 @media (max-width:1100px) {
   .detail-page .product {

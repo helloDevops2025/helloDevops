@@ -2,6 +2,7 @@ import "./WishListPage.css";
 import Header from "../components/header";
 import Footer from "./../components/Footer.jsx";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 const LS_KEY = "pm_wishlist";
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
@@ -94,7 +95,7 @@ function readWishIds() {
 function writeWishIds(ids) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify([...new Set(ids)]));
-  } catch {}
+  } catch { }
 }
 
 export default function WishListPage() {
@@ -103,6 +104,22 @@ export default function WishListPage() {
   const [sortBy, setSortBy] = useState("recent");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // 🔄 auto-sync เมื่อกลับโฟกัสแท็บนี้ หรือแก้ wishlist ในแท็บอื่น
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === LS_KEY) setWishIds(readWishIds());
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") setWishIds(readWishIds());
+    };
+    window.addEventListener("storage", onStorage);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -113,9 +130,10 @@ export default function WishListPage() {
           if (alive) setItems([]);
           return;
         }
-        const res = await fetch(`${API_URL}/api/products`, {
-          headers: { Accept: "application/json" },
-        });
+        const ids = wishIds.map(String).join(",");
+const res = await fetch(`${API_URL}/api/products?ids=${encodeURIComponent(ids)}`, {
+  headers: { Accept: "application/json" },
+});
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const rows = (await res.json()) || [];
         const wishSet = new Set(wishIds);
@@ -259,11 +277,20 @@ export default function WishListPage() {
                       ></line>
                     </svg>
                   </button>
-                  <img src={item.img} alt={item.name} />
+
+                  {/* คลิกภาพไปหน้า detail */}
+                  <Link to={`/detail/${item.id}`} aria-label={item.name} title={item.name}>
+                    <img src={item.img} alt={item.name} />
+                  </Link>
                 </div>
 
                 <div className="wl-body">
-                  <h3 className="wl-name">{item.name}</h3>
+                  {/* คลิกชื่อไปหน้า detail */}
+                  <h3 className="wl-name">
+                    <Link to={`/detail/${item.id}`} title={item.name}>
+                      {item.name}
+                    </Link>
+                  </h3>
                   <div className="wl-price">{formatPrice(item.price)}</div>
                   <div className="wl-meta">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
