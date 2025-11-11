@@ -12,12 +12,13 @@ export default function AdminOrderDetailPage() {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 
     // ✅ ดึงข้อมูล order จาก API
     useEffect(() => {
         const fetchOrder = async () => {
             try {
-                const res = await fetch(`http://localhost:8080/api/orders/${id}`);
+                const res = await fetch(`${API_URL}/api/orders/${id}`);
                 if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
                 const data = await res.json();
                 setOrder(data);
@@ -219,3 +220,4 @@ export default function AdminOrderDetailPage() {
         </div>
     );
 }
+

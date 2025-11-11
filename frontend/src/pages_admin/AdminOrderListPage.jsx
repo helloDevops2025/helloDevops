@@ -6,12 +6,13 @@ export default function AdminOrderListPage() {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
+    const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 
     // ✅ ดึงข้อมูล order ทั้งหมดจาก backend
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const res = await fetch("http://localhost:8080/api/orders");
+                const res = await fetch("${API_URL}/api/orders");
                 if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
                 const data = await res.json();
                 setItems(data);
