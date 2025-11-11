@@ -12,7 +12,7 @@ export default function AdminOrderListPage() {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const res = await fetch("${API_URL}/api/orders");
+                const res = await fetch(`${API_URL}/api/orders`);
                 if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
                 const data = await res.json();
                 setItems(data);
