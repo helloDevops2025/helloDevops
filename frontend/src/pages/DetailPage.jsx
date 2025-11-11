@@ -12,6 +12,7 @@ const LS_WISHLIST = "pm_wishlist";
 const LS_CART = "pm_cart";
 
 const normId = (v) => String(v ?? "");
+const lower = (s) => String(s ?? "").toLowerCase().trim();
 
 const FALLBACK_IMG = `data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='640'>
@@ -82,7 +83,7 @@ function Breadcrumb({ categorySlug, categoryName, currentTitle }) {
         </li>
         <li>
           <Link to={`/shop?cat=${encodeURIComponent(categoryName)}`}>
-            {categoryName.toUpperCase()}
+            {String(categoryName || "").toUpperCase()}
           </Link>
         </li>
         <li className="current" aria-current="page">
@@ -90,6 +91,77 @@ function Breadcrumb({ categorySlug, categoryName, currentTitle }) {
         </li>
       </ol>
     </nav>
+  );
+}
+
+/* ===== shuffle แบบเร็ว ๆ เพื่อสุ่มเลือกสินค้าเติมให้ครบ 4 ===== */
+const shuffle = (arr) => {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+/* ---------- Simple Popup (inline styles) ---------- */
+function Popup({ open, title = "Warning", message, onClose }) {
+  if (!open) return null;
+
+  const [hover, setHover] = useState(false);
+
+  const overlay = {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,.35)",
+    zIndex: 60,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  };
+  const box = {
+    width: "100%",
+    maxWidth: 440,
+    background: "#fff",
+    borderRadius: 12,
+    boxShadow: "0 10px 30px rgba(0,0,0,.2)",
+    padding: "20px 20px 16px",
+  };
+  const head = { fontWeight: 700, fontSize: 18, marginBottom: 8, color: "#111827" };
+  const msg = { color: "#374151", marginBottom: 16, lineHeight: 1.5 };
+  /* 🔹 ปุ่ม OK — โทนม่วงให้เข้ากับธีม */
+  const btn = {
+    display: "inline-block",
+    background: hover ? "#34369A" : "#3E40AE",
+    color: "#fff",
+    border: 0,
+    borderRadius: 10,
+    padding: "10px 18px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontFamily: "Poppins, system-ui, sans-serif",
+    transition: "background .15s ease, transform .08s ease",
+  };
+
+  return (
+    <div style={overlay} role="dialog" aria-modal="true">
+      <div style={box}>
+        <div style={head}>{title}</div>
+        <div style={msg}>{message}</div>
+        <button
+          onClick={onClose}
+          style={btn}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          onMouseDown={(e) => (e.currentTarget.style.transform = "translateY(1px)")}
+          onMouseUp={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+          autoFocus
+        >
+          OK
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -114,16 +186,25 @@ export default function DetailPage() {
     excerpt: "",
   });
 
-  // เก็บ qty เป็น string เพื่อผูกกับ input แต่จะ clamp เป็นตัวเลขทุกครั้งก่อนใช้
+  // qty
   const [qty, setQty] = useState("1");
   const [wish, setWish] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [added, setAdded] = useState(false); // สถานะเพิ่มตะกร้าสำเร็จ
+  const [added, setAdded] = useState(false);
 
   /* Related products */
   const [related, setRelated] = useState([]);
   const [relLoading, setRelLoading] = useState(false);
+
+  /* Popup state */
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupMsg, setPopupMsg] = useState("");
+
+  const openWarn = (msg) => {
+    setPopupMsg(msg);
+    setPopupOpen(true);
+  };
 
   useEffect(() => {
     document.title = "Details Page";
@@ -131,6 +212,7 @@ export default function DetailPage() {
 
   useEffect(() => {
     let cancelled = false;
+
     const safeJson = async (url) => {
       try {
         const r = await fetch(url, { headers: { Accept: "application/json" } });
@@ -162,9 +244,7 @@ export default function DetailPage() {
           ? brands.find((b) => b.id === p.brandId)?.name || ""
           : "";
 
-        let imgUrl = `${API_URL}/api/products/${encodeURIComponent(
-          p.id ?? id
-        )}/cover`;
+        let imgUrl = `${API_URL}/api/products/${encodeURIComponent(p.id ?? id)}/cover`;
         if (Array.isArray(imgs) && imgs.length) {
           const cover = imgs.find((x) => x.isCover) || imgs[0];
           if (cover?.imageUrl) imgUrl = cover.imageUrl;
@@ -187,50 +267,64 @@ export default function DetailPage() {
         };
 
         setProduct(mapped);
-        document.title = mapped.title
-          ? `${mapped.title} – Pure Mart`
-          : "Details Page";
+        document.title = mapped.title ? `${mapped.title} – Pure Mart` : "Details Page";
 
-        // ปรับ qty ให้ไม่เกิน stock เมื่อโหลดสินค้าเสร็จ
+        // qty not exceed stock
         setQty((prev) => {
           const n = clampQty(Number(prev || 1), mapped.stock);
           return String(n < 1 && mapped.stock > 0 ? 1 : n || (mapped.stock > 0 ? 1 : 1));
         });
 
-        // ตั้งค่า wish เริ่มต้นจาก localStorage (เทียบ id เป็น string)
+        // wishlist init
         const list = loadWL();
         if (!cancelled) setWish(inWL(list, normId(mapped.id)));
 
-        /* โหลด Related หลังได้ categoryId */
-        if (mapped.categoryId) {
-          setRelLoading(true);
-          const withFilter =
-            (await safeJson(
-              `${API_URL}/api/products?categoryId=${encodeURIComponent(
-                mapped.categoryId
-              )}`
-            )) ?? (await safeJson(`${API_URL}/api/products`));
+        /* ===== RELATED ===== */
+        setRelLoading(true);
+        const allProducts = (await safeJson(`${API_URL}/api/products`)) || [];
 
-          if (!cancelled && Array.isArray(withFilter)) {
-            const rel = withFilter
-              .filter((x) => x.id !== mapped.id)
-              .filter(
-                (x) =>
-                  !mapped.brandId ||
-                  x.brandId === mapped.brandId ||
-                  x.categoryId === mapped.categoryId
-              )
-              .slice(0, 8)
-              .map((x) => ({
-                id: x.id,
-                title: x.name,
-                price: Number(x.price) || 0,
-                cover: `${API_URL}/api/products/${encodeURIComponent(
-                  x.id
-                )}/cover`,
-              }));
-            setRelated(rel);
+        if (!cancelled && Array.isArray(allProducts)) {
+          const curId = normId(mapped.id);
+          const targetCatId = normId(mapped.categoryId);
+          const targetCatName = lower(mapped.categoryName);
+
+          const isSameCategory = (x) => {
+            const xCatId = normId(x.categoryId);
+            const xCatName = lower(x.categoryName ?? x.category);
+            return (
+              (targetCatId && xCatId && xCatId === targetCatId) ||
+              (targetCatName && xCatName && xCatName === targetCatName)
+            );
+          };
+
+          const notSelf = (x) => normId(x.id) !== curId;
+
+          const sameCat = allProducts.filter(notSelf).filter(isSameCategory);
+
+          const sameBrand = allProducts
+            .filter(notSelf)
+            .filter((x) => mapped.brandId != null && x.brandId === mapped.brandId);
+
+          const others = allProducts.filter(notSelf);
+
+          const pick = [];
+          for (const group of [sameCat, sameBrand, shuffle(others)]) {
+            for (const item of group) {
+              if (pick.find((p) => normId(p.id) === normId(item.id))) continue;
+              pick.push(item);
+              if (pick.length >= 4) break;
+            }
+            if (pick.length >= 4) break;
           }
+
+          const rel = pick.map((x) => ({
+            id: x.id,
+            title: x.name,
+            price: Number(x.price) || 0,
+            cover: `${API_URL}/api/products/${encodeURIComponent(x.id)}/cover`,
+          }));
+
+          setRelated(rel);
         }
       } catch (e) {
         setErr(e.message || "โหลดข้อมูลไม่สำเร็จ");
@@ -252,12 +346,12 @@ export default function DetailPage() {
   const clampQty = (v, stock) => {
     const s = Math.max(0, Number(stock || 0));
     const n = Math.floor(Number.isFinite(v) ? v : 1);
-    if (s <= 0) return 1; // แสดงผล 1 แต่ปุ่มซื้อจะ disabled อยู่แล้ว
+    if (s <= 0) return 1;
     return Math.min(Math.max(n, 1), s);
   };
 
   const stock = Math.max(0, Number(product.stock || 0));
-  const disabled = stock <= 0;
+  const disabledQty = stock <= 0;
 
   const dec = () => {
     setQty((prev) => String(Math.max(1, Math.floor(Number(prev || 1) - 1))));
@@ -307,7 +401,16 @@ export default function DetailPage() {
   };
 
   const addToCart = () => {
+    if (stock <= 0) {
+      openWarn("This item is currently out of stock.");
+      return;
+    }
     const item = buildCartItem();
+    const reqQty = Number(qty || 1);
+    if (reqQty > stock) {
+      openWarn(`Only ${stock} left in stock. Please reduce the quantity.`);
+      return;
+    }
     const cart = readCart();
     const idx = cart.findIndex((x) => normId(x.id) === normId(item.id));
     if (idx >= 0) {
@@ -323,8 +426,17 @@ export default function DetailPage() {
     setTimeout(() => setAdded(false), 1000);
   };
 
-  // กด BUY NOW -> ส่ง item ไปหน้า PlaceOrder โดยตรง
+  // BUY NOW
   const buyNow = () => {
+    if (stock <= 0) {
+      openWarn("This item is currently out of stock.");
+      return;
+    }
+    const reqQty = Number(qty || 1);
+    if (reqQty > stock) {
+      openWarn(`Only ${stock} left in stock. Please reduce the quantity.`);
+      return;
+    }
     const item = buildCartItem();
     navigate("/place-order", { state: { from: "buy-now", item } });
   };
@@ -373,11 +485,7 @@ export default function DetailPage() {
                   <div className="meta">
                     <span>
                       Brand:{" "}
-                      <a
-                        href="#"
-                        className="link"
-                        aria-label={`Brand ${product.brand}`}
-                      >
+                      <a href="#" className="link" aria-label={`Brand ${product.brand}`}>
                         {product.brand || "-"}
                       </a>
                     </span>
@@ -391,12 +499,23 @@ export default function DetailPage() {
                   <span className="amount">{fmtPrice(product.price)}</span>
                 </div>
 
+                {/* Stock line */}
                 <div className="stock">
-                  <span className="dot" aria-hidden="true" />
+                  <span
+                    className="dot"
+                    aria-hidden="true"
+                    style={{
+                      display: "inline-block",
+                      width: 10,
+                      height: 10,
+                      borderRadius: "999px",
+                      marginRight: 8,
+                      backgroundColor: stock > 0 ? "#22c55e" : "#ef4444", // green / red
+                      boxShadow: `0 0 0 3px ${stock > 0 ? "#dcfce7" : "#fee2e2"}`, // soft ring
+                    }}
+                  />
                   {stock > 0 ? (
-                    <>
-                      Availability: <b>{stock} in stock</b>
-                    </>
+                    <>Availability: <b>{stock} in stock</b></>
                   ) : (
                     <b style={{ color: "#b91c1c" }}>Out of stock</b>
                   )}
@@ -406,17 +525,10 @@ export default function DetailPage() {
 
                 <div className="buy-row">
                   <div className="qty" data-qty="">
-                    <button
-                      className="qty__btn"
-                      type="button"
-                      aria-label="decrease"
-                      onClick={dec}
-                      disabled={disabled || Number(qty || 1) <= 1}
-                      title={disabled ? "Out of stock" : "Decrease quantity"}
-                    >
+                    <button className="qty__btn" type="button" aria-label="decrease"
+                      onClick={dec} disabled={disabledQty || Number(qty || 1) <= 1}>
                       −
                     </button>
-
                     <input
                       className="qty__input"
                       type="number"
@@ -427,62 +539,20 @@ export default function DetailPage() {
                       onChange={onQtyChange}
                       onBlur={onQtyBlur}
                       onWheel={(e) => e.currentTarget.blur()}
-                      disabled={disabled}
+                      disabled={disabledQty}
                       aria-label="Quantity"
-                      title={
-                        disabled
-                          ? "Out of stock"
-                          : `Max ${stock} piece${stock > 1 ? "s" : ""}`
-                      }
                     />
-
-                    <button
-                      className="qty__btn"
-                      type="button"
-                      aria-label="increase"
-                      onClick={inc}
-                      disabled={disabled || Number(qty || 1) >= stock}
-                      title={
-                        disabled
-                          ? "Out of stock"
-                          : Number(qty || 1) >= stock
-                          ? "Reached available stock"
-                          : "Increase quantity"
-                      }
-                    >
+                    <button className="qty__btn" type="button" aria-label="increase"
+                      onClick={inc} disabled={disabledQty || Number(qty || 1) >= stock}>
                       +
                     </button>
                   </div>
 
-                  <button
-                    className="btn btn--primary"
-                    type="button"
-                    onClick={addToCart}
-                    disabled={disabled || Number(qty || 1) > stock}
-                    title={
-                      disabled
-                        ? "Out of stock"
-                        : Number(qty || 1) > stock
-                        ? "Quantity exceeds stock"
-                        : "Add to cart"
-                    }
-                  >
+                  <button className="btn btn--primary" type="button" onClick={addToCart}>
                     {added ? "ADDED ✓" : "ADD TO CART"}
                   </button>
 
-                  <button
-                    className="btn btn--gradient"
-                    type="button"
-                    onClick={buyNow}
-                    disabled={disabled || Number(qty || 1) > stock}
-                    title={
-                      disabled
-                        ? "Out of stock"
-                        : Number(qty || 1) > stock
-                        ? "Quantity exceeds stock"
-                        : "Buy now"
-                    }
-                  >
+                  <button className="btn btn--gradient" type="button" onClick={buyNow}>
                     BUY NOW
                   </button>
                 </div>
@@ -518,7 +588,7 @@ export default function DetailPage() {
               <div className="desc">
                 <div className="desc__text">
                   <p>
-                    <b>รายละเอียดสินค้า</b>
+                    <b>Product Detail</b>
                     <br />
                     {product.excerpt || "No description."}
                   </p>
@@ -550,25 +620,13 @@ export default function DetailPage() {
                 <div className="grid">
                   {related.map((r) => (
                     <article key={r.id} className="product-card">
-                      <Link
-                        className="thumb"
-                        to={`/detail/${r.id}`}
-                        aria-label={r.title}
-                        title={r.title}
-                      >
-                        <img
-                          src={r.cover}
-                          alt={r.title}
-                          loading="lazy"
-                          onError={handleImgError}
-                        />
+                      <Link className="thumb" to={`/detail/${r.id}`} aria-label={r.title} title={r.title}>
+                        <img src={r.cover} alt={r.title} loading="lazy" onError={handleImgError} />
                       </Link>
 
                       <h3 className="product-card__title">{r.title}</h3>
 
-                      <div className="product-card__price">
-                        ฿ {fmtPrice(r.price)}
-                      </div>
+                      <div className="product-card__price">฿ {fmtPrice(r.price)}</div>
 
                       <label className="wish" style={{ marginTop: 4 }}>
                         <input type="checkbox" className="heart-toggle" />
@@ -607,6 +665,14 @@ export default function DetailPage() {
       </main>
 
       <Footer />
+
+      {/* Popup */}
+      <Popup
+        open={popupOpen}
+        title="Warning"
+        message={popupMsg}
+        onClose={() => setPopupOpen(false)}
+      />
     </>
   );
 }
