@@ -8,6 +8,11 @@ import Footer from "./../components/Footer.jsx";
 const LS_CART = "pm_cart";
 const LS_REORDER = "pm_reorder";
 
+/* ใหม่: เก็บรายการที่ผู้ใช้เลือกไว้ */
+const LS_PICK = "pm_cart_pick";
+/* ใหม่: เก็บ snapshot สินค้าที่เลือกไว้เวลาจะไป checkout */
+const LS_CHECKOUT = "pm_checkout_selection";
+
 const norm = (v) => String(v ?? "").trim();
 const makeKey = (o) =>
   `${norm(o.productId ?? o.id ?? o.product_id)}::${norm(
@@ -49,30 +54,26 @@ function useCart() {
   }, []);
 
   const removeItem = useCallback((keyObj) => {
-    const next = loadJSON(LS_CART, []).filter((x) => makeKey(x) !== makeKey(keyObj));
+    const key = makeKey(keyObj);
+    const next = loadJSON(LS_CART, []).filter((x) => makeKey(x) !== key);
     saveJSON(LS_CART, next);
     setItems(next);
+
+    // ลบออกจาก selection ด้วย
+    const pick = new Set(loadJSON(LS_PICK, []));
+    if (pick.has(key)) {
+      pick.delete(key);
+      saveJSON(LS_PICK, Array.from(pick));
+    }
   }, []);
 
   const clear = useCallback(() => {
     saveJSON(LS_CART, []);
     setItems([]);
+    saveJSON(LS_PICK, []); 
   }, []);
 
-  const totalQty = useMemo(
-    () => items.reduce((s, x) => s + (Number(x.qty) || 0), 0),
-    [items]
-  );
-  const totalPrice = useMemo(
-    () =>
-      items.reduce(
-        (s, x) => s + (Number(x.qty) || 0) * (Number(x.price) || 0),
-        0
-      ),
-    [items]
-  );
-
-  return { items, setQty, removeItem, clear, totalQty, totalPrice, setItems };
+  return { items, setQty, removeItem, clear, setItems };
 }
 
 /* Hook: reorder tray */
@@ -90,6 +91,44 @@ function useReorder() {
     setReorder([]);
   }, []);
   return { reorder, setReorder, clearReorder };
+}
+
+/* Hook: pick/selection สำหรับเลือกจ่าย */
+function usePick(keys) {
+  const [pick, setPick] = useState(() => new Set(loadJSON(LS_PICK, [])));
+
+  // sync ให้ selection มีเฉพาะ keys ที่ยังอยู่ในตะกร้า
+  useEffect(() => {
+    const kset = new Set(keys);
+    const next = new Set();
+    // ถ้าไม่มี pick ใน storage ให้ default = เลือกทั้งหมด
+    const fromStorage = new Set(loadJSON(LS_PICK, []));
+    const base = fromStorage.size ? fromStorage : new Set(keys);
+    for (const k of base) if (kset.has(k)) next.add(k);
+    setPick(next);
+    saveJSON(LS_PICK, Array.from(next));
+  }, [keys.join("|")]); 
+
+  const toggle = useCallback((key) => {
+    setPick((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      saveJSON(LS_PICK, Array.from(next));
+      return next;
+    });
+  }, []);
+
+  const setAll = useCallback((on) => {
+    const next = on ? Array.from(keys) : [];
+    setPick(new Set(next));
+    saveJSON(LS_PICK, next);
+  }, [keys]);
+
+  const isAll = pick.size > 0 && pick.size === keys.length;
+  const isNone = pick.size === 0;
+
+  return { pick, toggle, setAll, isAll, isNone };
 }
 
 /*  Formatter  */
@@ -122,7 +161,7 @@ function Breadcrumb({ items = [] }) {
 }
 
 export default function CartPage() {
-  const { items, setQty, removeItem, clear, totalQty, totalPrice, setItems } = useCart();
+  const { items, setQty, removeItem, clear, setItems } = useCart();
   const { reorder, clearReorder, setReorder } = useReorder();
 
   // map ให้ฟิลด์ที่มาจากหลายหน้าเป็นรูปแบบเดียวกัน
@@ -153,6 +192,20 @@ export default function CartPage() {
         };
       }),
     [items]
+  );
+
+  // ===== Pick/Selection
+  const allKeys = useMemo(() => rows.map((r) => r.key), [rows]);
+  const { pick, toggle, setAll, isAll, isNone } = usePick(allKeys);
+
+  const pickedRows = useMemo(() => rows.filter((r) => pick.has(r.key)), [rows, pick]);
+  const pickedQty = useMemo(
+    () => pickedRows.reduce((s, x) => s + (Number(x.qty) || 0), 0),
+    [pickedRows]
+  );
+  const pickedTotal = useMemo(
+    () => pickedRows.reduce((s, x) => s + (Number(x.qty) || 0) * (Number(x.price) || 0), 0),
+    [pickedRows]
   );
 
   // แปลง reorder สำหรับแสดง
@@ -203,7 +256,8 @@ export default function CartPage() {
     const base = loadJSON(LS_CART, []);
     const next = [...base];
     for (const r of reorderRows) {
-      const idx = next.findIndex((x) => makeKey(x) === `${r.productId}::${r.variantId}`);
+      const key = `${r.productId}::${r.variantId}`;
+      const idx = next.findIndex((x) => makeKey(x) === key);
       if (idx >= 0) {
         next[idx] = { ...next[idx], qty: (Number(next[idx].qty) || 0) + (Number(r.qty) || 0) };
       } else {
@@ -220,6 +274,10 @@ export default function CartPage() {
     saveJSON(LS_CART, next);
     setItems(next);
     clearReorder();
+
+    // เมื่อมีของใหม่ เข้าตะกร้า -> เลือกเพิ่มอัตโนมัติ
+    const newKeys = next.map((x) => makeKey(x));
+    saveJSON(LS_PICK, newKeys); 
   }, [reorderRows, setItems, clearReorder]);
 
   // ปรับจำนวนในถาดชั่วคราว
@@ -237,6 +295,28 @@ export default function CartPage() {
     saveJSON(LS_REORDER, next);
     setReorder(next);
   }, [setReorder]);
+
+  const handleCheckout = useCallback(() => {
+    if (isNone) return;
+    // เก็บเฉพาะสินค้าที่เลือกไว้ใน storage เผื่อหน้า /place-order ใช้
+    const payload = {
+      items: pickedRows.map((r) => ({
+        productId: r.productId,
+        variantId: r.variantId,
+        title: r.title,
+        image: r.image,
+        price: r.price,
+        qty: r.qty,
+        key: r.key,
+      })),
+      totalQty: pickedQty,
+      totalPrice: pickedTotal,
+      ts: Date.now(),
+    };
+    saveJSON(LS_CHECKOUT, payload);
+    // ไปหน้า place-order
+    window.location.href = "/place-order";
+  }, [isNone, pickedRows, pickedQty, pickedTotal]);
 
   return (
     <>
@@ -330,7 +410,6 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* ปุ่มขนาดเท่ากัน + hover แดงเฉพาะ Discard */}
             <div className="reorder-actions">
               <button className="btn btn-primary" type="button" onClick={mergeReorderIntoCart}>
                 Add to Cart
@@ -356,9 +435,21 @@ export default function CartPage() {
               <div id="cartList">
                 {rows.map((it) => {
                   const total = (it.price || 0) * (it.qty || 1);
+                  const checked = pick.has(it.key);
                   return (
                     <article className="cart-item" key={it.key}>
-                      <img src={it.image} alt={it.title} />
+                      {/* custom checkbox + รูปให้บาลานซ์ */}
+                      <div className="select-thumb">
+                        <input
+                          type="checkbox"
+                          className="pm-check"
+                          checked={checked}
+                          onChange={() => toggle(it.key)}
+                          aria-label={`Select ${it.title}`}
+                        />
+                        <img src={it.image} alt={it.title} />
+                      </div>
+
                       <div>
                         <p className="cart-item__name">{it.title}</p>
                         <p className="cart-item__meta">{THB(it.price)} / each</p>
@@ -415,22 +506,46 @@ export default function CartPage() {
 
             <aside className="card summary-card">
               <h2 className="section-title">Order summary</h2>
+
+              {/* Select All */}
+              <label className="select-all">
+                <input
+                  type="checkbox"
+                  className="pm-check"
+                  checked={isAll}
+                  onChange={(e) => setAll(e.target.checked)}
+                  aria-label="Select all"
+                />
+                <span>{isAll ? "Selected all items" : "Select all items"}</span>
+              </label>
+              <p className="muted" style={{ marginTop: -4, marginBottom: 12 }}>
+                Totals are calculated from <strong>selected items</strong>.
+              </p>
+
               <div className="totals">
                 <div className="line">
                   <span>Items</span>
-                  <span>{totalQty}</span>
+                  <span>{pickedQty}</span>
                 </div>
                 <div className="line total">
                   <span>Grand Total</span>
                   <span id="grandTotal" className="price">
-                    {THB(totalPrice)}
+                    {THB(pickedTotal)}
                   </span>
                 </div>
               </div>
               <div className="actions">
-                <a className="btn btn-primary" id="goCheckout" href="/place-order">
+                <button
+                  className="btn btn-primary"
+                  id="goCheckout"
+                  type="button"
+                  onClick={handleCheckout}
+                  disabled={isNone}
+                  aria-disabled={isNone}
+                  title={isNone ? "Please select at least one item" : "Proceed to Checkout"}
+                >
                   Proceed to Checkout
-                </a>
+                </button>
                 <button className="btn btn-outline" onClick={clear} type="button">
                   Clear Cart
                 </button>
