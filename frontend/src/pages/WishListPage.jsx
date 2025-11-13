@@ -2,6 +2,7 @@ import "./WishListPage.css";
 import Header from "../components/header";
 import Footer from "./../components/Footer.jsx";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 const LS_KEY = "pm_wishlist";
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
@@ -20,7 +21,8 @@ const resolveImageUrl = (row) => {
     row.imageUrl ||
     row.image_url ||
     (Array.isArray(row.images)
-      ? (row.images.find((i) => i.is_cover)?.image_url || row.images[0]?.image_url)
+      ? (row.images.find((i) => i.is_cover)?.image_url ||
+          row.images[0]?.image_url)
       : null);
 
   if (u) {
@@ -52,7 +54,9 @@ function ConfirmModal({
     if (open) document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
   if (!open) return null;
+
   return (
     <div id="confirm-modal" className="pm-modal">
       <div className="pm-modal__overlay" onClick={onCancel}></div>
@@ -104,23 +108,50 @@ export default function WishListPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Auto-sync with other tabs
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === LS_KEY) setWishIds(readWishIds());
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") setWishIds(readWishIds());
+    };
+    window.addEventListener("storage", onStorage);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
+
+  /* FIX: แก้อาการ Clear All แล้วหน้าโล่ง เพราะ loading ค้าง true */
   useEffect(() => {
     let alive = true;
+
+    if (!wishIds.length) {
+      if (alive) {
+        setItems([]);
+        setLoading(false); // *** FIX สำคัญ ***
+      }
+      return;
+    }
+
     (async () => {
       setLoading(true);
       try {
-        if (!wishIds.length) {
-          if (alive) setItems([]);
-          return;
-        }
         const res = await fetch(`${API_URL}/api/products`, {
           headers: { Accept: "application/json" },
         });
+
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         const rows = (await res.json()) || [];
         const wishSet = new Set(wishIds);
+
         const mapped = rows
-          .filter((x) => wishSet.has(Number(x.id ?? x.productId ?? x.product_id)))
+          .filter((x) =>
+            wishSet.has(Number(x.id ?? x.productId ?? x.product_id))
+          )
           .map((x) => ({
             id: Number(x.id ?? x.productId ?? x.product_id),
             name: clean(x.name),
@@ -128,14 +159,16 @@ export default function WishListPage() {
             img: resolveImageUrl(x),
             liked: true,
           }));
+
         if (alive) setItems(mapped);
-      } catch (e) {
+      } catch (err) {
         if (alive) setItems([]);
-        console.warn("Load wishlist products failed:", e);
+        console.warn("Load wishlist products failed:", err);
       } finally {
         if (alive) setLoading(false);
       }
     })();
+
     return () => {
       alive = false;
     };
@@ -165,10 +198,12 @@ export default function WishListPage() {
   };
 
   const clearAll = () => setConfirmOpen(true);
+
   const handleClearOk = () => {
     setWishIds([]);
     setItems([]);
     setConfirmOpen(false);
+    setLoading(false); // กันเหนียวอีกชั้น
   };
 
   return (
@@ -181,7 +216,7 @@ export default function WishListPage() {
           <div className="wl-hero__inner">
             <h1 className="wl-title">WISHLIST</h1>
 
-            {/* ===== breadcrumb แบบเดิม ===== */}
+            {/* breadcrumb */}
             <nav className="custom-breadcrumb" aria-label="Breadcrumb">
               <ol>
                 <li className="custom-breadcrumb__item">
@@ -210,17 +245,18 @@ export default function WishListPage() {
             <div className="wl-total">
               <span id="wl-count">{loading ? "…" : items.length}</span> items
             </div>
+
             <div className="wl-controls">
               <select
                 id="wl-sort"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                aria-label="Sort wishlist"
               >
                 <option value="recent">Latest</option>
                 <option value="priceAsc">Low → High</option>
                 <option value="priceDesc">High → Low</option>
               </select>
+
               <button id="wl-clear" className="btn" onClick={clearAll}>
                 Clear All
               </button>
@@ -259,11 +295,16 @@ export default function WishListPage() {
                       ></line>
                     </svg>
                   </button>
-                  <img src={item.img} alt={item.name} />
+
+                  <Link to={`/detail/${item.id}`} aria-label={item.name}>
+                    <img src={item.img} alt={item.name} />
+                  </Link>
                 </div>
 
                 <div className="wl-body">
-                  <h3 className="wl-name">{item.name}</h3>
+                  <h3 className="wl-name">
+                    <Link to={`/detail/${item.id}`}>{item.name}</Link>
+                  </h3>
                   <div className="wl-price">{formatPrice(item.price)}</div>
                   <div className="wl-meta">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -285,6 +326,7 @@ export default function WishListPage() {
             ))}
           </div>
 
+          {/* Empty message */}
           <p className="wl-empty" hidden={loading || items.length !== 0}>
             No items in your wishlist
           </p>
