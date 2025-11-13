@@ -6,28 +6,37 @@ import Footer from "./../components/Footer.jsx";
 /* ===== Config & helpers ===== */
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 const isAbs = (u) => /^https?:\/\//i.test(String(u || ""));
-const join = (base, path) => base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
+const join = (base, path) =>
+  base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
 
 /* ===== Currency ===== */
 const formatTHB = (n) => {
   const v = Number(n ?? 0);
-  try { return v.toLocaleString("th-TH", { style: "currency", currency: "THB" }); }
-  catch { return `฿ ${v.toFixed(2)}`; }
+  try {
+    return v.toLocaleString("th-TH", { style: "currency", currency: "THB" });
+  } catch {
+    return `฿ ${v.toFixed(2)}`;
+  }
 };
 
 /*  Cart (localStorage) helpers  */
 const LS_CART = "pm_cart";
 const readCart = () => {
-  try { const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]"); return Array.isArray(arr) ? arr : []; }
-  catch { return []; }
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]");
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
 };
 const saveCart = (arr) => localStorage.setItem(LS_CART, JSON.stringify(arr));
 const addItemToCart = ({ id, name, price, qty = 1, img }) => {
   const cart = readCart();
   const key = String(id ?? "");
   const i = cart.findIndex((x) => String(x.id) === key);
-  if (i >= 0) { cart[i] = { ...cart[i], qty: Math.max(1, (cart[i].qty || 1) + qty) }; }
-  else {
+  if (i >= 0) {
+    cart[i] = { ...cart[i], qty: Math.max(1, (cart[i].qty || 1) + qty) };
+  } else {
     cart.push({
       id: key,
       name: name || "Unnamed product",
@@ -38,7 +47,9 @@ const addItemToCart = ({ id, name, price, qty = 1, img }) => {
   }
   saveCart(cart);
   const count = cart.reduce((s, it) => s + (Number(it.qty) || 0), 0);
-  try { window.dispatchEvent(new CustomEvent("pm_cart_updated", { detail: { count } })); } catch {}
+  try {
+    window.dispatchEvent(new CustomEvent("pm_cart_updated", { detail: { count } }));
+  } catch {}
 };
 
 /* ===== Image resolvers ===== */
@@ -78,26 +89,58 @@ const resolveCategoryImage = (cat) => {
   return encodeURI(fePath);
 };
 
+/* ===== Stock helper ===== */
+/** ถือว่า out of stock ถ้า inStock/in_stock เป็น false หรือ quantity <= 0 */
+const isOutOfStock = (p) => {
+  if (!p) return false;
+  const flag = p.inStock ?? p.in_stock;
+  const qVal = p.quantity ?? p.qty ?? p.stock;
+  const q = Number(qVal);
+  if (flag === false) return true;
+  if (Number.isFinite(q) && q <= 0) return true;
+  return false;
+};
+
 /* ===== Floating add-to-cart button (no useCart) ===== */
-function ProductMiniCard({ id, name, price, img }) {
+function ProductMiniCard({ id, name, price, img, disabled = false }) {
   const [added, setAdded] = useState(false);
+
   const onAdd = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (disabled) return; // ห้ามกดถ้า out of stock
+
     addItemToCart({ id: String(id), name, price: Number(price) || 0, qty: 1, img });
     setAdded(true);
     setTimeout(() => setAdded(false), 900);
   };
+
+  const baseColor = disabled ? "#9ca3af" : "#3E40AE";
+  const bg = added && !disabled ? "#16a34a" : baseColor;
+
+  const label = disabled
+    ? "Out of stock"
+    : added
+    ? "Added ✓"
+    : "Add to cart";
+
   return (
     <button
-      className={`add-to-cart${added ? " added" : ""}`}
+      className={`add-to-cart${added ? " added" : ""}${disabled ? " add-to-cart--disabled" : ""}`}
       type="button"
-      aria-label={added ? "Added" : "Add to cart"}
-      title={added ? "Added ✓" : "Add to cart"}
+      aria-label={label}
+      title={label}
       onClick={onAdd}
-      style={{ background: added ? "#16a34a" : "#3E40AE", transition: "background-color .25s ease" }}
+      disabled={disabled}
+      aria-disabled={disabled ? "true" : "false"}
+      style={{
+        background: bg,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+        transition: "background-color .25s ease, opacity .25s ease",
+      }}
     >
-      <i className={added ? "fas fa-check" : "fas fa-shopping-cart"} />
+      <i className={disabled ? "fas fa-ban" : added ? "fas fa-check" : "fas fa-shopping-cart"} />
     </button>
   );
 }
@@ -135,31 +178,45 @@ function BestSellersSection() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      setLoading(true); setErr("");
+      setLoading(true);
+      setErr("");
       try {
-        const res = await fetch(`${API_URL}/api/products`, { headers: { Accept: "application/json" } });
+        const res = await fetch(`${API_URL}/api/products`, {
+          headers: { Accept: "application/json" },
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
+
         const best = list
-          .filter((x) => (Number.isFinite(Number(x.quantity)) ? Number(x.quantity) > 0 : true))
+          // เลือกเฉพาะที่ไม่ out of stock
+          .filter((x) => !isOutOfStock(x))
           .sort(
             (a, b) =>
-              new Date(b.updated_at || b.updatedAt || 0) - new Date(a.updated_at || a.updatedAt || 0)
+              new Date(b.updated_at || b.updatedAt || 0) -
+              new Date(a.updated_at || a.updatedAt || 0)
           )
           .slice(0, 8);
+
         if (alive) setItems(best);
-      } catch (e) { if (alive) setErr(e.message || "Fetch failed"); }
-      finally { if (alive) setLoading(false); }
+      } catch (e) {
+        if (alive) setErr(e.message || "Fetch failed");
+      } finally {
+        if (alive) setLoading(false);
+      }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return (
     <section id="best-sellers" className="best-sellers" aria-labelledby="best-title">
       <div className="best-sellers__head">
         <h2 id="best-title">Best Sellers.</h2>
-        <Link to="/shop?best=1" className="shop-all">Shop all</Link>
+        <Link to="/shop?best=1" className="shop-all">
+          Shop all
+        </Link>
       </div>
 
       {loading && (
@@ -176,7 +233,9 @@ function BestSellersSection() {
         </div>
       )}
 
-      {!loading && err && <div className="error">Therefore, the goods can be loaded: {err}</div>}
+      {!loading && err && (
+        <div className="error">Therefore, the goods can be loaded: {err}</div>
+      )}
 
       {!loading && !err && (
         <div className="products">
@@ -185,8 +244,15 @@ function BestSellersSection() {
             const name = p.name ?? "";
             const price = p.price ?? 0;
             const img = resolveCoverUrl(p);
+            const out = isOutOfStock(p);
+
             return (
-              <Link key={id} className="product" to={`/detail/${encodeURIComponent(id)}`} aria-label={name}>
+              <Link
+                key={id}
+                className="product"
+                to={`/detail/${encodeURIComponent(id)}`}
+                aria-label={name}
+              >
                 <div className="product__thumb">
                   <img
                     src={img}
@@ -203,7 +269,13 @@ function BestSellersSection() {
                 <div className="product__body">
                   <h3 className="product__title">{name}</h3>
                   <div className="product__price">{formatTHB(price)}</div>
-                  <ProductMiniCard id={id} name={name} price={price} img={img} />
+                  <ProductMiniCard
+                    id={id}
+                    name={name}
+                    price={price}
+                    img={img}
+                    disabled={out}
+                  />
                 </div>
               </Link>
             );
@@ -223,18 +295,26 @@ function CategoriesSection() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      setLoading(true); setErr("");
+      setLoading(true);
+      setErr("");
       try {
-        const res = await fetch(`${API_URL}/api/categories`, { headers: { Accept: "application/json" } });
+        const res = await fetch(`${API_URL}/api/categories`, {
+          headers: { Accept: "application/json" },
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
         list.sort((a, b) => String(a.name).localeCompare(String(b.name), "th"));
         if (alive) setCats(list);
-      } catch (e) { if (alive) setErr(e.message || "Fetch failed"); }
-      finally { if (alive) setLoading(false); }
+      } catch (e) {
+        if (alive) setErr(e.message || "Fetch failed");
+      } finally {
+        if (alive) setLoading(false);
+      }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return (
@@ -255,7 +335,9 @@ function CategoriesSection() {
           </div>
         )}
 
-        {!loading && err && <div className="error">โหลดหมวดหมู่ไม่สำเร็จ: {err}</div>}
+        {!loading && err && (
+          <div className="error">โหลดหมวดหมู่ไม่สำเร็จ: {err}</div>
+        )}
 
         {!loading && !err && (
           <div className="category__grid">
@@ -277,7 +359,8 @@ function CategoriesSection() {
                       if (!e.currentTarget.dataset.fallback) {
                         e.currentTarget.dataset.fallback = 1;
                         e.currentTarget.src =
-                          CAT_IMAGE_FALLBACKS[name] || "/assets/products/placeholder.png";
+                          CAT_IMAGE_FALLBACKS[name] ||
+                          "/assets/products/placeholder.png";
                       }
                     }}
                   />
@@ -306,7 +389,8 @@ function useClampTitlesInList(listRef, deps = []) {
         if (fab) {
           const titleRect = title.getBoundingClientRect();
           const fabRect = fab.getBoundingClientRect();
-          if (titleRect.right > fabRect.left - 8) title.classList.add("title--shorten");
+          if (titleRect.right > fabRect.left - 8)
+            title.classList.add("title--shorten");
         }
       });
     };
@@ -327,22 +411,32 @@ function AllProductsSection({ listRef }) {
   useEffect(() => {
     let alive = true;
     (async () => {
-      setLoading(true); setErr("");
+      setLoading(true);
+      setErr("");
       try {
-        const res = await fetch(`${API_URL}/api/products`, { headers: { Accept: "application/json" } });
+        const res = await fetch(`${API_URL}/api/products`, {
+          headers: { Accept: "application/json" },
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
         if (alive) setItems(list);
-      } catch (e) { if (alive) setErr(e.message || "Fetch failed"); }
-      finally { if (alive) setLoading(false); }
+      } catch (e) {
+        if (alive) setErr(e.message || "Fetch failed");
+      } finally {
+        if (alive) setLoading(false);
+      }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return (
     <section className="all-products" aria-labelledby="all-title">
-      <div className="ap-head"><h3 id="all-title">All Products</h3></div>
+      <div className="ap-head">
+        <h3 id="all-title">All Products</h3>
+      </div>
       <span className="ap-underline" aria-hidden="true"></span>
 
       {loading && (
@@ -359,7 +453,9 @@ function AllProductsSection({ listRef }) {
         </div>
       )}
 
-      {!loading && err && <div className="error">โหลด All Products ไม่สำเร็จ: {err}</div>}
+      {!loading && err && (
+        <div className="error">โหลด All Products ไม่สำเร็จ: {err}</div>
+      )}
 
       {!loading && !err && (
         <div className="products" ref={listRef}>
@@ -368,8 +464,15 @@ function AllProductsSection({ listRef }) {
             const name = p.name ?? "";
             const price = p.price ?? 0;
             const img = resolveCoverUrl(p);
+            const out = isOutOfStock(p);
+
             return (
-              <Link key={id} className="product" to={`/detail/${encodeURIComponent(id)}`} aria-label={name}>
+              <Link
+                key={id}
+                className="product"
+                to={`/detail/${encodeURIComponent(id)}`}
+                aria-label={name}
+              >
                 <div className="product__thumb">
                   <img
                     src={img}
@@ -378,7 +481,8 @@ function AllProductsSection({ listRef }) {
                     onError={(e) => {
                       if (!e.currentTarget.dataset.fallback) {
                         e.currentTarget.dataset.fallback = 1;
-                        e.currentTarget.src = "/assets/products/placeholder.png";
+                        e.currentTarget.src =
+                          "/assets/products/placeholder.png";
                       }
                     }}
                   />
@@ -386,7 +490,13 @@ function AllProductsSection({ listRef }) {
                 <div className="product__body">
                   <h3 className="product__title">{name}</h3>
                   <div className="product__price">{formatTHB(price)}</div>
-                  <ProductMiniCard id={id} name={name} price={price} img={img} />
+                  <ProductMiniCard
+                    id={id}
+                    name={name}
+                    price={price}
+                    img={img}
+                    disabled={out}
+                  />
                 </div>
               </Link>
             );
@@ -427,8 +537,12 @@ export default function HomePage() {
               <h1>Pure & Fresh for Every Meal</h1>
               <p className="hero-sub">Find your favorites — fast.</p>
               <div className="hero-ctas">
-                <Link to="/shop?best=1" className="hero-btn">Shop Best Sellers</Link>
-                <a href="#categories" className="hero-btn hero-btn--ghost">Browse Categories</a>
+                <Link to="/shop?best=1" className="hero-btn">
+                  Shop Best Sellers
+                </Link>
+                <a href="#categories" className="hero-btn hero-btn--ghost">
+                  Browse Categories
+                </a>
               </div>
             </div>
           </section>
@@ -436,7 +550,10 @@ export default function HomePage() {
           <BestSellersSection />
 
           {/* Promo banner */}
-          <section className="hero-banner hero-banner--promo" aria-label="Promotional banner">
+          <section
+            className="hero-banner hero-banner--promo"
+            aria-label="Promotional banner"
+          >
             <img
               className="hero-img hero-img--focus-right"
               src="/assets/user/banner2.png"
@@ -445,9 +562,13 @@ export default function HomePage() {
             />
             <div className="hero-content">
               <h1>Fresh picks — 25% off</h1>
-              <p className="hero-sub">Seasonal produce & pantry essentials. Limited time only.</p>
+              <p className="hero-sub">
+                Seasonal produce & pantry essentials. Limited time only.
+              </p>
               <div className="hero-ctas">
-                <Link to="/shop" className="hero-btn">Shop the Sale</Link>
+                <Link to="/shop" className="hero-btn">
+                  Shop the Sale
+                </Link>
               </div>
             </div>
           </section>
