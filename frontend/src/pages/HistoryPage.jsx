@@ -6,6 +6,9 @@ import "./breadcrumb.css";
 
 /* ===== Config & Utils ===== */
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+const CART_KEY = "pm_cart";
+const REORDER_KEY = "pm_reorder";
+
 const THB = (n) =>
   Number(n || 0).toLocaleString("th-TH", {
     style: "currency",
@@ -13,19 +16,21 @@ const THB = (n) =>
     maximumFractionDigits: 0,
   });
 
-// ✅ ฟอร์แมตเป็น ค.ศ. + AM/PM  เช่น 25 Jan 2025 • 01:45 PM
+// ✅ 25 Jan 2025 • 01:45 PM
 const fDateTime = (iso) => {
   if (!iso) return "–";
   try {
     const d = new Date(iso);
-    const datePart = new Intl.DateTimeFormat(
-      "en-GB-u-ca-gregory",
-      { day: "2-digit", month: "short", year: "numeric" }
-    ).format(d);
-    const timePart = new Intl.DateTimeFormat(
-      "en-US-u-ca-gregory",
-      { hour: "2-digit", minute: "2-digit", hour12: true }
-    ).format(d);
+    const datePart = new Intl.DateTimeFormat("en-GB-u-ca-gregory", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(d);
+    const timePart = new Intl.DateTimeFormat("en-US-u-ca-gregory", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(d);
     return `${datePart} • ${timePart}`;
   } catch {
     return String(iso);
@@ -65,6 +70,7 @@ function StatusRight({ status }) {
     </div>
   );
 }
+
 function OrderCard({ o, onAgain, onView }) {
   const qtySum = o.items.reduce((s, it) => s + (it.qty || 0), 0);
   const thumbs = o.items.slice(0, 5);
@@ -95,7 +101,8 @@ function OrderCard({ o, onAgain, onView }) {
                     src={it.thumb || FALLBACK_IMG}
                     alt={it.name || `item-${i + 1}`}
                     onError={(e) => {
-                      if (e.currentTarget.src !== FALLBACK_IMG) e.currentTarget.src = FALLBACK_IMG;
+                      if (e.currentTarget.src !== FALLBACK_IMG)
+                        e.currentTarget.src = FALLBACK_IMG;
                     }}
                   />
                 </div>
@@ -157,16 +164,14 @@ export default function HistoryPage() {
 
   const PAGE_SIZE = 6;
   const [page, setPage] = useState(1);
-
   const [tab, setTab] = useState("All");
   const [q, setQ] = useState("");
   const qDeb = useDebounce(q, 400);
 
-  const [allRows, setAllRows] = useState([]); // client-side paginate/filter
+  const [allRows, setAllRows] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
   const [err, setErr] = useState("");
 
-  /* --- status mapper (DB -> UI) --- */
   const toUiStatus = (db) => {
     const s = String(db || "").toUpperCase();
     if (s === "DELIVERED") return "completed";
@@ -174,7 +179,6 @@ export default function HistoryPage() {
     return "processing";
   };
 
-  /* --- map รายละเอียดออเดอร์ (รวมรูปสินค้า) --- */
   const mapOrderDetail = (o) => {
     const items = Array.isArray(o.orderItems)
       ? o.orderItems.map((it) => {
@@ -197,7 +201,6 @@ export default function HistoryPage() {
       Number(o.totalAmount ?? 0) ||
       items.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
 
-    // ✅ เลือกฟิลด์วันที่ให้ครอบคลุม แล้วค่อยฟอร์แมตด้วย fDateTime
     const dateRaw =
       o.orderedAt ??
       o.ordered_at ??
@@ -221,15 +224,12 @@ export default function HistoryPage() {
     };
   };
 
-  /* --- โหลดจากฐานข้อมูล + hydrate แต่ละรายการ --- */
   useEffect(() => {
     let aborted = false;
-
     (async () => {
       setIsFetching(true);
       setErr("");
       try {
-        // 1) ดึงรายการทั้งหมด
         const res = await fetch(`${API_BASE}/api/orders`, {
           headers: { Accept: "application/json" },
         });
@@ -237,7 +237,6 @@ export default function HistoryPage() {
         const list = await res.json();
         const arr = Array.isArray(list) ? list : [];
 
-        // 2) ดึงรายละเอียดเพื่อเอา orderItems + รูปสินค้า
         const full = await Promise.all(
           arr.map(async (o) => {
             try {
@@ -260,13 +259,11 @@ export default function HistoryPage() {
         if (!aborted) setIsFetching(false);
       }
     })();
-
     return () => {
       aborted = true;
     };
   }, []);
 
-  /* --- client-side filter/paginate --- */
   const filteredClient = useMemo(() => {
     let list = [...allRows];
     if (tab === "Completed") list = list.filter((x) => x.status === "completed");
@@ -284,44 +281,27 @@ export default function HistoryPage() {
 
   const pages = Math.max(1, Math.ceil(filteredClient.length / PAGE_SIZE));
   const displayRows = filteredClient.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
   useEffect(() => setPage(1), [tab, qDeb]);
 
-  /* ===== Buy again (localStorage) ===== */
-  const CART_KEY = "pm_cart";
-  const readCart = () => {
-    try {
-      const v = JSON.parse(localStorage.getItem(CART_KEY) || "null");
-      return Array.isArray(v) ? v : [];
-    } catch {
-      return [];
-    }
-  };
-  const writeCart = (arr) => localStorage.setItem(CART_KEY, JSON.stringify(arr));
-
+  /* ===== Buy again: SAVE TO pm_reorder (do not touch pm_cart) ===== */
   const handleBuyAgain = (order) => {
-    const cart = readCart();
-    const next = [...cart];
-    for (const it of order.items || []) {
-      const id = String(it.productId ?? it.name);
-      const idx = next.findIndex((x) => String(x.id) === id);
-      if (idx >= 0) {
-        next[idx] = { ...next[idx], qty: Math.max(1, (next[idx].qty || 1) + (it.qty || 1)) };
-      } else {
-        next.push({
-          id,
-          name: it.name || id,
-          price: Number(it.price || 0),
-          qty: Math.max(1, Number(it.qty || 1)),
-          img: it.thumb || FALLBACK_IMG,
-        });
-      }
-    }
-    writeCart(next);
-    navigate("/cart");
+    const freshReorder = (order.items || []).map((it) => {
+      const productId = String(it.productId ?? it.id ?? it.name);
+      const variantId = String(it.variantId ?? it.variant ?? it.sku ?? "");
+      return {
+        productId,
+        variantId,
+        title: it.name || `#${productId}`,
+        price: Number(it.price || 0),
+        qty: Math.max(1, Number(it.qty || 1)),
+        img: it.thumb || FALLBACK_IMG,
+      };
+    });
+
+    localStorage.setItem(REORDER_KEY, JSON.stringify(freshReorder));
+    navigate("/cart"); // ไปหน้า Cart เพื่อยืนยันว่าจะรวม/ทิ้ง
   };
 
-  // ✅ View Details → ไปหน้า Tracking ด้วย order id จริง
   const handleViewDetails = (order) => {
     navigate(`/tracking-user/${encodeURIComponent(order._oid || order.id)}`);
   };
@@ -329,7 +309,6 @@ export default function HistoryPage() {
   return (
     <>
       <div className="history-page">
-        {/* hero */}
         <section className="wl-hero">
           <div className="wl-hero__inner">
             <h1 className="wl-title">ORDER HISTORY</h1>
