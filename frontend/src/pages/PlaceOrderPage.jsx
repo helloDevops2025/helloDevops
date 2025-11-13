@@ -1,4 +1,3 @@
-// src/pages/PlaceOrderPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/header";
@@ -9,9 +8,12 @@ import "./breadcrumb.css";
 /* ===== Config / API ===== */
 const API = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-/** พยายามหา userId จากแหล่งต่าง ๆ ใน localStorage/SessionStorage */
+/* Storage keys */
+const LS_CART = "pm_cart";
+const LS_CHECKOUT = "pm_checkout_selection";
+
+/** หา userId จาก storage ต่าง ๆ */
 function resolveUserId() {
-  // ปรับให้ตรงกับโปรเจ็กต์คุณได้ เช่น AuthContext
   const candidates = [
     () => JSON.parse(localStorage.getItem("auth_user") || "null")?.id,
     () => JSON.parse(localStorage.getItem("user") || "null")?.id,
@@ -22,7 +24,7 @@ function resolveUserId() {
     const v = fn();
     if (v && Number(v) > 0) return Number(v);
   }
-  return 1; // 🔧 fallback สำหรับ dev/test
+  return 1; // fallback dev/test
 }
 
 /* ===== Utils ===== */
@@ -34,7 +36,6 @@ function isValidThaiMobile(raw) {
   }
   return /^0[689]\d{8}$/.test(digits);
 }
-
 function formatThaiMobile(raw) {
   let d = raw.replace(/\D/g, "");
   if (d.startsWith("66")) d = "0" + d.slice(2);
@@ -109,7 +110,6 @@ async function apiDeleteAddress(id) {
 }
 
 /* ===== Mapper: FE <-> BE ===== */
-// FE shape -> BE AddressRequest
 function toRequest(addr) {
   return {
     name: addr.name,
@@ -123,7 +123,6 @@ function toRequest(addr) {
     status: addr.isDefault ? "DEFAULT" : "NON_DEFAULT",
   };
 }
-// BE AddressResponse -> FE shape
 function fromResponse(r) {
   const phone = r.phoneNumber || "";
   const text = `${r.address || ""}${r.street ? " " + r.street + "," : ""} ${r.subdistrict || ""}, ${r.district || ""}, ${r.province || ""} ${r.zipcode || ""} | Tel: ${phone}`;
@@ -143,15 +142,12 @@ function fromResponse(r) {
 }
 
 /* ===== Order API (จริง) ===== */
-// แปลง id สินค้าใน cart ให้เป็น productIdFk (เลข id ของ product ใน DB)
 function toProductIdFk(item) {
   if (item == null) return null;
-  // รองรับรูปแบบ "#00001"
   if (typeof item.id === "string" && item.id.startsWith("#")) {
     const n = Number(item.id.replace(/\D/g, ""));
     return Number.isFinite(n) ? n : null;
   }
-  // ถ้ามีฟิลด์ productId / productIdFk อยู่แล้ว
   return (
     item.productId ||
     item.product_id ||
@@ -160,7 +156,6 @@ function toProductIdFk(item) {
     (Number.isFinite(Number(item.id)) ? Number(item.id) : null)
   );
 }
-
 async function apiCreateOrder({ customerName, customerPhone, shippingAddress, cart }) {
   const payload = {
     customerName,
@@ -171,18 +166,16 @@ async function apiCreateOrder({ customerName, customerPhone, shippingAddress, ca
       quantity: Number(it.qty || 1),
     })),
   };
-
   const res = await fetch(`${API}/api/orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(payload),
   });
-
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
     throw new Error(txt || "สร้างคำสั่งซื้อไม่สำเร็จ");
   }
-  return res.json(); // คาดหวัง { id, orderCode, ... }
+  return res.json();
 }
 
 /* ===== Address Form ===== */
@@ -372,8 +365,8 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
   const { subtotal, itemsCount } = useMemo(() => {
     let subtotal = 0, itemsCount = 0;
     for (const it of cart) {
-      subtotal += it.price * it.qty;
-      itemsCount += it.qty;
+      subtotal += (Number(it.price) || 0) * (Number(it.qty) || 0);
+      itemsCount += Number(it.qty) || 0;
     }
     return { subtotal, itemsCount };
   }, [cart]);
@@ -383,10 +376,10 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
     <aside className="card summary-card">
       <h2 className="section-title">Your order</h2>
       <div id="order-list">
-        {cart.map((item) => {
-          const t = item.price * item.qty;
+        {cart.map((item, idx) => {
+          const t = (Number(item.price) || 0) * (Number(item.qty) || 0);
           return (
-            <div key={item.id} className="order-item">
+            <div key={item.id ?? idx} className="order-item">
               <img src={item.img} alt="" />
               <div className="order-item__body">
                 <p className="order-item__name">{item.name}</p>
@@ -397,7 +390,7 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
               <div>
                 <p className="order-item__price">
                   {currencyTHB(t)}
-                  <span className="unit-price">{currencyTHB(item.price)} each</span>
+                  <span className="unit-price">{currencyTHB(Number(item.price) || 0)} each</span>
                 </p>
               </div>
             </div>
@@ -430,13 +423,55 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
   );
 }
 
+/* ===== แปลงแหล่งข้อมูลไปเป็น cart shape เดียวกัน ===== */
+function mapSelectionToCartItems(selItems = []) {
+  return selItems.map((r, i) => ({
+    id: r.productId ?? r.id ?? r.key ?? `sel-${i}`,
+    productId: r.productId,   // เผื่อใช้หา productIdFk
+    name: r.title ?? r.name ?? `#${r.productId ?? r.id ?? (i + 1)}`,
+    price: Number(r.price) || 0,
+    qty: Math.max(1, Number(r.qty) || 1),
+    img: r.image || r.img || "/assets/products/placeholder.jpg",
+  }));
+}
+
+/** จาก pm_cart เดิม (หลายรูปแบบ field)
+ * ให้ normalize เป็น { id, name, price, qty, img } */
+function mapCartStorageToCartItems(raw = []) {
+  return raw.map((x, i) => {
+    const id =
+      x.id ??
+      x.productId ??
+      x.product_id ??
+      x.productIdFk ??
+      x.product_id_fk ??
+      `cart-${i}`;
+    const name = x.title ?? x.name ?? x.productName ?? `#${id}`;
+    const img =
+      x.image ||
+      x.img ||
+      x.cover ||
+      x.coverImageUrl ||
+      x.imageUrl ||
+      x.image_url ||
+      "/assets/products/placeholder.jpg";
+    return {
+      id,
+      productId: x.productId ?? x.product_id ?? x.productIdFk ?? x.product_id_fk,
+      name,
+      price: Number(x.price) || 0,
+      qty: Math.max(1, Number(x.qty) || 1),
+      img,
+    };
+  });
+}
+
 /* ===== Main Page ===== */
 export default function PlaceOrderPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const userId = resolveUserId();
 
-  // Simple in-app toast
   const [toast, setToast] = useState(null);
   const showToast = (message, type = "error", timeout = 4000) => {
     setToast({ message, type });
@@ -448,7 +483,6 @@ export default function PlaceOrderPage() {
     return () => document.body.classList.remove("po-page");
   }, []);
 
-  // defaultCart: fallback (คงไว้สำหรับ dev ถ้าไม่มี cart ใน storage/route)
   const defaultCart = [
     { id: '#00001', name: "ข้าวขาวหอมมะลิใหม่100% 5กก.", price: 165.0, qty: 1, img: "/assets/products/001.jpg" },
     { id: '#00007', name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3", price: 180.0, qty: 4, img: "/assets/products/007.jpg" },
@@ -463,12 +497,30 @@ export default function PlaceOrderPage() {
   const [editing, setEditing] = useState(null);
   const [loadingAddr, setLoadingAddr] = useState(true);
 
-  /* โหลดสินค้า (เหมือนเดิม) */
+  /* โหลดสินค้า — ลำดับความสำคัญ:
+     1) pm_checkout_selection (เฉพาะที่เลือก)
+     2) route.state.from === "buy-now"
+     3) session pm_order_preview (history)
+     4) pm_cart ทั้งหมด
+     5) defaultCart (dev)
+  */
   useEffect(() => {
     let initialCart = null;
-    if (location.state?.from === "buy-now" && location.state?.item) {
+
+    // (1) จาก selection
+    try {
+      const sel = JSON.parse(localStorage.getItem(LS_CHECKOUT) || "null");
+      if (sel && Array.isArray(sel.items) && sel.items.length > 0) {
+        initialCart = mapSelectionToCartItems(sel.items);
+      }
+    } catch {}
+
+    // (2) จาก buy-now
+    if (!initialCart && location.state?.from === "buy-now" && location.state?.item) {
       initialCart = [location.state.item];
     }
+
+    // (3) จาก history preview
     if (!initialCart) {
       const fromHistory = location.state?.from === "history";
       const raw = sessionStorage.getItem("pm_order_preview");
@@ -487,12 +539,15 @@ export default function PlaceOrderPage() {
         } catch {}
       }
     }
+
+    // (4) จาก pm_cart ทั้งหมด
     if (!initialCart) {
       try {
-        const ls = JSON.parse(localStorage.getItem("pm_cart") || "[]");
-        if (Array.isArray(ls) && ls.length) initialCart = ls;
+        const ls = JSON.parse(localStorage.getItem(LS_CART) || "[]");
+        if (Array.isArray(ls) && ls.length) initialCart = mapCartStorageToCartItems(ls);
       } catch {}
     }
+
     setCart(initialCart || defaultCart);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -554,7 +609,6 @@ export default function PlaceOrderPage() {
       showToast(e.message);
     }
   };
-
   const handleSave = async (payload) => {
     try {
       if (payload.id) {
@@ -572,7 +626,7 @@ export default function PlaceOrderPage() {
 
   const canConfirm = addresses.some((a) => a.isDefault);
 
-  // ✅ แก้ไขให้ POST จริง และเอา mock ออก
+  /* สร้างออเดอร์จริง */
   const handleConfirm = async () => {
     const selectedAddress =
       addresses.find((a) => a.isDefault) || addresses[0] || null;
@@ -582,7 +636,6 @@ export default function PlaceOrderPage() {
       return;
     }
 
-    // สร้าง shippingAddress string ให้ตรงกับ Postman ตัวอย่าง
     const shippingAddress = `${selectedAddress.house || ""}${
       selectedAddress.street ? " " + selectedAddress.street + "," : ""
     } ${selectedAddress.subdistrict || ""}, ${selectedAddress.district || ""}, ${
@@ -607,7 +660,11 @@ export default function PlaceOrderPage() {
         sessionStorage.setItem("pm_last_order", JSON.stringify(orderPayload));
       } catch {}
 
-      // ไปหน้า Tracking ด้วย id จริงจาก backend
+      // เคลียร์ snapshot ของ selection (ถ้ามี)
+      try {
+        localStorage.removeItem(LS_CHECKOUT);
+      } catch {}
+
       navigate(`/tracking-user/${created.id}`, { state: orderPayload });
     } catch (e) {
       showToast(e.message || "สร้างคำสั่งซื้อไม่สำเร็จ", "error");
