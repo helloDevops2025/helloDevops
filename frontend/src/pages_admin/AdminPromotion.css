@@ -1,0 +1,320 @@
+/* src/pages_admin/AdminPromotion.css */
+body {
+  font-family: system-ui, Arial, sans-serif;
+}
+
+.promo-page {
+  --bg: #ebeff7;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --radius: 16px;
+  --radius-sm: 12px;
+
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 28px;
+  box-sizing: border-box;
+}
+
+.promo-header h1 {
+  margin: 0 0 6px 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.promo-header .muted {
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.promo-toast {
+  background: #f1f5f9;
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.promo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 1024px) {
+  .promo-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========== Panel ========== */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* ========== Layout Utilities ========== */
+.row {
+  display: flex;
+  align-items: center;
+}
+.row.gap {
+  gap: 10px;
+}
+.row.end {
+  justify-content: flex-end;
+}
+.row.wrap {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.row .flex {
+  flex: 1;
+  min-width: 220px;
+}
+
+/* ========== Inputs and Buttons ========== */
+.inp,
+.btn,
+textarea.inp,
+select.inp {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--text);
+  background: #f9fafb;
+  box-sizing: border-box;
+}
+.inp {
+  width: 100%;
+}
+.inp:focus-visible,
+.btn:focus-visible,
+select.inp:focus-visible,
+textarea.inp:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  border-color: #2563eb;
+}
+
+.btn {
+  background: #f3f4f6;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+.btn:hover {
+  background: #e5e7eb;
+}
+.btn.primary {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.3);
+}
+.btn.primary:hover {
+  background: #1d4ed8;
+}
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+}
+.btn.ghost.danger {
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ========== Chips & Pills ========== */
+.muted {
+  color: var(--muted);
+}
+.pill {
+  display: inline-block;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  margin-right: 6px;
+  font-weight: 500;
+}
+.pill.ghost {
+  background: #f3f4f6;
+  color: #374151;
+}
+.pill.code {
+  background: #ecfeff;
+  color: #0369a1;
+}
+
+/* ========== Promotion List ========== */
+.promo-list {
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  margin-top: 8px;
+  background: #f9fafb;
+}
+
+.promo-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.promo-item + .promo-item {
+  margin-top: 6px;
+}
+.promo-item:hover {
+  background: #f3f4f6;
+}
+.promo-item.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+.pi-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+.pi-sub {
+  margin-top: 4px;
+}
+
+/* ========== Editor Form ========== */
+.editor {
+  margin-top: 16px;
+  border-top: 1px dashed var(--line);
+  padding-top: 14px;
+}
+.editor h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+/* ========== Cards (Product Lists) ========== */
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  margin-top: 12px;
+  background: var(--card);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.card-head {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 15px;
+  background: #f9fafb;
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+}
+
+.assigned-list {
+  padding: 10px;
+  max-height: 260px;
+  overflow: auto;
+}
+.assigned-item {
+  padding: 8px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+}
+.assigned-item + .assigned-item {
+  margin-top: 6px;
+}
+.assigned-item .grow {
+  flex: 1;
+}
+.assigned-item .title {
+  font-weight: 600;
+}
+.assigned-item .sub {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ========== Picker (Attach Product) ========== */
+.picker {
+  padding: 10px;
+  border-top: 1px dashed var(--line);
+  max-height: 320px;
+  overflow: auto;
+  background: #fff;
+}
+.pick-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.pick-item + .pick-item {
+  margin-top: 6px;
+}
+.pick-item.picked {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+.pick-item .meta .title {
+  font-weight: 600;
+}
+.pick-item .meta .sub {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 1000px) {
+  .promo-grid {
+    grid-template-columns: 1fr;
+  }
+}

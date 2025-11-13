@@ -86,12 +86,7 @@ export default function AdminSidebar() {
     <aside className="sidebar" ref={sidebarRef}>
       <div className="brand">
         <div className="brand-logo">
-          {/* ปรับ path ให้ตรงกับของคุณ (ดูจากโฟลเดอร์คุณอยู่ public/assets/user/logo.png) */}
-          <img
-            src="/assets/logo.png"  
-            alt="Admin Logo"
-            style={{ width: 120, height: "auto" }}
-          />
+          <img src="/assets/logo.png" alt="Admin Logo" style={{ width: 120, height: "auto" }} />
         </div>
         <i
           className="fa-solid fa-bars menu-btn"
@@ -103,12 +98,11 @@ export default function AdminSidebar() {
 
       <div className="section-title">MAIN</div>
       <nav className="nav">
-        {/* กลับหน้า Home (ฝั่ง user) หรือจะเปลี่ยนเป็น /admin/dashboard ก็ได้ถ้ามี */}
-        <NavLink to="/" className={mainItemClass}>
+        <NavLink to="/admin/dashboard" className={mainItemClass}>
           <span className="icon">
             <i className="fa-solid fa-house" />
           </span>
-          Home
+          Dashboard
         </NavLink>
       </nav>
 
@@ -128,10 +122,7 @@ export default function AdminSidebar() {
           </span>
           E-commerce
           <span className="right">
-            <i
-              className="fa-solid fa-chevron-down"
-              style={{ transform: "rotate(180deg)" }}
-            />
+            <i className="fa-solid fa-chevron-down" style={{ transform: "rotate(180deg)" }} />
           </span>
         </div>
 
@@ -144,6 +135,11 @@ export default function AdminSidebar() {
           {/* ไปหน้า AdminProductListPage.jsx */}
           <NavLink to="/admin/products" className={subItemClass}>
             Product List
+          </NavLink>
+
+          {/* ✅ เพิ่มแท็บจัดการโปรโมชัน (ไปสร้างหน้า /admin/promotions/new ภายหลัง) */}
+          <NavLink to="/admin/promotions" className={subItemClass}>
+            Add Promotion
           </NavLink>
         </div>
       </div>
@@ -162,26 +158,17 @@ export default function AdminSidebar() {
           </span>
           Order
           <span className="right">
-            <i
-              className="fa-solid fa-chevron-down"
-              style={{ transform: "rotate(180deg)" }}
-            />
+            <i className="fa-solid fa-chevron-down" style={{ transform: "rotate(180deg)" }} />
           </span>
         </div>
 
         <div className="submenu" id="menu-order" style={{ display: "block" }}>
-          {/* ไปหน้า AdminOrderListPage.jsx */}
           <NavLink to="/admin/orders" className={subItemClass}>
             Order List
           </NavLink>
-
-          {/* ไปหน้า AdminOrderDetailPage.jsx — ต้องมี :id จริง ตอนคลิกจากรายการ
-              ชั่วคราวใส่ตัวอย่าง /admin/orders/1 ไว้ก่อน หรือจะซ่อนเมนูนี้ก็ได้ */}
           <NavLink to="/admin/orders/1" className={subItemClass}>
             Order Detail
           </NavLink>
-
-          {/* ไปหน้า AdminOrderTrackingPage.jsx */}
           <NavLink to="/admin/orders/tracking" className={subItemClass}>
             Order Tracking
           </NavLink>

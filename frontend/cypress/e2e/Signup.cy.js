@@ -6,7 +6,7 @@ describe('E2E-Signup-101: Sign Up Page', () => {
 
   it('สมัครสำเร็จ → แสดง alert แล้ว redirect ไป /login', () => {
     // ดัก alert ของหน้าต่าง
-    cy.window().then((win) => cy.stub(win, 'alert').as('alert'));
+    // cy.window().then((win) => cy.stub(win, 'alert').as('alert'));
 
     // ตอบกลับสำเร็จจาก backend
     cy.intercept('POST', '**/api/auth/signup', {
@@ -21,8 +21,11 @@ describe('E2E-Signup-101: Sign Up Page', () => {
     cy.get('#submitBtn').click();
 
     cy.wait('@signupApi');
-    cy.get('@alert').should('have.been.calledWith', 'Sign up successful! Please log in.');
-    cy.location('pathname').should('eq', '/login');
+    cy.get('.pm-toast', { timeout: 4000 })
+    .should('be.visible')
+    .and('contain', 'Sign up successful! Please log in.');
+
+    cy.location('pathname', { timeout: 7000 }).should('eq', '/login');
   });
 
   it('รหัสผ่านไม่ตรงกัน → แสดง error', () => {
@@ -54,7 +57,7 @@ describe('E2E-Signup-101: Sign Up Page', () => {
     cy.get('#confirm-password').type('123456');
     cy.get('#submitBtn').click();
 
-    cy.contains('Please enter a valid phone number.').should('be.visible');
+    cy.contains('Please enter a valid Thai mobile number (e.g. 0xx-xxx-xxxx)').should('be.visible');
   });
 
   it('อีเมลซ้ำ (409) → แสดงข้อความ This email is already registered.', () => {

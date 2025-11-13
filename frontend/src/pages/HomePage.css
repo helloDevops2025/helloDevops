@@ -290,7 +290,7 @@
 }
 
 /* Headline: white, bold, with shadow & slight stroke for max legibility */
-.hero-content h1{
+.hero-banner--main .hero-content h1{
   color: #ffffff !important;
   font-weight: 700;
   margin: 0 0 8px;
@@ -313,6 +313,130 @@
   .hero-content { padding: 16px; }
   .hero-content h1 { font-size: 20px; max-width: 100%; }
   .hero-content .hero-sub { font-size: 14px; max-width: 100%; }
+}
+
+/* Larger headline for the second promo banner while keeping same aspect ratio */
+.hero-banner--promo .hero-content h1{
+  font-size: clamp(28px, 4.8vw, 59px);
+  max-width: 66%;
+  color: #000000; /* ขาว */
+  text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  margin-top: 0px  !important;
+  margin-bottom: 9px;
+  margin: 0 0 8px;
+}
+
+.hero-banner--promo .hero-content .hero-sub{
+  font-size: 21px;
+  font-weight: 600;
+  max-width: 54%;
+  color: hsl(0, 0%, 0%) !important;
+  text-shadow: none;
+  margin-bottom: 42px;
+}
+
+.hero-banner--promo .hero-content .hero-ctas .hero-btn{
+  font-size: 22px;
+  background-color: #4269E2;
+  color: #ffffff;
+  
+}
+
+@media (max-width: 900px){
+  .hero-banner--promo .hero-content h1{ font-size: clamp(26px, 5.6vw, 48px); max-width: 72%; }
+}
+
+@media (max-width: 640px) {
+  .hero-banner--promo .hero-content h1{ font-size: 28px; max-width: 100%; }
+}
+
+/* === Overrides requested: no shadows and do not tint/change the promo image === */
+.hero-banner--promo {
+  box-shadow: none !important; /* remove outer card shadow */
+}
+
+.hero-banner--promo .hero-content {
+  /* remove dark gradient overlay so image colors remain untouched */
+  background: none !important;
+  -webkit-text-stroke: 0 !important; /* do not apply stroke that can alter perceived color */
+  text-shadow: none !important; /* remove heading text shadow if any */
+  color: var(--text) !important; /* use dark text for readability over image */
+}
+
+.hero-banner--promo .hero-img {
+  /* ensure the image is displayed at original color with no filters or shadows */
+  filter: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.hero-banner--promo .hero-ctas .hero-btn {
+  box-shadow: none !important; /* CTA buttons shouldn't have drop shadow either */
+}
+
+/* ให้ promo เล็กลงเล็กน้อยบนจอใหญ่ แต่ยังคงอัตราส่วนเดิม (padding-top = % ของความกว้าง) */
+.hero-banner--promo {
+  max-width: calc(var(--max) * 0.9); /* 90% ของความกว้างคอนเทนเนอร์ */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 1000px) {
+  .hero-banner--promo { max-width: 100%; }
+}
+
+/* =====================================
+   🟣 PROMO BANNER (restored second banner)
+   ===================================== */
+.promo-banner{
+  width:100%;
+  margin: 24px 0 48px;
+}
+.promo-inner{
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 24px;
+  align-items: center;
+  background: #e8ecfb; /* soft lavender */
+  border-radius: 12px;
+  padding: clamp(18px, 3vw, 34px);
+  box-shadow: 0 10px 24px rgba(20,24,80,0.08);
+}
+.promo-text h2{
+  margin:0 0 8px;
+  font-size: clamp(20px, 3vw, 34px);
+  line-height:1.05;
+  color: #111;
+}
+.promo-desc{
+  margin: 0 0 6px;
+  color: #4b4f6b;
+  font-weight:600;
+}
+.promo-big{
+  font-size: clamp(32px, 6vw, 56px);
+  font-weight:800;
+  color:#000;
+  margin: 6px 0 14px;
+}
+.promo-ctas{ margin-top:8px; }
+.promo-image img{
+  width:100%;
+  height: auto;
+  display:block;
+  border-radius:10px;
+  object-fit: cover;
+}
+
+@media (max-width: 900px){
+  .promo-inner{ grid-template-columns: 1fr 320px; }
+}
+@media (max-width: 720px){
+  .promo-inner{ grid-template-columns: 1fr; }
+  .promo-image{ order: 2; }
+  .promo-text{ order: 1; }
+  .promo-text h2{ font-size: 22px; }
+  .promo-big{ font-size: 34px; }
 }
 
 
@@ -1289,4 +1413,20 @@ html {
 .all-products :where(img, hr, .divider, .product__thumb){
   margin-left: 0 !important;
   margin-right: 0 !important;
+}
+
+.product__promo-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+  z-index: 2;
+}
+.product__thumb {
+  position: relative;
 }
