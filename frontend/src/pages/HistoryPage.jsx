@@ -233,7 +233,7 @@ export default function HistoryPage() {
         const res = await fetch(`${API_BASE}/api/orders`, {
           headers: { Accept: "application/json" },
         });
-        if (!res.ok) throw new Error("โหลดรายการคำสั่งซื้อไม่สำเร็จ");
+        if (!res.ok) throw new Error("Order list loading failed.");
         const list = await res.json();
         const arr = Array.isArray(list) ? list : [];
 
@@ -270,11 +270,14 @@ export default function HistoryPage() {
     if (tab === "Cancelled") list = list.filter((x) => x.status === "cancelled");
     if (qDeb.trim()) {
       const qq = qDeb.trim().toLowerCase();
-      list = list.filter(
-        (x) =>
-          String(x.id).toLowerCase().includes(qq) ||
-          String(x.address).toLowerCase().includes(qq)
-      );
+      list = list.filter((x) => {
+        const inId = String(x.id).toLowerCase().includes(qq);
+        const inAddress = String(x.address).toLowerCase().includes(qq);
+        const inProducts = (x.items || []).some((it) =>
+          String(it.name || "").toLowerCase().includes(qq)
+        );
+        return inId || inAddress || inProducts;
+      });
     }
     return list;
   }, [allRows, tab, qDeb]);
@@ -350,7 +353,7 @@ export default function HistoryPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search by order ID / address"
+                placeholder="Search by order ID, product, or address"
                 aria-label="Search order"
               />
               <button onClick={() => setQ((s) => s)}>Search</button>
@@ -358,12 +361,17 @@ export default function HistoryPage() {
           </div>
 
           {displayRows.length === 0 ? (
-            <div className="hx-empty">{isFetching ? "กำลังโหลด…" : "ไม่พบรายการ"}</div>
+            <div className="hx-empty">{isFetching ? "Update…" : "No items found"}</div>
           ) : (
             <>
               <div className="hx-list">
                 {displayRows.map((o) => (
-                  <OrderCard key={o.id} o={o} onAgain={handleBuyAgain} onView={handleViewDetails} />
+                  <OrderCard
+                    key={o.id}
+                    o={o}
+                    onAgain={handleBuyAgain}
+                    onView={handleViewDetails}
+                  />
                 ))}
               </div>
 
@@ -373,7 +381,7 @@ export default function HistoryPage() {
 
           {isFetching && (
             <div className="hx-spinner" aria-live="polite">
-              กำลังอัปเดต…
+              Updating…
             </div>
           )}
           {err && <div className="hx-error">Error: {err}</div>}
