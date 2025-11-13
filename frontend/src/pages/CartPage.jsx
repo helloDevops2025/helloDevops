@@ -1,27 +1,12 @@
-
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Header from "../components/header";
-
 import "../components/header.css";
 import "./CartPage.css";
 import "./breadcrumb.css";
-
 import Footer from "./../components/Footer.jsx";
 
-
 const LS_CART = "pm_cart";
-
-function loadCart() {
-  try {
-    const v = JSON.parse(localStorage.getItem(LS_CART) || "[]");
-    return Array.isArray(v) ? v : [];
-  } catch {
-    return [];
-  }
-}
-function saveCart(arr) {
-  localStorage.setItem(LS_CART, JSON.stringify(arr || []));
-}
+const LS_REORDER = "pm_reorder";
 
 const norm = (v) => String(v ?? "").trim();
 const makeKey = (o) =>
@@ -29,14 +14,26 @@ const makeKey = (o) =>
     o.variantId ?? o.variant ?? o.sku ?? ""
   )}`;
 
-/* Hook จัดการตะกร้า: ใช้ได้เฉพาะหน้านี้ */
-function useCart() {
-  const [items, setItems] = useState(() => loadCart());
+function loadJSON(key, fallback = []) {
+  try {
+    const v = JSON.parse(localStorage.getItem(key) || "null");
+    if (Array.isArray(fallback)) return Array.isArray(v) ? v : fallback;
+    return v ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function saveJSON(key, val) {
+  localStorage.setItem(key, JSON.stringify(val));
+}
 
-  // sync เมื่อมีการแก้ไขจากแท็บอื่น
+/* Hook: main cart */
+function useCart() {
+  const [items, setItems] = useState(() => loadJSON(LS_CART, []));
+
   useEffect(() => {
     const onStorage = (e) => {
-      if (!e.key || e.key === LS_CART) setItems(loadCart());
+      if (!e.key || e.key === LS_CART) setItems(loadJSON(LS_CART, []));
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -44,21 +41,21 @@ function useCart() {
 
   const setQty = useCallback((keyObj, qty) => {
     const q = Math.max(0, Number(qty) || 0);
-    const next = loadCart()
+    const next = loadJSON(LS_CART, [])
       .map((x) => (makeKey(x) === makeKey(keyObj) ? { ...x, qty: q } : x))
       .filter((x) => (x.qty || 0) > 0);
-    saveCart(next);
+    saveJSON(LS_CART, next);
     setItems(next);
   }, []);
 
   const removeItem = useCallback((keyObj) => {
-    const next = loadCart().filter((x) => makeKey(x) !== makeKey(keyObj));
-    saveCart(next);
+    const next = loadJSON(LS_CART, []).filter((x) => makeKey(x) !== makeKey(keyObj));
+    saveJSON(LS_CART, next);
     setItems(next);
   }, []);
 
   const clear = useCallback(() => {
-    saveCart([]);
+    saveJSON(LS_CART, []);
     setItems([]);
   }, []);
 
@@ -75,7 +72,24 @@ function useCart() {
     [items]
   );
 
-  return { items, setQty, removeItem, clear, totalQty, totalPrice };
+  return { items, setQty, removeItem, clear, totalQty, totalPrice, setItems };
+}
+
+/* Hook: reorder tray */
+function useReorder() {
+  const [reorder, setReorder] = useState(() => loadJSON(LS_REORDER, []));
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (!e.key || e.key === LS_REORDER) setReorder(loadJSON(LS_REORDER, []));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+  const clearReorder = useCallback(() => {
+    saveJSON(LS_REORDER, []);
+    setReorder([]);
+  }, []);
+  return { reorder, setReorder, clearReorder };
 }
 
 /*  Formatter  */
@@ -108,12 +122,13 @@ function Breadcrumb({ items = [] }) {
 }
 
 export default function CartPage() {
-  const { items, setQty, removeItem, clear, totalQty, totalPrice } = useCart();
+  const { items, setQty, removeItem, clear, totalQty, totalPrice, setItems } = useCart();
+  const { reorder, clearReorder, setReorder } = useReorder();
 
   // map ให้ฟิลด์ที่มาจากหลายหน้าเป็นรูปแบบเดียวกัน
   const rows = useMemo(
     () =>
-      items.map((x) => {
+      (items || []).map((x) => {
         const productId = x.productId ?? x.id ?? x.product_id;
         const variantId = x.variantId ?? x.variant ?? x.sku ?? "";
         const title = x.title ?? x.name ?? x.productName ?? `#${productId}`;
@@ -140,14 +155,95 @@ export default function CartPage() {
     [items]
   );
 
+  // แปลง reorder สำหรับแสดง
+  const reorderRows = useMemo(
+    () =>
+      (reorder || []).map((x) => {
+        const productId = x.productId ?? x.id ?? x.product_id;
+        const variantId = x.variantId ?? x.variant ?? x.sku ?? "";
+        const title = x.title ?? x.name ?? x.productName ?? `#${productId}`;
+        const image =
+          x.image ||
+          x.img ||
+          x.cover ||
+          x.coverImageUrl ||
+          x.imageUrl ||
+          x.image_url ||
+          "/assets/products/placeholder.png";
+        const price = Number(x.price) || 0;
+        const qty = Math.max(1, Number(x.qty) || 1);
+        return {
+          key: `${productId}::${variantId}`,
+          productId,
+          variantId,
+          title,
+          image,
+          price,
+          qty,
+        };
+      }),
+    [reorder]
+  );
+
+  const reorderTotalQty = useMemo(
+    () => reorderRows.reduce((s, x) => s + (Number(x.qty) || 0), 0),
+    [reorderRows]
+  );
+  const reorderTotalPrice = useMemo(
+    () =>
+      reorderRows.reduce(
+        (s, x) => s + (Number(x.qty) || 0) * (Number(x.price) || 0),
+        0
+      ),
+    [reorderRows]
+  );
+
+  // รวม reorder เข้า cart (merge โดย key productId::variantId)
+  const mergeReorderIntoCart = useCallback(() => {
+    const base = loadJSON(LS_CART, []);
+    const next = [...base];
+    for (const r of reorderRows) {
+      const idx = next.findIndex((x) => makeKey(x) === `${r.productId}::${r.variantId}`);
+      if (idx >= 0) {
+        next[idx] = { ...next[idx], qty: (Number(next[idx].qty) || 0) + (Number(r.qty) || 0) };
+      } else {
+        next.push({
+          productId: r.productId,
+          variantId: r.variantId,
+          title: r.title,
+          price: r.price,
+          qty: r.qty,
+          img: r.image,
+        });
+      }
+    }
+    saveJSON(LS_CART, next);
+    setItems(next);
+    clearReorder();
+  }, [reorderRows, setItems, clearReorder]);
+
+  // ปรับจำนวนในถาดชั่วคราว
+  const setReorderQty = useCallback((keyObj, qty) => {
+    const q = Math.max(0, Number(qty) || 0);
+    const next = (loadJSON(LS_REORDER, []) || [])
+      .map((x) => (makeKey(x) === makeKey(keyObj) ? { ...x, qty: q } : x))
+      .filter((x) => (x.qty || 0) > 0);
+    saveJSON(LS_REORDER, next);
+    setReorder(next);
+  }, [setReorder]);
+
+  const removeReorderItem = useCallback((keyObj) => {
+    const next = (loadJSON(LS_REORDER, []) || []).filter((x) => makeKey(x) !== makeKey(keyObj));
+    saveJSON(LS_REORDER, next);
+    setReorder(next);
+  }, [setReorder]);
+
   return (
     <>
       <Header />
 
       <main className="cart-page container cart-container">
-        <Breadcrumb
-          items={[{ label: "Home", href: "/home" }, { label: "Cart" }]}
-        />
+        <Breadcrumb items={[{ label: "Home", href: "/home" }, { label: "Cart" }]} />
 
         <div className="title-row">
           <h1 className="title">Shopping Cart</h1>
@@ -156,6 +252,97 @@ export default function CartPage() {
           </a>
         </div>
 
+        {/* ===== Reorder Panel (separate list) ===== */}
+        {reorderRows.length > 0 && (
+          <section className="card summary-card" style={{ marginBottom: 24 }}>
+            <h2 className="section-title">Buy Again</h2>
+            <p className="muted" style={{ marginTop: -8 }}>
+              These items were selected from your Order History. They are separate from your cart until you add them.
+            </p>
+
+            <div className="cart-list" style={{ paddingTop: 8 }}>
+              {reorderRows.map((it) => {
+                const total = (it.price || 0) * (it.qty || 1);
+                return (
+                  <article className="cart-item" key={`reorder-${it.key}`}>
+                    <img src={it.image} alt={it.title} />
+                    <div>
+                      <p className="cart-item__name">{it.title}</p>
+                      <p className="cart-item__meta">{THB(it.price)} / each</p>
+                      <div className="qty" role="group" aria-label="Quantity">
+                        <button
+                          type="button"
+                          aria-label="Decrease"
+                          onClick={() =>
+                            setReorderQty(
+                              { productId: it.productId, variantId: it.variantId },
+                              (it.qty || 1) - 1
+                            )
+                          }
+                        >
+                          −
+                        </button>
+                        <span aria-live="polite">{it.qty}</span>
+                        <button
+                          type="button"
+                          aria-label="Increase"
+                          onClick={() =>
+                            setReorderQty(
+                              { productId: it.productId, variantId: it.variantId },
+                              (it.qty || 1) + 1
+                            )
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className="remove"
+                        aria-label={`Remove ${it.title}`}
+                        onClick={() =>
+                          removeReorderItem({
+                            productId: it.productId,
+                            variantId: it.variantId,
+                          })
+                        }
+                      >
+                        ✕ Remove
+                      </button>
+                    </div>
+                    <div className="price-box">
+                      <p className="line">{THB(total)}</p>
+                      <span className="unit">{THB(it.price)} each</span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="totals" style={{ marginTop: 12 }}>
+              <div className="line">
+                <span>Items</span>
+                <span>{reorderTotalQty}</span>
+              </div>
+              <div className="line total">
+                <span>Subtotal</span>
+                <span className="price">{THB(reorderTotalPrice)}</span>
+              </div>
+            </div>
+
+            {/* ปุ่มขนาดเท่ากัน + hover แดงเฉพาะ Discard */}
+            <div className="reorder-actions">
+              <button className="btn btn-primary" type="button" onClick={mergeReorderIntoCart}>
+                Add to Cart
+              </button>
+              <button className="btn btn-outline danger-hover" type="button" onClick={clearReorder}>
+                Discard
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* ===== Main Cart ===== */}
         {rows.length === 0 ? (
           <div id="emptyState" className="empty">
             <p>Your cart is empty.</p>
