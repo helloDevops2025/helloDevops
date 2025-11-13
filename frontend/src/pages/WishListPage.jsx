@@ -21,7 +21,8 @@ const resolveImageUrl = (row) => {
     row.imageUrl ||
     row.image_url ||
     (Array.isArray(row.images)
-      ? (row.images.find((i) => i.is_cover)?.image_url || row.images[0]?.image_url)
+      ? (row.images.find((i) => i.is_cover)?.image_url ||
+          row.images[0]?.image_url)
       : null);
 
   if (u) {
@@ -53,7 +54,9 @@ function ConfirmModal({
     if (open) document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
   if (!open) return null;
+
   return (
     <div id="confirm-modal" className="pm-modal">
       <div className="pm-modal__overlay" onClick={onCancel}></div>
@@ -95,7 +98,7 @@ function readWishIds() {
 function writeWishIds(ids) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify([...new Set(ids)]));
-  } catch { }
+  } catch {}
 }
 
 export default function WishListPage() {
@@ -105,7 +108,7 @@ export default function WishListPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // 🔄 auto-sync เมื่อกลับโฟกัสแท็บนี้ หรือแก้ wishlist ในแท็บอื่น
+  // Auto-sync with other tabs
   useEffect(() => {
     const onStorage = (e) => {
       if (e.key === LS_KEY) setWishIds(readWishIds());
@@ -121,24 +124,34 @@ export default function WishListPage() {
     };
   }, []);
 
+  /* FIX: แก้อาการ Clear All แล้วหน้าโล่ง เพราะ loading ค้าง true */
   useEffect(() => {
     let alive = true;
+
+    if (!wishIds.length) {
+      if (alive) {
+        setItems([]);
+        setLoading(false); // *** FIX สำคัญ ***
+      }
+      return;
+    }
+
     (async () => {
       setLoading(true);
       try {
-        if (!wishIds.length) {
-          if (alive) setItems([]);
-          return;
-        }
-        const ids = wishIds.map(String).join(",");
-const res = await fetch(`${API_URL}/api/products?ids=${encodeURIComponent(ids)}`, {
-  headers: { Accept: "application/json" },
-});
+        const res = await fetch(`${API_URL}/api/products`, {
+          headers: { Accept: "application/json" },
+        });
+
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         const rows = (await res.json()) || [];
         const wishSet = new Set(wishIds);
+
         const mapped = rows
-          .filter((x) => wishSet.has(Number(x.id ?? x.productId ?? x.product_id)))
+          .filter((x) =>
+            wishSet.has(Number(x.id ?? x.productId ?? x.product_id))
+          )
           .map((x) => ({
             id: Number(x.id ?? x.productId ?? x.product_id),
             name: clean(x.name),
@@ -146,14 +159,16 @@ const res = await fetch(`${API_URL}/api/products?ids=${encodeURIComponent(ids)}`
             img: resolveImageUrl(x),
             liked: true,
           }));
+
         if (alive) setItems(mapped);
-      } catch (e) {
+      } catch (err) {
         if (alive) setItems([]);
-        console.warn("Load wishlist products failed:", e);
+        console.warn("Load wishlist products failed:", err);
       } finally {
         if (alive) setLoading(false);
       }
     })();
+
     return () => {
       alive = false;
     };
@@ -183,10 +198,12 @@ const res = await fetch(`${API_URL}/api/products?ids=${encodeURIComponent(ids)}`
   };
 
   const clearAll = () => setConfirmOpen(true);
+
   const handleClearOk = () => {
     setWishIds([]);
     setItems([]);
     setConfirmOpen(false);
+    setLoading(false); // กันเหนียวอีกชั้น
   };
 
   return (
@@ -199,7 +216,7 @@ const res = await fetch(`${API_URL}/api/products?ids=${encodeURIComponent(ids)}`
           <div className="wl-hero__inner">
             <h1 className="wl-title">WISHLIST</h1>
 
-            {/* ===== breadcrumb แบบเดิม ===== */}
+            {/* breadcrumb */}
             <nav className="custom-breadcrumb" aria-label="Breadcrumb">
               <ol>
                 <li className="custom-breadcrumb__item">
@@ -228,17 +245,18 @@ const res = await fetch(`${API_URL}/api/products?ids=${encodeURIComponent(ids)}`
             <div className="wl-total">
               <span id="wl-count">{loading ? "…" : items.length}</span> items
             </div>
+
             <div className="wl-controls">
               <select
                 id="wl-sort"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                aria-label="Sort wishlist"
               >
                 <option value="recent">Latest</option>
                 <option value="priceAsc">Low → High</option>
                 <option value="priceDesc">High → Low</option>
               </select>
+
               <button id="wl-clear" className="btn" onClick={clearAll}>
                 Clear All
               </button>
@@ -278,18 +296,14 @@ const res = await fetch(`${API_URL}/api/products?ids=${encodeURIComponent(ids)}`
                     </svg>
                   </button>
 
-                  {/* คลิกภาพไปหน้า detail */}
-                  <Link to={`/detail/${item.id}`} aria-label={item.name} title={item.name}>
+                  <Link to={`/detail/${item.id}`} aria-label={item.name}>
                     <img src={item.img} alt={item.name} />
                   </Link>
                 </div>
 
                 <div className="wl-body">
-                  {/* คลิกชื่อไปหน้า detail */}
                   <h3 className="wl-name">
-                    <Link to={`/detail/${item.id}`} title={item.name}>
-                      {item.name}
-                    </Link>
+                    <Link to={`/detail/${item.id}`}>{item.name}</Link>
                   </h3>
                   <div className="wl-price">{formatPrice(item.price)}</div>
                   <div className="wl-meta">
@@ -312,6 +326,7 @@ const res = await fetch(`${API_URL}/api/products?ids=${encodeURIComponent(ids)}`
             ))}
           </div>
 
+          {/* Empty message */}
           <p className="wl-empty" hidden={loading || items.length !== 0}>
             No items in your wishlist
           </p>

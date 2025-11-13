@@ -88,13 +88,24 @@ const resolveImageUrl = (row) => {
   return `${API_URL}/api/products/${encodeURIComponent(id)}/cover`;
 };
 
+/* ===== Stock helper (เหมือนหน้า Home) ===== */
+const isOutOfStock = (p) => {
+  if (!p) return false;
+  const flag = p.inStock ?? p.in_stock;
+  const qVal = p.quantity ?? p.qty ?? p.stock;
+  const q = Number(qVal);
+  if (flag === false) return true;
+  if (Number.isFinite(q) && q <= 0) return true;
+  return false;
+};
+
 export default function ShopPage() {
   const [searchParams] = useSearchParams();
 
   const [PRODUCTS, setPRODUCTS] = useState([]);
   const [CATEGORIES, setCATEGORIES] = useState([]);
   const [BRANDS_MASTER, setBRANDS_MASTER] = useState([]);
-  const [PROMO_LIST, setPROMO_LIST] = useState([]); // 👈 เพิ่ม state เก็บชื่อโปร
+  const [PROMO_LIST, setPROMO_LIST] = useState([]); // รายชื่อโปรสำหรับ filter
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState("");
 
@@ -199,6 +210,8 @@ export default function ShopPage() {
 
           if (promoLabel !== "-") promoLabelSet.add(promoLabel);
 
+          const outOfStock = isOutOfStock(x);
+
           return {
             id: pid,
             name: clean(x.name),
@@ -209,6 +222,7 @@ export default function ShopPage() {
             brand: brandName,
             promo: promoLabel,
             img: resolveImageUrl(x),
+            outOfStock,
           };
         });
 
@@ -512,7 +526,15 @@ export default function ShopPage() {
     const to = `/detail/${encodeURIComponent(p.id)}`;
     const stop = (e) => e.stopPropagation();
 
+    const out = !!p.outOfStock;
+    const btnLabel = out
+      ? "OUT OF STOCK"
+      : added
+      ? "ADDED ✓"
+      : "ADD TO CART";
+
     const onAdd = () => {
+      if (out) return;
       addItemToCart({
         id: String(p.id),
         name: p.name || "Unnamed product",
@@ -589,11 +611,17 @@ export default function ShopPage() {
             type="button"
             onClick={(e) => {
               stop(e);
-              onAdd();
+              if (!out) onAdd();
             }}
-            title="Add to cart"
+            title={btnLabel}
+            disabled={out}
+            aria-disabled={out ? "true" : "false"}
+            style={{
+              cursor: out ? "not-allowed" : "pointer",
+              opacity: out ? 0.7 : 1,
+            }}
           >
-            {added ? "ADDED ✓" : "ADD TO CART"}
+            {btnLabel}
           </button>
         </div>
       </article>

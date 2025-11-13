@@ -46,13 +46,15 @@ const loadWL = () => {
   }
 };
 const saveWL = (arr) => localStorage.setItem(LS_WISHLIST, JSON.stringify(arr));
-const entryId = (x) => (typeof x === "object" && x !== null ? normId(x.id) : normId(x));
+const entryId = (x) =>
+  typeof x === "object" && x !== null ? normId(x.id) : normId(x);
 const inWL = (arr, id) => arr.some((x) => entryId(x) === normId(id));
 const toEntry = (p) => ({
   id: normId(p.id),
   title: p.title,
   price: p.price,
-  cover: p.imgMain || `${API_URL}/api/products/${encodeURIComponent(p.id)}/cover`,
+  cover:
+    p.imgMain || `${API_URL}/api/products/${encodeURIComponent(p.id)}/cover`,
 });
 const addToWL = (arr, p) => {
   if (inWL(arr, p.id)) return arr;
@@ -60,7 +62,8 @@ const addToWL = (arr, p) => {
   if (hasObject || arr.length === 0) return [...arr, toEntry(p)];
   return [...arr, normId(p.id)];
 };
-const removeFromWL = (arr, id) => arr.filter((x) => entryId(x) !== normId(id));
+const removeFromWL = (arr, id) =>
+  arr.filter((x) => entryId(x) !== normId(id));
 
 /* Cart helpers */
 const readCart = () => {
@@ -130,7 +133,6 @@ function Popup({ open, title = "Warning", message, onClose }) {
   };
   const head = { fontWeight: 700, fontSize: 18, marginBottom: 8, color: "#111827" };
   const msg = { color: "#374151", marginBottom: 16, lineHeight: 1.5 };
-  /* 🔹 ปุ่ม OK — โทนม่วงให้เข้ากับธีม */
   const btn = {
     display: "inline-block",
     background: hover ? "#34369A" : "#3E40AE",
@@ -154,8 +156,12 @@ function Popup({ open, title = "Warning", message, onClose }) {
           style={btn}
           onMouseEnter={() => setHover(true)}
           onMouseLeave={() => setHover(false)}
-          onMouseDown={(e) => (e.currentTarget.style.transform = "translateY(1px)")}
-          onMouseUp={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+          onMouseDown={(e) =>
+            (e.currentTarget.style.transform = "translateY(1px)")
+          }
+          onMouseUp={(e) =>
+            (e.currentTarget.style.transform = "translateY(0)")
+          }
           autoFocus
         >
           OK
@@ -186,8 +192,8 @@ export default function DetailPage() {
     excerpt: "",
   });
 
-  // qty
-  const [qty, setQty] = useState("1");
+  // qty (เริ่มต้นให้เป็น 0 ไปก่อน)
+  const [qty, setQty] = useState("0");
   const [wish, setWish] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -209,6 +215,14 @@ export default function DetailPage() {
   useEffect(() => {
     document.title = "Details Page";
   }, []);
+
+  /*  Qty helpers (ล็อกไม่ให้เกิน stock และถ้า stock = 0 ให้ qty = 0) */
+  const clampQty = (v, stock) => {
+    const s = Math.max(0, Number(stock || 0));
+    const n = Math.floor(Number.isFinite(v) ? v : 1);
+    if (s <= 0) return 0; // ❗ ของหมด → 0
+    return Math.min(Math.max(n, 1), s);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -244,7 +258,9 @@ export default function DetailPage() {
           ? brands.find((b) => b.id === p.brandId)?.name || ""
           : "";
 
-        let imgUrl = `${API_URL}/api/products/${encodeURIComponent(p.id ?? id)}/cover`;
+        let imgUrl = `${API_URL}/api/products/${encodeURIComponent(
+          p.id ?? id
+        )}/cover`;
         if (Array.isArray(imgs) && imgs.length) {
           const cover = imgs.find((x) => x.isCover) || imgs[0];
           if (cover?.imageUrl) imgUrl = cover.imageUrl;
@@ -267,12 +283,15 @@ export default function DetailPage() {
         };
 
         setProduct(mapped);
-        document.title = mapped.title ? `${mapped.title} – Pure Mart` : "Details Page";
+        document.title = mapped.title
+          ? `${mapped.title} – Pure Mart`
+          : "Details Page";
 
-        // qty not exceed stock
-        setQty((prev) => {
-          const n = clampQty(Number(prev || 1), mapped.stock);
-          return String(n < 1 && mapped.stock > 0 ? 1 : n || (mapped.stock > 0 ? 1 : 1));
+        // ถ้าของหมด → qty = 0, ถ้ามีของ → อย่างน้อย 1
+        setQty(() => {
+          const s = Number(mapped.stock || 0);
+          if (s <= 0) return "0";
+          return String(clampQty(1, s));
         });
 
         // wishlist init
@@ -321,7 +340,9 @@ export default function DetailPage() {
             id: x.id,
             title: x.name,
             price: Number(x.price) || 0,
-            cover: `${API_URL}/api/products/${encodeURIComponent(x.id)}/cover`,
+            cover: `${API_URL}/api/products/${encodeURIComponent(
+              x.id
+            )}/cover`,
           }));
 
           setRelated(rel);
@@ -342,26 +363,23 @@ export default function DetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API_URL, id]);
 
-  /*  Qty helpers (ล็อกไม่ให้เกิน stock) */
-  const clampQty = (v, stock) => {
-    const s = Math.max(0, Number(stock || 0));
-    const n = Math.floor(Number.isFinite(v) ? v : 1);
-    if (s <= 0) return 1;
-    return Math.min(Math.max(n, 1), s);
-  };
-
   const stock = Math.max(0, Number(product.stock || 0));
   const disabledQty = stock <= 0;
 
   const dec = () => {
-    setQty((prev) => String(Math.max(1, Math.floor(Number(prev || 1) - 1))));
-  };
-  const inc = () => {
     setQty((prev) => {
-      const next = Math.floor(Number(prev || 1) + 1);
+      const next = Number(prev || 1) - 1;
       return String(clampQty(next, stock));
     });
   };
+
+  const inc = () => {
+    setQty((prev) => {
+      const next = Number(prev || 1) + 1;
+      return String(clampQty(next, stock));
+    });
+  };
+
   const onQtyChange = (e) => {
     const raw = e.target.value;
     if (raw === "") return setQty("");
@@ -369,14 +387,16 @@ export default function DetailPage() {
     if (!Number.isFinite(num)) return;
     setQty(String(clampQty(num, stock)));
   };
+
   const onQtyBlur = () => {
     setQty((prev) => {
       const num = Math.floor(Number(prev || 1));
       return String(clampQty(num, stock));
     });
   };
+
   const cartKey = (p) => {
-  // ยึด id เป็นหลัก ถ้าไม่มีค่อยใช้ productId/sku
+    // ยึด id เป็นหลัก ถ้าไม่มีค่อยใช้ productId/sku
     return String(
       p?.id ?? p?.productId ?? p?.product_id ?? p?.sku ?? ""
     );
@@ -395,16 +415,17 @@ export default function DetailPage() {
   };
 
   /* Cart: Add & Buy */
- const buildCartItem = () => {
-   const pid = cartKey(product) || "#UNKNOWN";
-   return {
-     id: pid,
-     name: product.title || "Unnamed product",
-     price: Number(product.price) || 0,
-     qty: clampQty(Number(qty || 1), stock),
-     img: product.imgMain || FALLBACK_IMG,
-   };
- };
+  const buildCartItem = () => {
+    const pid = cartKey(product) || "#UNKNOWN";
+    return {
+      id: pid,
+      name: product.title || "Unnamed product",
+      price: Number(product.price) || 0,
+      qty: clampQty(Number(qty || 1), stock),
+      img: product.imgMain || FALLBACK_IMG,
+    };
+  };
+
   const addToCart = () => {
     if (stock <= 0) {
       openWarn("This item is currently out of stock.");
@@ -445,6 +466,9 @@ export default function DetailPage() {
     const item = buildCartItem();
     navigate("/place-order", { state: { from: "buy-now", item } });
   };
+
+  // ถ้าของหมด บังคับให้ช่องแสดง "0" เสมอ (กันเคส state ค้างเป็น 1)
+  const displayQty = stock <= 0 ? "0" : qty;
 
   return (
     <>
@@ -490,7 +514,11 @@ export default function DetailPage() {
                   <div className="meta">
                     <span>
                       Brand:{" "}
-                      <a href="#" className="link" aria-label={`Brand ${product.brand}`}>
+                      <a
+                        href="#"
+                        className="link"
+                        aria-label={`Brand ${product.brand}`}
+                      >
                         {product.brand || "-"}
                       </a>
                     </span>
@@ -515,12 +543,17 @@ export default function DetailPage() {
                       height: 10,
                       borderRadius: "999px",
                       marginRight: 8,
-                      backgroundColor: stock > 0 ? "#22c55e" : "#ef4444", // green / red
-                      boxShadow: `0 0 0 3px ${stock > 0 ? "#dcfce7" : "#fee2e2"}`, // soft ring
+                      backgroundColor:
+                        stock > 0 ? "#22c55e" : "#ef4444", // green / red
+                      boxShadow: `0 0 0 3px ${
+                        stock > 0 ? "#dcfce7" : "#fee2e2"
+                      }`, // soft ring
                     }}
                   />
                   {stock > 0 ? (
-                    <>Availability: <b>{stock} in stock</b></>
+                    <>
+                      Availability: <b>{stock} in stock</b>
+                    </>
                   ) : (
                     <b style={{ color: "#b91c1c" }}>Out of stock</b>
                   )}
@@ -530,34 +563,52 @@ export default function DetailPage() {
 
                 <div className="buy-row">
                   <div className="qty" data-qty="">
-                    <button className="qty__btn" type="button" aria-label="decrease"
-                      onClick={dec} disabled={disabledQty || Number(qty || 1) <= 1}>
+                    <button
+                      className="qty__btn"
+                      type="button"
+                      aria-label="decrease"
+                      onClick={dec}
+                      disabled={disabledQty || Number(displayQty || 1) <= 1}
+                    >
                       −
                     </button>
                     <input
                       className="qty__input"
                       type="number"
-                      min={1}
-                      max={Math.max(1, stock)}
+                      min={stock > 0 ? 1 : 0}
+                      max={stock > 0 ? stock : 0}
                       inputMode="numeric"
-                      value={qty}
+                      value={displayQty}
                       onChange={onQtyChange}
                       onBlur={onQtyBlur}
                       onWheel={(e) => e.currentTarget.blur()}
                       disabled={disabledQty}
                       aria-label="Quantity"
                     />
-                    <button className="qty__btn" type="button" aria-label="increase"
-                      onClick={inc} disabled={disabledQty || Number(qty || 1) >= stock}>
+                    <button
+                      className="qty__btn"
+                      type="button"
+                      aria-label="increase"
+                      onClick={inc}
+                      disabled={disabledQty || Number(displayQty || 1) >= stock}
+                    >
                       +
                     </button>
                   </div>
 
-                  <button className="btn btn--primary" type="button" onClick={addToCart}>
+                  <button
+                    className="btn btn--primary"
+                    type="button"
+                    onClick={addToCart}
+                  >
                     {added ? "ADDED ✓" : "ADD TO CART"}
                   </button>
 
-                  <button className="btn btn--gradient" type="button" onClick={buyNow}>
+                  <button
+                    className="btn btn--gradient"
+                    type="button"
+                    onClick={buyNow}
+                  >
                     BUY NOW
                   </button>
                 </div>
@@ -578,7 +629,9 @@ export default function DetailPage() {
                 <div className="cat">
                   Category:{" "}
                   <Link
-                    to={`/shop?cat=${encodeURIComponent(product.categoryName || "")}`}
+                    to={`/shop?cat=${encodeURIComponent(
+                      product.categoryName || ""
+                    )}`}
                     className="link"
                   >
                     {product.categoryName || "-"}
@@ -625,16 +678,31 @@ export default function DetailPage() {
                 <div className="grid">
                   {related.map((r) => (
                     <article key={r.id} className="product-card">
-                      <Link className="thumb" to={`/detail/${r.id}`} aria-label={r.title} title={r.title}>
-                        <img src={r.cover} alt={r.title} loading="lazy" onError={handleImgError} />
+                      <Link
+                        className="thumb"
+                        to={`/detail/${r.id}`}
+                        aria-label={r.title}
+                        title={r.title}
+                      >
+                        <img
+                          src={r.cover}
+                          alt={r.title}
+                          loading="lazy"
+                          onError={handleImgError}
+                        />
                       </Link>
 
                       <h3 className="product-card__title">{r.title}</h3>
 
-                      <div className="product-card__price">฿ {fmtPrice(r.price)}</div>
+                      <div className="product-card__price">
+                        ฿ {fmtPrice(r.price)}
+                      </div>
 
                       <label className="wish" style={{ marginTop: 4 }}>
-                        <input type="checkbox" className="heart-toggle" />
+                        <input
+                          type="checkbox"
+                          className="heart-toggle"
+                        />
                         <span className="heart-label">Add to wishlist</span>
                       </label>
 
@@ -650,8 +718,14 @@ export default function DetailPage() {
                             qty: 1,
                             img: r.cover || FALLBACK_IMG,
                           };
-                          const idx = cart.findIndex((x) => String(x.id) === String(item.id));
-                          if (idx >= 0) cart[idx] = { ...cart[idx], qty: (cart[idx].qty || 1) + 1 };
+                          const idx = cart.findIndex(
+                            (x) => String(x.id) === String(item.id)
+                          );
+                          if (idx >= 0)
+                            cart[idx] = {
+                              ...cart[idx],
+                              qty: (cart[idx].qty || 1) + 1,
+                            };
                           else cart.push(item);
                           saveCart(cart);
                           setAdded(true);

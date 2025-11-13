@@ -6,7 +6,8 @@ import Footer from "./../components/Footer.jsx";
 /* ===== Config & helpers ===== */
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 const isAbs = (u) => /^https?:\/\//i.test(String(u || ""));
-const join = (base, path) => base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
+const join = (base, path) =>
+  base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
 
 /* ===== Currency ===== */
 const formatTHB = (n) => {
@@ -88,41 +89,54 @@ const resolveCategoryImage = (cat) => {
   return encodeURI(fePath);
 };
 
-/* ===== 🔥 Promotion helpers (ใช้ทั้ง BestSellers + AllProducts) ===== */
+/* ===== Stock helper ===== */
+/** ถือว่า out of stock ถ้า inStock/in_stock เป็น false หรือ quantity <= 0 */
+const isOutOfStock = (p) => {
+  if (!p) return false;
+  const flag = p.inStock ?? p.in_stock;
+  const qVal = p.quantity ?? p.qty ?? p.stock;
+  const q = Number(qVal);
+  if (flag === false) return true;
+  if (Number.isFinite(q) && q <= 0) return true;
+  return false;
+};
 
-// เช็คว่าโปรนี้ Active ตาม status + วันที่หรือยัง
-const isPromoActive = (p) => {
-  const status = p.status ?? p.promo_status ?? "";
+/* ===== 🔥 Promotion helpers (ใช้ร่วมกันทั้ง BestSellers + AllProducts) ===== */
+
+// เช็คว่าโปร active ตาม status + วันที่หรือยัง
+const isPromoActive = (promo) => {
+  if (!promo) return false;
+  const status = promo.status ?? promo.promo_status ?? "";
   if (status !== "ACTIVE") return false;
 
   const now = Date.now();
-  const start = p.start_at || p.startAt || null;
-  const end = p.end_at || p.endAt || null;
+  const start = promo.start_at || promo.startAt || null;
+  const end = promo.end_at || promo.endAt || null;
 
   if (start && new Date(start).getTime() > now) return false;
   if (end && new Date(end).getTime() < now) return false;
   return true;
 };
 
-// สร้างข้อความสั้น ๆ สำหรับ badge ของโปร
-const getPromoLabel = (p) => {
-  const type = p.promo_type || p.promoType;
-  if (type === "PERCENT_OFF" && p.percent_off != null) {
-    return `${Number(p.percent_off).toFixed(0)}% OFF`;
+// สร้างข้อความสั้น ๆ สำหรับ badge โปร
+const getPromoLabel = (promo) => {
+  const type = promo.promo_type || promo.promoType;
+  if (type === "PERCENT_OFF" && promo.percent_off != null) {
+    return `${Number(promo.percent_off).toFixed(0)}% OFF`;
   }
-  if (type === "AMOUNT_OFF" && p.amount_off != null) {
-    return `฿${Number(p.amount_off).toFixed(0)} OFF`;
+  if (type === "AMOUNT_OFF" && promo.amount_off != null) {
+    return `฿${Number(promo.amount_off).toFixed(0)} OFF`;
   }
-  if (type === "BUY_X_GET_Y" && p.buy_qty && p.get_qty) {
-    return `BUY ${p.buy_qty} GET ${p.get_qty}`;
+  if (type === "BUY_X_GET_Y" && promo.buy_qty && promo.get_qty) {
+    return `BUY ${promo.buy_qty} GET ${promo.get_qty}`;
   }
-  if (type === "FIXED_PRICE" && p.fixed_price != null) {
-    return `฿${Number(p.fixed_price).toFixed(0)}`;
+  if (type === "FIXED_PRICE" && promo.fixed_price != null) {
+    return `฿${Number(promo.fixed_price).toFixed(0)}`;
   }
-  return p.name || "PROMO";
+  return promo.name || "PROMO";
 };
 
-// ดึง map: productId -> promoLabel (เฉพาะโปรแบบ scope PRODUCT ที่ active)
+// ดึง map: productId -> promoLabel (เฉพาะโปร scope PRODUCT ที่ active)
 async function fetchPromotionMap() {
   try {
     const res = await fetch(`${API_URL}/api/promotions`, {
@@ -139,7 +153,7 @@ async function fetchPromotionMap() {
     await Promise.all(
       activePromos.map(async (promo) => {
         const scope = promo.scope || promo.promo_scope;
-        if (scope !== "PRODUCT") return; // หน้า home โชว์เฉพาะโปรที่ผูกกับสินค้าโดยตรง
+        if (scope !== "PRODUCT") return; // โชว์เฉพาะโปรที่ผูกกับสินค้า
 
         try {
           const r = await fetch(
@@ -165,7 +179,7 @@ async function fetchPromotionMap() {
             }
           });
         } catch {
-          // เงียบไป ไม่ต้องทำอะไร ถ้าดึงสินค้าของโปรล้มเหลว
+          // ถ้าดึงไม่ได้ก็ข้าม
         }
       })
     );
@@ -177,25 +191,45 @@ async function fetchPromotionMap() {
 }
 
 /* ===== Floating add-to-cart button (no useCart) ===== */
-function ProductMiniCard({ id, name, price, img }) {
+function ProductMiniCard({ id, name, price, img, disabled = false }) {
   const [added, setAdded] = useState(false);
+
   const onAdd = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (disabled) return; // ห้ามกดถ้า out of stock
+
     addItemToCart({ id: String(id), name, price: Number(price) || 0, qty: 1, img });
     setAdded(true);
     setTimeout(() => setAdded(false), 900);
   };
+
+  const baseColor = disabled ? "#9ca3af" : "#3E40AE";
+  const bg = added && !disabled ? "#16a34a" : baseColor;
+
+  const label = disabled
+    ? "Out of stock"
+    : added
+    ? "Added ✓"
+    : "Add to cart";
+
   return (
     <button
-      className={`add-to-cart${added ? " added" : ""}`}
+      className={`add-to-cart${added ? " added" : ""}${disabled ? " add-to-cart--disabled" : ""}`}
       type="button"
-      aria-label={added ? "Added" : "Add to cart"}
-      title={added ? "Added ✓" : "Add to cart"}
+      aria-label={label}
+      title={label}
       onClick={onAdd}
-      style={{ background: added ? "#16a34a" : "#3E40AE", transition: "background-color .25s ease" }}
+      disabled={disabled}
+      aria-disabled={disabled ? "true" : "false"}
+      style={{
+        background: bg,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+        transition: "background-color .25s ease, opacity .25s ease",
+      }}
     >
-      <i className={added ? "fas fa-check" : "fas fa-shopping-cart"} />
+      <i className={disabled ? "fas fa-ban" : added ? "fas fa-check" : "fas fa-shopping-cart"} />
     </button>
   );
 }
@@ -243,11 +277,9 @@ function BestSellersSection() {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
 
-        // เลือก 8 ตัว "best sellers" แบบเดิม
+        // เลือกเฉพาะที่ไม่ out of stock
         const best = list
-          .filter((x) =>
-            Number.isFinite(Number(x.quantity)) ? Number(x.quantity) > 0 : true
-          )
+          .filter((x) => !isOutOfStock(x))
           .sort(
             (a, b) =>
               new Date(b.updated_at || b.updatedAt || 0) -
@@ -255,12 +287,12 @@ function BestSellersSection() {
           )
           .slice(0, 8);
 
-        // 🔥 ดึง promotion map แล้วแปะ label ลงสินค้า
+        // 🔥 เติมข้อมูล promotion ลงไป
         const promoMap = await fetchPromotionMap();
         const withPromo = best.map((p) => {
           const id = p.id ?? p.productId ?? p.product_id;
-          const promoLabel = promoMap.get(id);
-          return promoLabel ? { ...p, _promoLabel: promoLabel } : p;
+          const label = promoMap.get(id);
+          return label ? { ...p, _promoLabel: label } : p;
         });
 
         if (alive) setItems(withPromo);
@@ -309,6 +341,7 @@ function BestSellersSection() {
             const name = p.name ?? "";
             const price = p.price ?? 0;
             const img = resolveCoverUrl(p);
+            const out = isOutOfStock(p);
             const promoLabel = p._promoLabel;
 
             return (
@@ -319,7 +352,7 @@ function BestSellersSection() {
                 aria-label={name}
               >
                 <div className="product__thumb">
-                  {/* 🔥 แสดง badge โปร ถ้ามี */}
+                  {/* 🔥 badge โปรโมชั่น */}
                   {promoLabel && (
                     <span className="product__promo-badge">{promoLabel}</span>
                   )}
@@ -338,7 +371,13 @@ function BestSellersSection() {
                 <div className="product__body">
                   <h3 className="product__title">{name}</h3>
                   <div className="product__price">{formatTHB(price)}</div>
-                  <ProductMiniCard id={id} name={name} price={price} img={img} />
+                  <ProductMiniCard
+                    id={id}
+                    name={name}
+                    price={price}
+                    img={img}
+                    disabled={out}
+                  />
                 </div>
               </Link>
             );
@@ -452,7 +491,8 @@ function useClampTitlesInList(listRef, deps = []) {
         if (fab) {
           const titleRect = title.getBoundingClientRect();
           const fabRect = fab.getBoundingClientRect();
-          if (titleRect.right > fabRect.left - 8) title.classList.add("title--shorten");
+          if (titleRect.right > fabRect.left - 8)
+            title.classList.add("title--shorten");
         }
       });
     };
@@ -483,12 +523,12 @@ function AllProductsSection({ listRef }) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
 
-        // 🔥 ใช้ promotion map เหมือนกัน
+        // 🔥 เติม promo map ให้ All Products
         const promoMap = await fetchPromotionMap();
         const withPromo = list.map((p) => {
           const id = p.id ?? p.productId ?? p.product_id;
-          const promoLabel = promoMap.get(id);
-          return promoLabel ? { ...p, _promoLabel: promoLabel } : p;
+          const label = promoMap.get(id);
+          return label ? { ...p, _promoLabel: label } : p;
         });
 
         if (alive) setItems(withPromo);
@@ -535,6 +575,7 @@ function AllProductsSection({ listRef }) {
             const name = p.name ?? "";
             const price = p.price ?? 0;
             const img = resolveCoverUrl(p);
+            const out = isOutOfStock(p);
             const promoLabel = p._promoLabel;
 
             return (
@@ -545,7 +586,7 @@ function AllProductsSection({ listRef }) {
                 aria-label={name}
               >
                 <div className="product__thumb">
-                  {/* 🔥 badge โปรใน All Products */}
+                  {/* 🔥 badge โปรแกรมที่นี่ด้วย */}
                   {promoLabel && (
                     <span className="product__promo-badge">{promoLabel}</span>
                   )}
@@ -556,7 +597,8 @@ function AllProductsSection({ listRef }) {
                     onError={(e) => {
                       if (!e.currentTarget.dataset.fallback) {
                         e.currentTarget.dataset.fallback = 1;
-                        e.currentTarget.src = "/assets/products/placeholder.png";
+                        e.currentTarget.src =
+                          "/assets/products/placeholder.png";
                       }
                     }}
                   />
@@ -564,7 +606,13 @@ function AllProductsSection({ listRef }) {
                 <div className="product__body">
                   <h3 className="product__title">{name}</h3>
                   <div className="product__price">{formatTHB(price)}</div>
-                  <ProductMiniCard id={id} name={name} price={price} img={img} />
+                  <ProductMiniCard
+                    id={id}
+                    name={name}
+                    price={price}
+                    img={img}
+                    disabled={out}
+                  />
                 </div>
               </Link>
             );
