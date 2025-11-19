@@ -16,6 +16,7 @@ const PAGE_SIZE = 9;
 /* ===== LocalStorage keys & cart helpers ===== */
 const LS_WISH = "pm_wishlist";
 const LS_CART = "pm_cart";
+
 const readCart = () => {
   try {
     const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]");
@@ -29,7 +30,8 @@ const addItemToCart = ({ id, name, price, qty = 1, img }) => {
   const cart = readCart();
   const key = String(id ?? "");
   const i = cart.findIndex((x) => String(x.id) === key);
-  if (i >= 0) cart[i] = { ...cart[i], qty: Math.max(1, (cart[i].qty || 1) + qty) };
+  if (i >= 0)
+    cart[i] = { ...cart[i], qty: Math.max(1, (cart[i].qty || 1) + qty) };
   else
     cart.push({
       id: key,
@@ -41,8 +43,32 @@ const addItemToCart = ({ id, name, price, qty = 1, img }) => {
   saveCart(cart);
   const count = cart.reduce((s, it) => s + (Number(it.qty) || 0), 0);
   try {
-    window.dispatchEvent(new CustomEvent("pm_cart_updated", { detail: { count } }));
+    window.dispatchEvent(
+      new CustomEvent("pm_cart_updated", { detail: { count } })
+    );
   } catch {}
+};
+
+/* ===== Wishlist helpers (global, ไม่ผูกกับ card เดียว) ===== */
+const readWishIdsStr = () => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LS_WISH) || "[]");
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((x) =>
+        typeof x === "object" && x !== null
+          ? String(x.id ?? "")
+          : String(x ?? "")
+      )
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+
+const writeWishIdsStr = (ids) => {
+  const uniq = [...new Set(ids.map((v) => String(v)).filter(Boolean))];
+  localStorage.setItem(LS_WISH, JSON.stringify(uniq));
 };
 
 /* ===== Placeholder image ===== */
@@ -396,9 +422,11 @@ export default function ShopPage() {
       if (hasSearch) {
         const q = normalize(searchQ).replace(/^#/, "");
         if (searchScope === "productid" || searchScope === "product_id") {
-          if (!String(p.productCode || p.id || "")
-            .toLowerCase()
-            .includes(q))
+          if (
+            !String(p.productCode || p.id || "")
+              .toLowerCase()
+              .includes(q)
+          )
             return false;
         } else if (searchScope === "category") {
           if (!normalize(p.cat || "").includes(q)) return false;
@@ -420,7 +448,12 @@ export default function ShopPage() {
             .split(" ")
             .filter(Boolean);
           const ok = terms.every((t) => {
-            if (name.includes(t) || code.includes(t) || brand.includes(t) || cat.includes(t))
+            if (
+              name.includes(t) ||
+              code.includes(t) ||
+              brand.includes(t) ||
+              cat.includes(t)
+            )
               return true;
             if (fuzzyMatch(t, name)) return true;
             if (brand && fuzzyMatch(t, brand)) return true;
@@ -471,13 +504,9 @@ export default function ShopPage() {
       out.push({
         key: "price",
         label: `฿${
-          filters.priceMinC != null
-            ? fromCents(filters.priceMinC)
-            : "0.00"
+          filters.priceMinC != null ? fromCents(filters.priceMinC) : "0.00"
         }–${
-          filters.priceMaxC != null
-            ? fromCents(filters.priceMaxC)
-            : "∞"
+          filters.priceMaxC != null ? fromCents(filters.priceMaxC) : "∞"
         }`,
       });
     return out;
@@ -507,21 +536,18 @@ export default function ShopPage() {
   /* ===== Product card ===== */
   const ProductCard = ({ p }) => {
     const nav = useNavigate();
-    const [wish, setWish] = useState(() => {
-      try {
-        return new Set(JSON.parse(localStorage.getItem(LS_WISH) || "[]"));
-      } catch {
-        return new Set();
-      }
-    });
-    useEffect(() => {
-      localStorage.setItem(LS_WISH, JSON.stringify([...wish]));
-    }, [wish]);
-
-    const liked = wish.has(p.id);
     const [src, setSrc] = useState(p.img);
     const [loaded, setLoaded] = useState(false);
     const [added, setAdded] = useState(false);
+
+    // ⭐ ใช้ boolean liked + sync กับ localStorage แบบ global
+    const [liked, setLiked] = useState(false);
+
+    // init: อ่านว่าตัวนี้อยู่ใน wishlist ไหม
+    useEffect(() => {
+      const ids = readWishIdsStr();
+      setLiked(ids.includes(String(p.id)));
+    }, [p.id]);
 
     const to = `/detail/${encodeURIComponent(p.id)}`;
     const stop = (e) => e.stopPropagation();
@@ -544,6 +570,24 @@ export default function ShopPage() {
       });
       setAdded(true);
       setTimeout(() => setAdded(false), 900);
+    };
+
+    const toggleWish = (e) => {
+      stop(e);
+      const pid = String(p.id);
+      const ids = readWishIdsStr();
+      const idx = ids.indexOf(pid);
+      let next;
+      if (idx >= 0) {
+        // remove
+        next = [...ids.slice(0, idx), ...ids.slice(idx + 1)];
+        setLiked(false);
+      } else {
+        // add
+        next = [...ids, pid];
+        setLiked(true);
+      }
+      writeWishIdsStr(next);
     };
 
     return (
@@ -585,14 +629,7 @@ export default function ShopPage() {
             className={`p-wishline ${liked ? "on" : ""}`}
             type="button"
             aria-pressed={liked}
-            onClick={(e) => {
-              stop(e);
-              setWish((prev) => {
-                const n = new Set(prev);
-                n.has(p.id) ? n.delete(p.id) : n.add(p.id);
-                return n;
-              });
-            }}
+            onClick={toggleWish}
           >
             <svg
               width="18"
