@@ -8,7 +8,7 @@
 /* Header */
 .app[data-page="AdminDashboard"] .admin-dashboard .header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
@@ -25,10 +25,11 @@
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .header-actions {
   display: flex;
-  gap: 10px;
-  flex-wrap: nowrap;
-  align-items: center;
+  align-items: center; /* <<< ทำให้ทุกอย่างอยู่ระดับเดียวกัน */
+  gap: 14px;
 }
+
+
 .app[data-page="AdminDashboard"] .admin-dashboard .btn {
   border: 1px solid #e2e8f0;
   background: #ffffff;
@@ -187,7 +188,7 @@
 .app[data-page="AdminDashboard"] .admin-dashboard .thead,
 .app[data-page="AdminDashboard"] .admin-dashboard .trow {
   display: grid;
-  grid-template-columns: 3fr 1.2fr 1.4fr 1.2fr 1fr 1fr 1.2fr 1.4fr 1.6fr;
+  grid-template-columns: 3fr 1.2fr 1.4fr 1.2fr 1fr 1fr 1.2fr 1.4fr 1.6fr 0.8fr;
   gap: 10px;
   padding: 12px 10px;
 }
@@ -220,7 +221,11 @@
 }
 
 .app[data-page="AdminDashboard"] .admin-dashboard .trow {
+  /* border-bottom: 1px dashed #e2e8f0;
+   */
   border-bottom: 1px dashed #e2e8f0;
+  min-height: 50px;
+  align-items: center;
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .trow:last-child {
   border-bottom: 0;
@@ -270,8 +275,10 @@
 /* กล่องรวม From / To / Apply */
 .app[data-page="AdminDashboard"] .admin-dashboard .header-actions .daterange {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  white-space: nowrap;
   /* background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -280,6 +287,8 @@
   height: 36px;/ */
 }
 
+
+
 /* label + input อยู่ในแถวเดียวกัน */
 .app[data-page="AdminDashboard"] .admin-dashboard .header-actions .dr-label {
   display: flex;
@@ -287,7 +296,7 @@
   gap: 6px;
   font-size: 13px;
   color: #475569; /* slate-600 */
-  line-height: 1.2;
+  line-height: 1;
   font-weight: 500;
   white-space: nowrap;
   min-width: max-content;
@@ -312,7 +321,7 @@
   color: #0f172a;
   box-shadow: 0 1px 0 rgba(0,0,0,0.03);
   min-width: 130px;
-  height: 30px; /* ให้พอดีใน box ที่สูง 36px */
+  height: 36px; 
   cursor: pointer;
 }
 
@@ -329,22 +338,18 @@
   justify-content: center;
 
   line-height: 1;
-  vertical-align: middle;
-
-  position: relative;
-  top: 3px;
 }
 
 /* ปุ่ม Apply */
-.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .btn.inline {
-  height: 30px; /* เท่ากับปุ่มหลัก */
+/* .app[data-page="AdminDashboard"] .admin-dashboard .header-actions .btn.inline {
+  height: 36px; 
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 500;
   white-space: nowrap;
   padding: 0 12px;
-}
+} */
 
 /* disabled state */
 .app[data-page="AdminDashboard"] .admin-dashboard .header-actions .btn[disabled] {
@@ -352,20 +357,108 @@
   cursor: not-allowed;
 }
 
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline{
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 100%;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  line-height: 1.1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option input[type="radio"]{
+  margin: 0;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option .label-text{
+  line-height: 1;         /* ลด line-height ไม่ให้ดันขึ้นบน */
+  display: inline-flex;
+  align-items: center;
+  
+}
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #2563eb; /* เปลี่ยนสีวงกลมถ้าต้องการ (เช่น blue-600) */
+  cursor: pointer;
+}
+
+
+/* กัน style label ทั่วระบบที่ใส่ margin/block */
+.app[data-page="AdminDashboard"] .admin-dashboard .header label{
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .btn-edit-inline {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .btn-edit-inline:hover {
+  background: #1e40af;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline {
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option .label-text {
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+
 /* responsive: ถ้าหน้าจอแคบ ให้ wrap */
 @media (max-width: 900px) {
   .app[data-page="AdminDashboard"] .admin-dashboard .header-actions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: nowrap;
     align-items: center;
+    height: 36px;
   }
 
   .app[data-page="AdminDashboard"] .admin-dashboard .header-actions .daterange {
-    /* flex-wrap: wrap; */
     width: 100%;
     justify-content: center;
     height: auto; 
   }
+  
 }
+
 

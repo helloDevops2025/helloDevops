@@ -223,7 +223,7 @@ export default function AdminOrderListPage() {
                   <option value="customerName">Customer</option>
                   <option value="orderStatus">Status</option>
                 </select>
-                <input type="text" placeholder="ค้นหาคำสั่งซื้อ…" />
+                <input type="text" placeholder="Search Here" />
               </div>
 
               {/* ปุ่มรีเฟรช แบบ manual กรณีอยากกดดูของใหม่ทันที */}

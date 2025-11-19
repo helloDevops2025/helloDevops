@@ -95,6 +95,15 @@ export default function AdminOrderDetailPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [statusDraft, setStatusDraft] = useState(""); // เก็บค่า code จาก select
+  // ★ popup แบบเดียวกับหน้า Add Product
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertList, setAlertList] = useState([]);
+
+  const showAlert = (items) => {
+    const arr = Array.isArray(items) ? items : [items];
+    setAlertList(arr);
+    setAlertOpen(true);
+  };
 
   // ===== Load one order =====
   useEffect(() => {
@@ -113,8 +122,8 @@ export default function AdminOrderDetailPage() {
         const orderItems = Array.isArray(data.orderItems)
           ? data.orderItems
           : Array.isArray(data.items)
-          ? data.items
-          : [];
+            ? data.items
+            : [];
 
         // ✅ รองรับหลายชื่อคีย์ของเวลา
         const orderedAt =
@@ -190,10 +199,15 @@ export default function AdminOrderDetailPage() {
       setSaving(true);
       await updateOrderStatusFlexible(order.id ?? id, code);
       setOrder((prev) => (prev ? { ...prev, orderStatus: code } : prev));
-      alert("อัปเดตสถานะเรียบร้อย");
+      // ★ แจ้งสำเร็จด้วย popup
+      showAlert("อัปเดตสถานะเรียบร้อย");
     } catch (e) {
       console.error(e);
-      alert("❌ อัปเดตสถานะไม่สำเร็จ — กรุณาตรวจสอบ log ใน Console/Network");
+
+      // ★ แจ้ง error ด้วย popup
+      showAlert(
+        "❌ อัปเดตสถานะไม่สำเร็จ — กรุณาตรวจสอบ log ใน Console/Network"
+      );
     } finally {
       setSaving(false);
     }
@@ -417,6 +431,57 @@ export default function AdminOrderDetailPage() {
             </div>
           </div>
         </aside>
+        {/* ★ Popup แบบโปรดตรวจสอบ */}
+        {alertOpen && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                width: "min(560px, 92vw)",
+                background: "#fff",
+                borderRadius: 16,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+                padding: 24,
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
+                โปรดตรวจสอบ
+              </h3>
+              <ul style={{ margin: "14px 0 0 18px" }}>
+                {alertList.map((m, i) => (
+                  <li key={i} style={{ marginBottom: 6 }}>
+                    {m}
+                  </li>
+                ))}
+              </ul>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: 20,
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={() => setAlertOpen(false)}
+                  style={{ padding: "10px 28px", borderRadius: 10, fontWeight: 600, fontSize: 15, }}
+                >
+                  ตกลง
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
