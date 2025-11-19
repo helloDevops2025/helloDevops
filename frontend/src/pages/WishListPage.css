@@ -35,7 +35,7 @@
   margin: 0;
 }
 
-/* ===== breadcrumb แบบเดิม (custom-breadcrumb) ===== */
+/* ===== breadcrumb ===== */
 .custom-breadcrumb ol {
   list-style: none;
   display: inline-flex;
@@ -53,7 +53,7 @@
 }
 
 .custom-breadcrumb__item + .custom-breadcrumb__item {
-  margin-left: 0; /* เราใช้ .divider เอง ไม่ต้องเว้นเพิ่ม */
+  margin-left: 0;
 }
 
 .custom-breadcrumb a {
@@ -117,7 +117,19 @@
 }
 
 #wl-clear {
-  align-self: center;
+  height: 44px;
+  padding: 0 18px;
+  background: #ffffff;
+  border: 1.8px solid #d3d6e0;  /* ขอบเข้มขึ้น */
+  border-radius: 12px;
+  font: 700 14px "Poppins";
+  color: #3E40AE;
+  transition: all .15s ease;
+}
+
+#wl-clear:hover {
+  background: #f2f3f7;
+  border-color: #bfc3d0;
 }
 
 .wl-toolbar select {
@@ -198,6 +210,7 @@
   box-shadow: 0 8px 18px rgba(17, 24, 39, .08);
   display: flex;
   flex-direction: column;
+  height: 100%;                          /* ✅ การ์ดสูงเต็มแถว */
   transition: transform .18s ease, box-shadow .18s ease;
 }
 
@@ -249,6 +262,7 @@
 /* ========== CONTENT ========== */
 .wl-body {
   padding: 16px 18px 0;
+  flex: 1 0 auto;                        /* ✅ เนื้อหาโตได้ ดันปุ่มลงล่าง */
 }
 
 .wl-name {
@@ -257,6 +271,23 @@
   line-height: 1.45;
   margin: 0 0 22px;
   color: #0f172a;
+}
+
+/* ชื่อสินค้าในการ์ด Wishlist ให้ดูเป็นปกติ ไม่ม่วง ไม่ขีดเส้นใต้ */
+.wl-name a {
+  color: #0f172a;          /* สีตัวหนังสือปกติ */
+  text-decoration: none;   /* ตัดเส้นใต้ทิ้ง */
+}
+
+/* กดแล้วก็ยังสีเดิม ไม่เป็นม่วง */
+.wl-name a:visited {
+  color: #0f172a;
+}
+
+/* Hover ให้เปลี่ยนเป็นสี primary นิดหน่อย แต่ไม่ต้องมีเส้นใต้ */
+.wl-name a:hover {
+  color: var(--pm-primary);
+  text-decoration: none;
 }
 
 .wl-price {
@@ -292,7 +323,7 @@
   display: flex;
   justify-content: center;
   padding: 0px 16px 14px;
-  margin-top: 0;
+  margin-top: auto;                      /* ✅ ดันปุ่มให้ชิดล่างเสมอ */
   flex: 0 0 auto;
 }
 
@@ -335,35 +366,31 @@
   font-size: 14px;
 }
 
-/* ========== MODAL (Full-screen overlay) ========== */
-.pm-modal {
+/* ========== MODAL (เฉพาะ Wishlist) ========== */
+
+.wl-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;          /* กินเต็ม viewport แน่นอน */
-  height: 100vh;
+  inset: 0;
   z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;  /* ตัว container ไม่ดักคลิก */
+  pointer-events: none; /* ให้ overlay/dialog เป็นตัวรับคลิก */
 }
 
-.pm-modal__overlay {
+/* พื้นหลังเทาโปร่ง ๆ คลุมทั้งจอ */
+.wl-modal__overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(3px);
-  pointer-events: auto;  /* คลิกที่พื้นหลังได้ (ใช้ปิด modal) */
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  pointer-events: auto;
 }
 
-.pm-modal__dialog {
-  position: relative;
+/* กล่อง dialog ลอยกลางจอ */
+.wl-modal__dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 1;
-  pointer-events: auto;  /* ปุ่มในกล่องคลิกได้ */
+  pointer-events: auto;
   width: min(420px, calc(100vw - 40px));
   background: #ffffff;
   border-radius: 20px;
@@ -373,35 +400,62 @@
   text-align: left;
 }
 
-.pm-modal__dialog h3 {
+.wl-modal__dialog h3 {
   margin: 0 0 8px;
   font: 600 18px/1.3 "Poppins";
   color: #111827;
 }
 
-.pm-modal__text {
+.wl-modal__text {
   margin: 0 0 18px;
   color: #475569;
   font-size: 14px;
 }
 
-.pm-modal__actions {
+.wl-modal__actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
 
-.pm-modal .btn-danger {
-  background: #ef4444;
-  border-color: #ef4444;
-  color: #fff;
+/* ----------------------------- */
+/* ปุ่ม Cancel (ซ้าย)           */
+/* ----------------------------- */
+.wl-modal__actions .btn {
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 12px;
+  border: 1.8px solid #d3d6e0;   /* ขอบเทาเข้มขึ้น */
+  background: #f7f8fb;
+  color: #4b5563;
+  font: 600 14px "Poppins";
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  transition: all 0.15s ease;
 }
 
-.pm-modal .btn-danger:hover {
+.wl-modal__actions .btn:hover {
+  background: #eef0f5;
+  border-color: #cfd2dc;
+}
+
+/* ----------------------------- */
+/* ปุ่ม Clear all (แดง)          */
+/* ----------------------------- */
+.wl-modal__actions .btn.btn-danger {
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 12px;
+  border: 1.8px solid #ef4444;   /* ขอบแดงสวย ๆ */
   background: #ef4444;
-  border-color: #ef4444;
   color: #fff;
-  filter: brightness(1.05);
+  font: 700 14px "Poppins";
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
+  transition: all 0.15s ease;
+}
+
+.wl-modal__actions .btn.btn-danger:hover {
+  filter: brightness(1.07);
+  border-color: #dc2626;
 }
 
 /* ========== RESPONSIVE ========== */
