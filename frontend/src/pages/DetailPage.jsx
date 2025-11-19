@@ -1,3 +1,4 @@
+// src/pages/DetailPage.jsx
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { isAuthed } from "../auth";
@@ -131,7 +132,12 @@ function Popup({ open, title = "Warning", message, onClose }) {
     boxShadow: "0 10px 30px rgba(0,0,0,.2)",
     padding: "20px 20px 16px",
   };
-  const head = { fontWeight: 700, fontSize: 18, marginBottom: 8, color: "#111827" };
+  const head = {
+    fontWeight: 700,
+    fontSize: 18,
+    marginBottom: 8,
+    color: "#111827",
+  };
   const msg = { color: "#374151", marginBottom: 16, lineHeight: 1.5 };
   const btn = {
     display: "inline-block",
@@ -190,6 +196,8 @@ export default function DetailPage() {
     categoryName: "",
     categorySlug: "all",
     excerpt: "",
+    // ✅ promotion badge text (เหมือนหน้า Shop)
+    promotionText: "",
   });
 
   // qty (เริ่มต้นให้เป็น 0 ไปก่อน)
@@ -197,7 +205,8 @@ export default function DetailPage() {
   const [wish, setWish] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [added, setAdded] = useState(false);
+  const [added, setAdded] = useState(false); // ปุ่ม ADD TO CART หลัก
+  const [relAddedId, setRelAddedId] = useState(null); // ปุ่ม ADD TO CART ของ RELATED
 
   /* Related products */
   const [related, setRelated] = useState([]);
@@ -239,17 +248,41 @@ export default function DetailPage() {
 
     (async () => {
       setLoading(true);
+      setRelLoading(true);
       setErr("");
       try {
-        const [p, imgs, cats, brands] = await Promise.all([
+        // 🔹 โหลด product หลัก + images + master data + promotions + allProducts (สำหรับ related)
+        const [p, imgs, cats, brands, promos, allProducts] = await Promise.all([
           safeJson(`${API_URL}/api/products/${encodeURIComponent(id)}`),
-          safeJson(`${API_URL}/api/products/${encodeURIComponent(id)}/images`),
+          safeJson(
+            `${API_URL}/api/products/${encodeURIComponent(id)}/images`
+          ),
           safeJson(`${API_URL}/api/categories`),
           safeJson(`${API_URL}/api/brands`),
+          safeJson(`${API_URL}/api/promotions?status=ACTIVE`),
+          safeJson(`${API_URL}/api/products`),
         ]);
 
         if (cancelled) return;
         if (!p) throw new Error("ไม่พบสินค้า หรือเรียก API ไม่สำเร็จ");
+
+        /* ===== สร้าง promoMap แบบเดียวกับหน้า Shop ===== */
+        const promoMap = new Map(); // productId -> [promo name]
+
+        if (Array.isArray(promos)) {
+          for (const promo of promos) {
+            const plist = await safeJson(
+              `${API_URL}/api/promotions/${promo.id}/products`
+            );
+            (plist || []).forEach((prod) => {
+              const pid = prod.id ?? prod.productId ?? prod.product_id;
+              if (pid == null) return;
+              if (!promoMap.has(pid)) promoMap.set(pid, []);
+              const label = promo.name || promo.code || "PROMO";
+              promoMap.get(pid).push(label);
+            });
+          }
+        }
 
         const catName = Array.isArray(cats)
           ? cats.find((c) => c.id === p.categoryId)?.name || ""
@@ -266,6 +299,11 @@ export default function DetailPage() {
           if (cover?.imageUrl) imgUrl = cover.imageUrl;
         }
 
+        // promo ของสินค้าหลัก
+        const selfPid = p.id ?? p.productId ?? p.product_id ?? id;
+        const promoNamesSelf = promoMap.get(selfPid) || [];
+        const promoLabelSelf = promoNamesSelf.length ? promoNamesSelf[0] : "";
+
         const mapped = {
           id: p.id ?? id,
           title: p.name || "",
@@ -280,6 +318,7 @@ export default function DetailPage() {
           categoryName: catName || "",
           categorySlug: toSlug(catName) || "all",
           excerpt: p.description || "",
+          promotionText: promoLabelSelf,
         };
 
         setProduct(mapped);
@@ -294,14 +333,11 @@ export default function DetailPage() {
           return String(clampQty(1, s));
         });
 
-        // wishlist init
+        // wishlist init (ของตัวหลัก)
         const list = loadWL();
         if (!cancelled) setWish(inWL(list, normId(mapped.id)));
 
         /* ===== RELATED ===== */
-        setRelLoading(true);
-        const allProducts = (await safeJson(`${API_URL}/api/products`)) || [];
-
         if (!cancelled && Array.isArray(allProducts)) {
           const curId = normId(mapped.id);
           const targetCatId = normId(mapped.categoryId);
@@ -322,28 +358,43 @@ export default function DetailPage() {
 
           const sameBrand = allProducts
             .filter(notSelf)
-            .filter((x) => mapped.brandId != null && x.brandId === mapped.brandId);
+            .filter(
+              (x) => mapped.brandId != null && x.brandId === mapped.brandId
+            );
 
           const others = allProducts.filter(notSelf);
 
-          const pick = [];
+          const pickList = [];
           for (const group of [sameCat, sameBrand, shuffle(others)]) {
             for (const item of group) {
-              if (pick.find((p) => normId(p.id) === normId(item.id))) continue;
-              pick.push(item);
-              if (pick.length >= 4) break;
+              if (
+                pickList.find((p) => normId(p.id) === normId(item.id))
+              )
+                continue;
+              pickList.push(item);
+              if (pickList.length >= 4) break;
             }
-            if (pick.length >= 4) break;
+            if (pickList.length >= 4) break;
           }
 
-          const rel = pick.map((x) => ({
-            id: x.id,
-            title: x.name,
-            price: Number(x.price) || 0,
-            cover: `${API_URL}/api/products/${encodeURIComponent(
-              x.id
-            )}/cover`,
-          }));
+          // โหลด wishlist ปัจจุบัน เพื่อเช็คว่า related ตัวไหนอยู่ใน wl แล้ว
+          const wlList = list; // ใช้ list ที่โหลดไว้ด้านบน
+
+          const rel = pickList.map((x) => {
+            const rid = x.id ?? x.productId ?? x.product_id;
+            const promoNames = promoMap.get(rid) || [];
+            const promoLabel = promoNames.length ? promoNames[0] : "";
+
+            return {
+              id: rid,
+              title: x.name,
+              price: Number(x.price) || 0,
+              cover: `${API_URL}/api/products/${encodeURIComponent(rid)}/cover`,
+              promo: promoLabel,
+              // ✅ สถานะ wishlist สำหรับการ์ด RELATED
+              inWish: inWL(wlList, rid),
+            };
+          });
 
           setRelated(rel);
         }
@@ -361,7 +412,7 @@ export default function DetailPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API_URL, id]);
+  }, [id]);
 
   const stock = Math.max(0, Number(product.stock || 0));
   const disabledQty = stock <= 0;
@@ -397,20 +448,21 @@ export default function DetailPage() {
 
   const cartKey = (p) => {
     // ยึด id เป็นหลัก ถ้าไม่มีค่อยใช้ productId/sku
-    return String(
-      p?.id ?? p?.productId ?? p?.product_id ?? p?.sku ?? ""
-    );
+    return String(p?.id ?? p?.productId ?? p?.product_id ?? p?.sku ?? "");
   };
 
   const handleImgError = (e) => {
-    if (e.currentTarget.src !== FALLBACK_IMG) e.currentTarget.src = FALLBACK_IMG;
+    if (e.currentTarget.src !== FALLBACK_IMG)
+      e.currentTarget.src = FALLBACK_IMG;
   };
 
-  /* Wishlist: sync checkbox ↔ localStorage */
+  /* Wishlist: sync checkbox ↔ localStorage (ตัวหลัก) */
   const toggleWish = (checked) => {
     setWish(checked);
     const list = loadWL();
-    const next = checked ? addToWL(list, product) : removeFromWL(list, product.id);
+    const next = checked
+      ? addToWL(list, product)
+      : removeFromWL(list, product.id);
     saveWL(next);
   };
 
@@ -470,6 +522,29 @@ export default function DetailPage() {
   // ถ้าของหมด บังคับให้ช่องแสดง "0" เสมอ (กันเคส state ค้างเป็น 1)
   const displayQty = stock <= 0 ? "0" : qty;
 
+  // ✅ toggle wishlist สำหรับ RELATED
+  const toggleRelatedWish = (r, checked) => {
+    // อัปเดต state ให้ checkbox ติด/ไม่ติด
+    setRelated((prev) =>
+      prev.map((item) =>
+        item.id === r.id ? { ...item, inWish: checked } : item
+      )
+    );
+
+    // sync กับ localStorage
+    const list = loadWL();
+    const productForWL = {
+      id: r.id,
+      title: r.title,
+      price: r.price,
+      imgMain: r.cover,
+    };
+    const next = checked
+      ? addToWL(list, productForWL)
+      : removeFromWL(list, r.id);
+    saveWL(next);
+  };
+
   return (
     <>
       <main className="page container detail-page">
@@ -496,6 +571,13 @@ export default function DetailPage() {
             <section className="product card">
               <div className="product__media">
                 <div className="product__img">
+                  {/* ✅ Promotion badge เหนือรูปหลัก */}
+                  {product.promotionText && (
+                    <div className="product__promo-badge">
+                      {product.promotionText}
+                    </div>
+                  )}
+
                   <img
                     src={product.imgMain}
                     alt={product.title}
@@ -543,8 +625,7 @@ export default function DetailPage() {
                       height: 10,
                       borderRadius: "999px",
                       marginRight: 8,
-                      backgroundColor:
-                        stock > 0 ? "#22c55e" : "#ef4444", // green / red
+                      backgroundColor: stock > 0 ? "#22c55e" : "#ef4444", // green / red
                       boxShadow: `0 0 0 3px ${
                         stock > 0 ? "#dcfce7" : "#fee2e2"
                       }`, // soft ring
@@ -590,7 +671,9 @@ export default function DetailPage() {
                       type="button"
                       aria-label="increase"
                       onClick={inc}
-                      disabled={disabledQty || Number(displayQty || 1) >= stock}
+                      disabled={
+                        disabledQty || Number(displayQty || 1) >= stock
+                      }
                     >
                       +
                     </button>
@@ -684,6 +767,13 @@ export default function DetailPage() {
                         aria-label={r.title}
                         title={r.title}
                       >
+                        {/* ✅ badge โปรโมชั่นใน RELATED เหมือนหน้า Shop */}
+                        {r.promo && (
+                          <span className="product__promo-badge">
+                            {r.promo}
+                          </span>
+                        )}
+
                         <img
                           src={r.cover}
                           alt={r.title}
@@ -698,12 +788,19 @@ export default function DetailPage() {
                         ฿ {fmtPrice(r.price)}
                       </div>
 
+                      {/* ✅ Wishlist ที่ใช้งานได้จริงสำหรับ RELATED */}
                       <label className="wish" style={{ marginTop: 4 }}>
                         <input
                           type="checkbox"
                           className="heart-toggle"
+                          checked={!!r.inWish}
+                          onChange={(e) =>
+                            toggleRelatedWish(r, e.target.checked)
+                          }
                         />
-                        <span className="heart-label">Add to wishlist</span>
+                        <span className="heart-label">
+                          {r.inWish ? "In wishlist" : "Add to wishlist"}
+                        </span>
                       </label>
 
                       <button
@@ -728,11 +825,13 @@ export default function DetailPage() {
                             };
                           else cart.push(item);
                           saveCart(cart);
-                          setAdded(true);
-                          setTimeout(() => setAdded(false), 800);
+
+                          // ให้เฉพาะสินค้าที่กดอยู่เปลี่ยนเป็น ADDED ✓ ชั่วคราว
+                          setRelAddedId(r.id);
+                          setTimeout(() => setRelAddedId(null), 800);
                         }}
                       >
-                        ADD TO CART
+                        {relAddedId === r.id ? "ADDED ✓" : "ADD TO CART"}
                       </button>
                     </article>
                   ))}
