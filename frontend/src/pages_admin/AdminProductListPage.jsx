@@ -159,6 +159,7 @@ export default function AdminProductListPage() {
       };
     };
 
+    // 
     // Pre-index
     const record = new WeakMap();     // เก็บ fields แบบแยก
     const hayAll = new WeakMap();     // สำหรับโหมด "ค้นหาทุกฟิลด์" ถ้าจะใช้ภายหลัง
@@ -323,22 +324,54 @@ export default function AdminProductListPage() {
         };
 
   // ---------- DELETE ----------
-  async function handleDelete(p) {
-    const id = p.id;
-    if (id == null) {
-      alert("ไม่พบ id ของรายการนี้ ลบไม่ได้");
-      return;
+  // ช่วยฟอร์แมตรหัสสินค้าให้เป็น #00001
+const fmtCode = (v) => "#" + String(v ?? "").replace(/\D/g, "").padStart(5, "0");
+
+async function handleDelete(p) {
+  const dbId = p?.id ?? null;                           // id ในฐานข้อมูล
+  const code = String(p?.productId ?? "");              // รหัสสินค้า 5 หลัก (string/number ก็ได้)
+  const codeClean = code.replace(/\D/g, "");
+  const label = `${p?.name ?? "-"} – ${code ? fmtCode(code) : ""}`;
+
+  if (!confirm(`Delete product: ${label} ?`)) return;
+
+  try {
+    let done = false;
+
+    // 1) พยายามลบด้วย "id" ก่อน (กรณีปกติ)
+    if (dbId != null) {
+      const r = await fetch(`${API_URL}/api/products/${encodeURIComponent(dbId)}`, { method: "DELETE" });
+      if (r.ok) done = true;
+      else if (r.status !== 404) throw new Error(`DELETE by id failed: HTTP ${r.status}`);
     }
-    if (!confirm(`Delete product id=${id}?`)) return;
-    try {
-      const res = await fetch(`${API_URL}/api/products/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(`DELETE failed: HTTP ${res.status}`);
-      setItems((prev) => prev.filter((x) => x.id !== id));
-    } catch (e) {
-      console.error(e);
-      alert("Delete failed.");
+
+    // 2) ถ้ายังไม่สำเร็จและมี productId → ลองลบด้วย productId (รองรับหลายรูปแบบ endpoint)
+    if (!done && codeClean) {
+      const candidates = [
+        `${API_URL}/api/products/byProductId/${encodeURIComponent(codeClean)}`,
+        `${API_URL}/api/products/code/${encodeURIComponent(codeClean)}`,
+        `${API_URL}/api/products/${encodeURIComponent(codeClean)}?by=productId`,
+      ];
+      for (const url of candidates) {
+        try {
+          const r = await fetch(url, { method: "DELETE" });
+          if (r.ok) { done = true; break; }
+        } catch {}
+      }
     }
+
+    if (!done) throw new Error("ไม่พบ endpoint สำหรับลบรายการนี้");
+
+    // 3) ลบออกจาก state ทั้งตาม id และ productId เพื่อความแน่นอน
+    setItems((prev) =>
+      prev.filter((x) => x.id !== dbId && String(x.productId).replace(/\D/g, "") !== codeClean)
+    );
+  } catch (e) {
+    console.error(e);
+    alert(e.message || "Delete failed.");
   }
+}
+
 
   return (
     <div className="app" data-page="AdminProductListPage">
@@ -371,7 +404,7 @@ export default function AdminProductListPage() {
           <div className="table-card">
             <div className="table-header">
               <div>Product</div>
-              <div>Product ID</div>
+              <div>Product Code</div>
               <div>Price</div>
               <div>Category</div>
               <div>Brand</div>

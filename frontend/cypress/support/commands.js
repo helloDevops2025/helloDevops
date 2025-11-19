@@ -40,7 +40,7 @@ Cypress.Commands.add('loginAsAdmin', () => {
     // ✅ มาถึงหน้า list แล้ว
     cy.location('pathname', { timeout: 10000 }).should('include', '/admin/products');
 
-    // ✅ บังคับ auth state ฝั่ง client (ครอบทุกชื่อ key ที่พบบ่อย)
+    //  บังคับ auth state ฝั่ง client (ครอบทุกชื่อ key ที่พบบ่อย)
     cy.window().then((w) => {
       const authPayload = JSON.stringify({ user: { name: 'admin', role: 'ADMIN' }, token: 'test-token' });
       // ใส่หลาย key ไว้ก่อน — ถ้าระบบคุณใช้ key ใด key หนึ่งก็จะจับได้
@@ -78,20 +78,58 @@ Cypress.Commands.add('logoutUI', () => {
 
 // cypress/support/commands.js
 Cypress.Commands.add('loginAs', (role = 'ADMIN', payload = {}) => {
-  cy.intercept('POST', '**/api/auth/login', (req) => {
-    req.reply({
+  cy.session([role, payload.email], () => {
+    cy.visit('/login');
+    cy.intercept('POST', '**/api/auth/login', {
       statusCode: 200,
       body: {
         token: 'fake-jwt',
         role,
-        email: payload.email || (role === 'ADMIN' ? 'admin@puremart.com' : 'user@puremart.com'),
-        user: { role }
+        email: payload.email || 'admin@puremart.com',
+        user: { name: 'admin', role }
       }
-    });
-  }).as('loginApi');
+    }).as('loginApi');
 
-  cy.get('#email').clear().type(payload.email || (role === 'ADMIN' ? 'admin' : 'user'));
-  cy.get('#password').clear().type(payload.password || '123456');
-  cy.get('#submitBtn').click();
-  cy.wait('@loginApi');
+    cy.get('#email').type(payload.email || 'admin@puremart.com');
+    cy.get('#password').type(payload.password || 'admin123');
+    cy.get('#submitBtn').click();
+    cy.wait('@loginApi');
+  });
 });
+
+// Overwrite cy.visit to seed sessionStorage auth keys by default so guarded routes
+// don't immediately redirect tests to /login. Tests that want to visit /login
+// for real auth flows should pass { seedAuth: false } or visit '/login' directly.
+Cypress.Commands.overwrite('visit', (originalFn, url, options = {}) => {
+  // If caller explicitly opts out, skip seeding
+  if (options && options.seedAuth === false) {
+    return originalFn(url, options);
+  }
+
+  // If visiting login page, don't seed (tests that exercise login flow need a clean state)
+  const urlStr = (typeof url === 'string') ? url : '';
+  if (urlStr.includes('/login') || urlStr.includes('/signup')) {
+    return originalFn(url, options);
+  }
+
+  const seedAuth = (win) => {
+    try {
+      win.sessionStorage.setItem('token', 'e2e-dummy-token');
+      win.sessionStorage.setItem('role', 'USER');
+      win.sessionStorage.setItem('user', JSON.stringify({ email: 'e2e@test.local' }));
+      win.sessionStorage.setItem('email', 'e2e@test.local');
+    } catch (e) {
+      // ignore if sessionStorage is unavailable
+    }
+    if (options && typeof options.onBeforeLoad === 'function') {
+      options.onBeforeLoad(win);
+    }
+  };
+
+  // NOTE: keep this overwrite minimal and only seed sessionStorage in onBeforeLoad.
+  // Avoid calling Cypress commands (cy.intercept, etc.) here to prevent unexpected
+  // command queue issues. Tests that require API stubbing should add intercepts
+  // themselves (or use helper commands) inside test context.
+  return originalFn(url, { ...options, onBeforeLoad: seedAuth });
+});
+

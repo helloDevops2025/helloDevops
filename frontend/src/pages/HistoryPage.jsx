@@ -1,9 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./HistoryPage.css";
-import Footer from "../components/footer";
+import Footer from "./../components/Footer.jsx";
 import "./breadcrumb.css";
 
-/* ===== Utils ===== */
+/* ===== Config & Utils ===== */
+const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+const CART_KEY = "pm_cart";
+const REORDER_KEY = "pm_reorder";
+
 const THB = (n) =>
   Number(n || 0).toLocaleString("th-TH", {
     style: "currency",
@@ -11,14 +16,26 @@ const THB = (n) =>
     maximumFractionDigits: 0,
   });
 
-const fDateTime = (iso) =>
-  new Date(iso).toLocaleString("th-TH", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+// ✅ 25 Jan 2025 • 01:45 PM
+const fDateTime = (iso) => {
+  if (!iso) return "–";
+  try {
+    const d = new Date(iso);
+    const datePart = new Intl.DateTimeFormat("en-GB-u-ca-gregory", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(d);
+    const timePart = new Intl.DateTimeFormat("en-US-u-ca-gregory", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(d);
+    return `${datePart} • ${timePart}`;
+  } catch {
+    return String(iso);
+  }
+};
 
 function useDebounce(v, d = 400) {
   const [x, setX] = useState(v);
@@ -29,62 +46,14 @@ function useDebounce(v, d = 400) {
   return x;
 }
 
-/* ===== Mock fallback ===== */
-function buildMock(n = 18) {
-  return Array.from({ length: n }).map((_, i) => {
-    const done = i % 3 !== 2;
-    const cancelled = i % 3 === 2;
-    const status = cancelled ? "cancelled" : done ? "completed" : "processing";
-    const items = [
-      { name: "สินค้า A", qty: 2, price: 89, thumb: "" },
-      { name: "สินค้า B", qty: 1, price: 178, thumb: "" },
-      { name: "สินค้า C", qty: 2, price: 0, thumb: "" },
-    ];
-    const total = items.reduce((s, it) => s + it.qty * it.price, 0);
-    return {
-      id: `PM-2025-${String(10018 - i).padStart(5, "0")}`,
-      date: new Date(Date.now() - i * 86400000).toISOString(),
-      status,
-      items,
-      total,
-      address:
-        "79/6 หมู่ 4 ถนนกุหลาบงาม, บางพลี, สมุทรปราการ 10540\nโทร 08x-xxx-xxxx",
-    };
-  });
-}
-
-/* ===== Tabs + Search ===== */
-const TABS = ["All", "Completed", "Cancelled"];
-
-function FilterBar({ tab, setTab, q, setQ, onSearch }) {
-  return (
-    <div className="hx-toolbar">
-      <div className="hx-tabs" role="tablist" aria-label="Order status tabs">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            className={`hx-tab ${tab === t ? "is-active" : ""}`}
-            onClick={() => setTab(t)}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      <div className="hx-search">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by order ID / address"
-          aria-label="Search order"
-        />
-        <button onClick={onSearch}>Search</button>
-      </div>
-    </div>
+const FALLBACK_IMG =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'>
+      <rect width='100%' height='100%' fill='#eef1f5'/>
+      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#9aa3b2' font-size='10'>No Image</text>
+    </svg>`
   );
-}
 
 /* ===== Order Card ===== */
 function StatusRight({ status }) {
@@ -102,8 +71,10 @@ function StatusRight({ status }) {
   );
 }
 
-function OrderCard({ o, onAgain }) {
-  const qtySum = o.items.reduce((s, it) => s + it.qty, 0);
+function OrderCard({ o, onAgain, onView }) {
+  const qtySum = o.items.reduce((s, it) => s + (it.qty || 0), 0);
+  const thumbs = o.items.slice(0, 5);
+
   return (
     <article className="hx-card">
       <header className="hx-card__head">
@@ -120,11 +91,22 @@ function OrderCard({ o, onAgain }) {
       </header>
 
       <div className="hx-card__body">
-        <div className="hx-address">{o.address}</div>
+        <div className="hx-address">{o.address || "-"}</div>
         <div className="hx-thumbs">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div className="hx-thumb" key={i} />
-          ))}
+          {thumbs.length === 0
+            ? Array.from({ length: 5 }).map((_, i) => <div className="hx-thumb" key={i} />)
+            : thumbs.map((it, i) => (
+                <div className="hx-thumb" key={i}>
+                  <img
+                    src={it.thumb || FALLBACK_IMG}
+                    alt={it.name || `item-${i + 1}`}
+                    onError={(e) => {
+                      if (e.currentTarget.src !== FALLBACK_IMG)
+                        e.currentTarget.src = FALLBACK_IMG;
+                    }}
+                  />
+                </div>
+              ))}
         </div>
       </div>
 
@@ -136,9 +118,9 @@ function OrderCard({ o, onAgain }) {
           </div>
         </div>
         <div className="hx-actions">
-          <a className="hx-btn ghost" href={`/orders/${o.id}`}>
+          <button className="hx-btn ghost" onClick={() => onView(o)}>
             View Details
-          </a>
+          </button>
           <button className="hx-btn primary" onClick={() => onAgain(o)}>
             Buy Again
           </button>
@@ -154,16 +136,11 @@ function Pager({ page, pages, onChange }) {
   const go = (n) => () => onChange(Math.min(Math.max(1, n), pages));
   return (
     <nav className="hx-pager" role="navigation" aria-label="Pagination">
-      <button
-        className="hx-page"
-        onClick={go(page - 1)}
-        disabled={page === 1}
-        aria-label="Previous page"
-      >
+      <button className="hx-page" onClick={go(page - 1)} disabled={page === 1} aria-label="Previous page">
         ‹ Prev
       </button>
       {Array.from({ length: pages }, (_, i) => i + 1)
-        .slice(0, Math.min(3, pages)) /* ดีไซน์ตัวอย่าง: หน้า 1,2,… */
+        .slice(0, Math.min(3, pages))
         .map((n) => (
           <button
             key={n}
@@ -174,12 +151,7 @@ function Pager({ page, pages, onChange }) {
             {n}
           </button>
         ))}
-      <button
-        className="hx-page"
-        onClick={go(page + 1)}
-        disabled={page === pages}
-        aria-label="Next page"
-      >
+      <button className="hx-page" onClick={go(page + 1)} disabled={page === pages} aria-label="Next page">
         Next ›
       </button>
     </nav>
@@ -188,157 +160,208 @@ function Pager({ page, pages, onChange }) {
 
 /* ===== Page ===== */
 export default function HistoryPage() {
-  const API_BASE = import.meta.env.VITE_API_BASE || "";
-  const FORCE_MOCK = import.meta.env.VITE_FORCE_MOCK === "1";
+  const navigate = useNavigate();
 
   const PAGE_SIZE = 6;
   const [page, setPage] = useState(1);
-
   const [tab, setTab] = useState("All");
   const [q, setQ] = useState("");
   const qDeb = useDebounce(q, 400);
 
-  const [rows, setRows] = useState([]);       // สำหรับ server-side
-  const [allRows, setAllRows] = useState([]); // สำหรับ mock/client-side
-  const [total, setTotal] = useState(undefined); // ถ้า API ส่ง total มา
+  const [allRows, setAllRows] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
   const [err, setErr] = useState("");
 
-  // โหลดข้อมูลของหน้า (รองรับทั้ง API จริงและ mock)
+  const toUiStatus = (db) => {
+    const s = String(db || "").toUpperCase();
+    if (s === "DELIVERED") return "completed";
+    if (s === "CANCELLED") return "cancelled";
+    return "processing";
+  };
+
+  const mapOrderDetail = (o) => {
+    const items = Array.isArray(o.orderItems)
+      ? o.orderItems.map((it) => {
+          const p = it.product || {};
+          const thumb =
+            p?.id !== undefined
+              ? `${API_BASE}/api/products/${encodeURIComponent(p.id)}/cover`
+              : "";
+          return {
+            name: p.name || it.productName || "",
+            qty: Number(it.quantity || 1),
+            price: Number(p.price ?? it.priceEach ?? 0),
+            thumb,
+            productId: p.id,
+          };
+        })
+      : [];
+
+    const total =
+      Number(o.totalAmount ?? 0) ||
+      items.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
+
+    const dateRaw =
+      o.orderedAt ??
+      o.ordered_at ??
+      o.orderDate ??
+      o.order_date ??
+      o.createdAt ??
+      o.created_at ??
+      o.updatedAt ??
+      o.updated_at ??
+      new Date().toISOString();
+
+    return {
+      id: String(o.id ?? o.orderCode ?? ""),
+      date: dateRaw,
+      status: toUiStatus(o.orderStatus || o.status),
+      items,
+      total,
+      address: o.shippingAddress || "-",
+      _oid: o.id,
+      _raw: o,
+    };
+  };
+
   useEffect(() => {
     let aborted = false;
-    const run = async () => {
-      if (FORCE_MOCK) {
-        const mock = buildMock();
-        if (!aborted) {
-          setAllRows(mock);
-          setTotal(undefined);
-          setRows([]);
-        }
-        return;
-      }
-
+    (async () => {
       setIsFetching(true);
       setErr("");
       try {
-        const params = new URLSearchParams();
-        params.set("page", String(page));
-        params.set("size", String(PAGE_SIZE));
-        if (qDeb.trim()) params.set("q", qDeb.trim());
-        if (tab === "Completed") params.set("status", "completed");
-        if (tab === "Cancelled") params.set("status", "cancelled");
+        const res = await fetch(`${API_BASE}/api/orders`, {
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) throw new Error("Order list loading failed.");
+        const list = await res.json();
+        const arr = Array.isArray(list) ? list : [];
 
-        const r = await fetch(`${API_BASE}/api/orders?${params.toString()}`);
-        const ct = r.headers.get("content-type") || "";
-        if (!r.ok || !ct.includes("application/json")) {
-          const mock = buildMock();
-          if (!aborted) {
-            setAllRows(mock);
-            setTotal(undefined);
-            setRows([]);
-          }
-          return;
-        }
-        const data = await r.json();
-        const items = (data.items || []).map((x) => ({
-          ...x,
-          status:
-            x.status === "จัดส่งสำเร็จ"
-              ? "completed"
-              : x.status === "ยกเลิก"
-              ? "cancelled"
-              : "processing",
-        }));
-        if (!aborted) {
-          setRows(items);
-          setTotal(Number.isFinite(data.total) ? data.total : undefined);
-          setAllRows([]);
-        }
+        const full = await Promise.all(
+          arr.map(async (o) => {
+            try {
+              const r = await fetch(`${API_BASE}/api/orders/${o.id}`, {
+                headers: { Accept: "application/json" },
+              });
+              if (!r.ok) return null;
+              const data = await r.json();
+              return mapOrderDetail(data);
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        if (!aborted) setAllRows(full.filter(Boolean));
       } catch (e) {
-        if (!aborted) {
-          setAllRows(buildMock());
-          setTotal(undefined);
-          setRows([]);
-          setErr(String(e?.message || "Fetch error"));
-        }
+        if (!aborted) setErr(String(e?.message || "Fetch error"));
       } finally {
         if (!aborted) setIsFetching(false);
       }
-    };
-    run();
+    })();
     return () => {
       aborted = true;
     };
-  }, [API_BASE, FORCE_MOCK, qDeb, tab, page]);
+  }, []);
 
-  // client-side filter/paginate (เมื่อไม่มี total)
   const filteredClient = useMemo(() => {
     let list = [...allRows];
     if (tab === "Completed") list = list.filter((x) => x.status === "completed");
     if (tab === "Cancelled") list = list.filter((x) => x.status === "cancelled");
     if (qDeb.trim()) {
       const qq = qDeb.trim().toLowerCase();
-      list = list.filter(
-        (x) => x.id.toLowerCase().includes(qq) || x.address.toLowerCase().includes(qq)
-      );
+      list = list.filter((x) => {
+        const inId = String(x.id).toLowerCase().includes(qq);
+        const inAddress = String(x.address).toLowerCase().includes(qq);
+        const inProducts = (x.items || []).some((it) =>
+          String(it.name || "").toLowerCase().includes(qq)
+        );
+        return inId || inAddress || inProducts;
+      });
     }
     return list;
   }, [allRows, tab, qDeb]);
 
-  const clientPages = Math.max(1, Math.ceil(filteredClient.length / PAGE_SIZE));
-  const serverPages = Math.max(1, Math.ceil((total ?? 0) / PAGE_SIZE));
-  const pages = total !== undefined ? serverPages : clientPages;
+  const pages = Math.max(1, Math.ceil(filteredClient.length / PAGE_SIZE));
+  const displayRows = filteredClient.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => setPage(1), [tab, qDeb]);
 
-  const displayRows =
-    total !== undefined
-      ? rows
-      : filteredClient.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  /* ===== Buy again: SAVE TO pm_reorder (do not touch pm_cart) ===== */
+  const handleBuyAgain = (order) => {
+    const freshReorder = (order.items || []).map((it) => {
+      const productId = String(it.productId ?? it.id ?? it.name);
+      const variantId = String(it.variantId ?? it.variant ?? it.sku ?? "");
+      return {
+        productId,
+        variantId,
+        title: it.name || `#${productId}`,
+        price: Number(it.price || 0),
+        qty: Math.max(1, Number(it.qty || 1)),
+        img: it.thumb || FALLBACK_IMG,
+      };
+    });
 
-  // รีเซ็ตหน้าเมื่อเปลี่ยนตัวกรอง/ค้นหา
-  useEffect(() => {
-    setPage(1);
-  }, [tab, qDeb]);
+    localStorage.setItem(REORDER_KEY, JSON.stringify(freshReorder));
+    navigate("/cart"); // ไปหน้า Cart เพื่อยืนยันว่าจะรวม/ทิ้ง
+  };
+
+  const handleViewDetails = (order) => {
+    navigate(`/tracking-user/${encodeURIComponent(order._oid || order.id)}`);
+  };
 
   return (
     <>
       <div className="history-page">
-        {/* hero */}
         <section className="wl-hero">
           <div className="wl-hero__inner">
             <h1 className="wl-title">ORDER HISTORY</h1>
             <nav className="custom-breadcrumb" aria-label="Breadcrumb">
-  <ol>
-    <li className="custom-breadcrumb__item">
-      <a href="/">HOME</a>
-    </li>
-    <li className="custom-breadcrumb__item">
-      <span className="divider">›</span><a href="/shop">SHOP</a>
-      <span className="divider">›</span>
-    </li>
-    <li className="custom-breadcrumb__item current" aria-current="page">ORDER HISTORY</li>
-  </ol>
-</nav>
-
-
-
-
-
-
-
+              <ol>
+                <li className="custom-breadcrumb__item">
+                  <a href="/">HOME</a>
+                </li>
+                <li className="custom-breadcrumb__item">
+                  <span className="divider">›</span>
+                  <a href="/shop">SHOP</a>
+                  <span className="divider">›</span>
+                </li>
+                <li className="custom-breadcrumb__item current" aria-current="page">
+                  ORDER HISTORY
+                </li>
+              </ol>
+            </nav>
           </div>
         </section>
 
         <div className="wl-wrap">
-          <FilterBar
-            tab={tab}
-            setTab={setTab}
-            q={q}
-            setQ={setQ}
-            onSearch={() => setQ((s) => s)}
-          />
+          <div className="hx-toolbar">
+            <div className="hx-tabs" role="tablist" aria-label="Order status tabs">
+              {["All", "Completed", "Cancelled"].map((t) => (
+                <button
+                  key={t}
+                  role="tab"
+                  aria-selected={tab === t}
+                  className={`hx-tab ${tab === t ? "is-active" : ""}`}
+                  onClick={() => setTab(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            <div className="hx-search">
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search by order ID, product, or address"
+                aria-label="Search order"
+              />
+              <button onClick={() => setQ((s) => s)}>Search</button>
+            </div>
+          </div>
 
           {displayRows.length === 0 ? (
-            <div className="hx-empty">ไม่พบรายการ</div>
+            <div className="hx-empty">{isFetching ? "Update…" : "No items found"}</div>
           ) : (
             <>
               <div className="hx-list">
@@ -346,7 +369,8 @@ export default function HistoryPage() {
                   <OrderCard
                     key={o.id}
                     o={o}
-                    onAgain={() => alert(`Buy again #${o.id}`)}
+                    onAgain={handleBuyAgain}
+                    onView={handleViewDetails}
                   />
                 ))}
               </div>
@@ -357,7 +381,7 @@ export default function HistoryPage() {
 
           {isFetching && (
             <div className="hx-spinner" aria-live="polite">
-              กำลังอัปเดต…
+              Updating…
             </div>
           )}
           {err && <div className="hx-error">Error: {err}</div>}

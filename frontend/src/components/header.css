@@ -151,9 +151,16 @@ html{ overflow-y:scroll; }
   .pm-icon__label{ display:none; }
 }
 
-@media (max-width:640px){
-  .pm-search{ height:40px; }
+/* When header collapses (mobile), increase top padding so main content doesn't overlap
+   the fixed header + topbar. This nudges body down a bit on smaller screens. */
+@media (max-width:1100px) {
+  /* increased extra space to avoid content overlap when header stacks */
+  body.has-header{
+    padding-top: calc(var(--pm-topbar-h) + var(--pm-header-h) + 28px);
+  }
 }
+
+
 
 /* ===== Breadcrumb ===== */
 .breadcrumb{
@@ -230,3 +237,241 @@ html{ overflow-y:scroll; }
 .pm-account:hover .pm-name {
   filter: brightness(1.05);
 }
+
+
+/* ===== Search (ปรับใหม่) ===== */
+.pm-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 42px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 0 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.25s ease;
+}
+
+.pm-search:hover {
+  border-color: var(--pm-primary);
+  box-shadow: 0 3px 10px rgba(62, 64, 174, 0.15);
+}
+
+.pm-search:focus-within {
+  border-color: var(--pm-primary);
+  box-shadow: 0 4px 12px rgba(62, 64, 174, 0.2);
+}
+
+/* ไอคอนค้นหา */
+.pm-search svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--pm-primary);
+  stroke-width: 2;
+  margin-right: 8px;
+  transition: transform 0.25s ease;
+}
+.pm-search:focus-within svg {
+  transform: scale(1.05);
+}
+
+/* ช่อง input */
+.pm-search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 0 8px;
+  color: var(--pm-text);
+  font: 400 15px/1 "Poppins", system-ui, sans-serif;
+  min-width: 0;
+}
+.pm-search input::placeholder {
+  color: #aaa;
+}
+
+/* Hide browser-native search clear button so only our custom clear exists */
+.pm-search input[type="search"]::-webkit-search-decoration,
+.pm-search input[type="search"]::-webkit-search-cancel-button,
+.pm-search input[type="search"]::-webkit-search-results-button,
+.pm-search input[type="search"]::-webkit-search-results-decoration{
+  -webkit-appearance:none; display:none; }
+/* IE/Edge */
+.pm-search input[type="search"]::-ms-clear{ display:none; width:0; height:0; }
+
+/* Autocomplete suggestions under header search */
+.search-suggestions{
+  position:absolute; left:14px; right:14px; top:calc(100% + 8px);
+  background:#fff; border:1px solid #e6e6e6; border-radius:10px;
+  box-shadow:0 10px 30px rgba(15,23,42,0.08); z-index:1100;
+  max-height:320px; overflow:auto; padding:6px; display:flex; flex-direction:column; gap:6px;
+}
+.search-suggestion-item{
+  display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+  padding:8px 12px; border-radius:8px; background:transparent; border:0; text-align:left; cursor:pointer;
+}
+.search-suggestion-item:hover{ background:#f4f6ff; }
+.ss-main{ font-weight:600; color:#0b2545 }
+.ss-sub{ font-size:12px; color:#6b7280 }
+
+/* clear (x) button inside search */
+.pm-search .clear-btn{
+  appearance:none; border:0; background:transparent; color:#777; font-size:18px;
+  width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer; margin-left:6px; flex:0 0 30px;
+}
+.pm-search .clear-btn:hover{ background:#f4f6ff; color:var(--pm-primary); }
+
+/* dropdown scope */
+.pm-search-scope {
+  appearance: none;
+  border: none;
+  background: #f8f8f8;
+  border-radius: 16px;
+  padding: 6px 10px;
+  font-size: 14px;
+  margin-right: 8px;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+.pm-search-scope:hover {
+  background: #eee;
+}
+.pm-search-scope:focus {
+  outline: none;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(62, 64, 174, 0.2);
+}
+
+/* Responsive - ให้เต็มบรรทัดตอนจอแคบ */
+@media (max-width: 1100px) {
+  .pm-search {
+    width: 100%;
+    max-width: none;
+    height: 44px;
+    padding: 0 16px;
+  }
+  .pm-search-scope {
+    flex-shrink: 0;
+  }
+}
+
+/* ===== Search (เวอร์ชัน refined พร้อม | separator) ===== */
+.pm-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 0 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s ease;
+}
+
+.pm-search:hover {
+  border-color: var(--pm-primary);
+  box-shadow: 0 3px 12px rgba(62, 64, 174, 0.15);
+}
+
+.pm-search:focus-within {
+  border-color: var(--pm-primary);
+  box-shadow: 0 4px 14px rgba(62, 64, 174, 0.25);
+}
+
+/* ไอคอนค้นหา */
+.pm-search svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--pm-primary);
+  stroke-width: 2;
+  margin-right: 10px;
+  transition: transform 0.25s ease;
+}
+.pm-search:focus-within svg {
+  transform: scale(1.05);
+}
+
+/* dropdown scope */
+.pm-search-scope {
+  appearance: none;
+  border: none;
+  background: #f7f7f7;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 14px;
+  margin-right: 10px;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.25s ease;
+}
+.pm-search-scope:hover {
+  background: #eee;
+}
+
+/* เส้นคั่น (|) */
+.pm-search::after {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 20px;
+  background: #ccc;
+  margin-right: 10px;
+}
+
+/* ช่อง input */
+.pm-search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 0 8px;
+  color: var(--pm-text);
+  font: 400 15px/1 "Poppins", system-ui, sans-serif;
+  min-width: 0;
+}
+.pm-search input::placeholder {
+  color: #aaa;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .pm-search {
+    width: 100%;
+    max-width: none;
+    height: 46px;
+  }
+}
+
+/* กล่องค้นหา */
+.pm-search{
+  position:relative;display:flex;align-items:center;
+  height:44px;border-radius:999px;background:#fff;
+  border:1px solid #ddd;padding:0 14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+  transition:all .25s ease;
+}
+.pm-search:hover{ border-color:var(--pm-primary); box-shadow:0 3px 12px rgba(62,64,174,.15); }
+.pm-search:focus-within{ border-color:var(--pm-primary); box-shadow:0 4px 14px rgba(62,64,174,.22); }
+
+/* ไอคอน */
+.pm-search svg{ width:20px;height:20px;stroke:var(--pm-primary);stroke-width:2;margin-right:10px; }
+
+/* dropdown (ซ้าย) */
+.pm-search-scope{
+  appearance:none;border:0;background:#f7f7f7;border-radius:16px;
+  padding:6px 12px;font-size:14px;margin-right:10px;cursor:pointer;color:#333;
+}
+.pm-search-scope:hover{ background:#eee; }
+
+/* เส้นคั่น — ใช้ border-left กับ input แทน (ชัวร์สุด) */
+.pm-search input{
+  flex:1;border:0;outline:0;background:transparent;min-width:0;
+  font:400 15px/1 "Poppins",system-ui,sans-serif;color:var(--pm-text);
+  padding:0 10px 0 14px;           /* เผื่อระยะด้านซ้ายให้หลังเส้นคั่น */
+  border-left:1px solid #ccc;      /* << เส้นคั่น */
+}
+.pm-search input::placeholder{ color:#aaa; }

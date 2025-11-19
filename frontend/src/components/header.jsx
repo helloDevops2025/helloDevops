@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 import { Link, useNavigate } from "react-router-dom";
 import { getEmail, isAuthed, logout } from "../auth"; // ✅ ใช้ helper เดียวกับฝั่งแอดมิน
 import "./header.css";
@@ -7,6 +8,13 @@ const Header = () => {
   const [accOpen, setAccOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [searchQ, setSearchQ] = useState("");
+  const [searchScope, setSearchScope] = useState("name");
+  // autocomplete state
+  const [suggestions, setSuggestions] = useState([]);
+  const [productsCache, setProductsCache] = useState(null);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const suggestTimer = useRef(null);
   const wrapRef = useRef(null);
   const navigate = useNavigate();
 
@@ -100,6 +108,79 @@ const Header = () => {
     navigate("/login");
   };
 
+  // ===== Autocomplete / fuzzy helpers (lightweight copy from ShopPage) =====
+  const levenshtein = (a = "", b = "") => {
+    const m = a.length;
+    const n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    const v0 = new Array(n + 1).fill(0).map((_, i) => i);
+    const v1 = new Array(n + 1).fill(0);
+    for (let i = 0; i < m; i++) {
+      v1[0] = i + 1;
+      for (let j = 0; j < n; j++) {
+        const cost = a[i] === b[j] ? 0 : 1;
+        v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+      }
+      for (let k = 0; k <= n; k++) v0[k] = v1[k];
+    }
+    return v1[n];
+  };
+
+  const fuzzyMatch = (q = "", text = "") => {
+    if (!q) return false;
+    const A = String(q).toLowerCase();
+    const B = String(text).toLowerCase();
+    if (B.includes(A)) return true;
+    const tokens = B.split(/\s+/).filter(Boolean);
+    const qLen = A.length;
+    const maxDist = qLen <= 4 ? 1 : Math.max(1, Math.floor(qLen * 0.3));
+    for (const t of tokens) {
+      const dist = levenshtein(A, t.slice(0, Math.max(A.length + 2, t.length)));
+      if (dist <= maxDist) return true;
+    }
+    const distFull = levenshtein(A, B.slice(0, Math.max(A.length + 2, B.length)));
+    return distFull <= maxDist;
+  };
+
+  // fetch products once for autocomplete suggestions
+  const ensureProducts = async () => {
+    if (productsCache) return productsCache;
+    try {
+      const r = await fetch(`${API_URL}/api/products`, { headers: { Accept: "application/json" } });
+      if (!r.ok) return [];
+      const js = await r.json();
+      setProductsCache(js || []);
+      return js || [];
+    } catch (e) {
+      setProductsCache([]);
+      return [];
+    }
+  };
+
+  const doSuggest = async (q) => {
+    if (!q || q.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    const list = await ensureProducts();
+    const normQ = String(q).toLowerCase().trim();
+    const hits = [];
+    for (const row of list) {
+      const name = String(row.name || row.title || "").trim();
+      const brand = String(row.brand || row.brandName || "").trim();
+      const cat = String(row.category || row.cat || "").trim();
+      if (!name && !brand && !cat) continue;
+      if (name.toLowerCase().includes(normQ) || brand.toLowerCase().includes(normQ) || cat.toLowerCase().includes(normQ)) {
+        hits.push({ type: "product", label: name, row });
+      } else if (fuzzyMatch(normQ, name) || fuzzyMatch(normQ, brand) || fuzzyMatch(normQ, cat)) {
+        hits.push({ type: "product", label: name, row });
+      }
+      if (hits.length >= 8) break;
+    }
+    setSuggestions(hits.slice(0, 8));
+  };
+
   return (
     <>
       {/* Top stripe (ของเดิม) */}
@@ -120,13 +201,81 @@ const Header = () => {
             <a href="/home#categories">Categories</a>
           </nav>
 
-          {/* Search (ของเดิม) */}
-          <form className="pm-search" role="search" aria-label="Site search">
+          {/* Search (scoped) */}
+          <form
+            className="pm-search"
+            role="search"
+            aria-label="Site search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const params = new URLSearchParams();
+              if (searchQ) params.set("search", searchQ);
+              navigate(`/shop?${params.toString()}`);
+            }}
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="search" placeholder="Search....." />
+            <input
+              type="search"
+              placeholder="Search (Brand · Product · Category)"
+              value={searchQ}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSearchQ(v);
+                // debounce suggestions
+                clearTimeout(suggestTimer.current);
+                suggestTimer.current = setTimeout(() => doSuggest(v), 250);
+                setSuggestOpen(true);
+              }}
+              onFocus={() => {
+                if (suggestions.length) setSuggestOpen(true);
+              }}
+              onBlur={() => setTimeout(() => setSuggestOpen(false), 180)}
+            />
+
+            {/* clear button (x) */}
+            {searchQ && (
+              <button
+                type="button"
+                className="clear-btn"
+                aria-label="Clear search"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setSearchQ("");
+                  setSuggestions([]);
+                  setSuggestOpen(false);
+                  // navigate to shop without search param to reset results
+                  navigate(`/shop`);
+                }}
+              >
+                ×
+              </button>
+            )}
+
+            {/* suggestions dropdown */}
+            {suggestOpen && suggestions.length > 0 && (
+              <div className="search-suggestions" role="listbox">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="search-suggestion-item"
+                    onMouseDown={(ev) => { ev.preventDefault(); }}
+                    onClick={() => {
+                      const q = s.label || (s.row && s.row.name) || searchQ;
+                      setSearchQ(q);
+                      setSuggestOpen(false);
+                      navigate(`/shop?search=${encodeURIComponent(q)}`);
+                    }}
+                  >
+                    <div className="ss-main">{s.label}</div>
+                    {s.row?.brand ? <div className="ss-sub">{s.row.brand}</div> : null}
+                  </button>
+                ))}
+              </div>
+            )}
           </form>
 
           {/* Right icons (ของเดิม + แค่เพิ่ม logic account) */}
