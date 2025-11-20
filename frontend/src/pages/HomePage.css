@@ -23,7 +23,7 @@
 }
 
 /* =====================================
-   🟣 BEST SELLERS SECTION
+   BEST SELLERS SECTION
    ===================================== */
 .best-sellers {
   background: var(--primary);
@@ -58,7 +58,7 @@
 }
 
 /* =====================================
-   🟣 PRODUCT GRID (3 COLUMNS)
+   PRODUCT GRID (3 COLUMNS)
    ===================================== */
 .products {
   display: grid !important;
@@ -79,7 +79,7 @@
 }
 
 /* =====================================
-   🟣 PRODUCT CARD (Anchor as Card)
+   PRODUCT CARD (Anchor as Card)
    ===================================== */
 .product {
   position: relative;
@@ -1444,15 +1444,24 @@ html {
   text-align: left !important;
 }
 
-
-
-
-/* ชื่อสินค้า */
+/* ===== ตรงนี้คือจุดสำคัญ: จำกัดบรรทัด + เผื่อที่ให้ปุ่มรถเข็น ===== */
 .best-sellers .product__title,
 .all-products .product__title {
   font-weight: 500;
   line-height: 1.4;
   margin: 8px 0 4px !important;
+
+  /* กันไม่ให้ตัวหนังสือไปทับไอคอนรถเข็น */
+  padding-right: 60px !important;
+
+  /* ตัดให้เหลือ 2 บรรทัดแล้วขึ้น … */
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: normal !important;
 }
 
 /* ราคา */
@@ -1500,4 +1509,16 @@ html {
 /* ย้ำว่า thumb เป็น relative (เผื่อ style อื่นมา override) */
 .product__thumb {
   position: relative;
+}
+
+/* ===== Animation: section เด้งเบา ๆ ตอนเลื่อนมาถึง ===== */
+.section-fade-in {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity .55s ease, transform .55s ease;
+}
+
+.section-fade-in.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }

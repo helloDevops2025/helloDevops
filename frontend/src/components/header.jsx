@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
-import { Link, useNavigate } from "react-router-dom";
-import { getEmail, isAuthed, logout } from "../auth"; // ✅ ใช้ helper เดียวกับฝั่งแอดมิน
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { getEmail, isAuthed, logout } from "../auth";
 import "./header.css";
 
 const Header = () => {
@@ -17,6 +17,7 @@ const Header = () => {
   const suggestTimer = useRef(null);
   const wrapRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // ให้ body มี padding-top รองรับ header ติดบน
   useEffect(() => {
@@ -49,56 +50,7 @@ const Header = () => {
     setEmail(getEmail() || "");
   }, []);
 
-  // ===== ติด active ให้เมนู + ไอคอนตาม path (คงของเดิม) =====
-  useEffect(() => {
-    const path = (window.location.pathname || "/").toLowerCase();
-    const markActive = (el) => {
-      if (!el) return;
-      el.classList.add("active");
-      el.setAttribute("aria-current", "page");
-    };
-    const unmarkAll = (sel) => {
-      document.querySelectorAll(sel).forEach((el) => {
-        el.classList.remove("active");
-        el.removeAttribute("aria-current");
-      });
-    };
-    unmarkAll(".pm-nav a, .pm-right a.pm-icon, .pm-account");
-
-    document.querySelectorAll(".pm-nav a").forEach((a) => {
-      const href = (a.getAttribute("href") || "").toLowerCase();
-      const isHomeLink = href === "/" || href === "/home" || href.endsWith("/index.html");
-      const isHomePage = path === "/" || path.endsWith("/index.html") || path.startsWith("/home");
-
-      if (isHomeLink && isHomePage) {
-        markActive(a);
-        return;
-      }
-      if (href && href !== "/" && path.startsWith(href)) {
-        markActive(a);
-      }
-    });
-
-    document.querySelectorAll(".pm-right a.pm-icon").forEach((a) => {
-      const href = (a.getAttribute("href") || "").toLowerCase();
-      if (href && path.startsWith(href)) {
-        markActive(a);
-      }
-    });
-
-    const accountBtn = document.querySelector(".pm-account");
-    if (accountBtn) {
-      const isAccountRelated =
-        path.startsWith("/login") ||
-        path.startsWith("/register") ||
-        path.startsWith("/profile") ||
-        path.startsWith("/account") ||
-        path.startsWith("/history");
-      if (isAccountRelated) markActive(accountBtn);
-    }
-  }, []);
-
-  // ===== ส่วนที่ "เพิ่ม" เข้ามา =====
+  // ===== auth =====
   const authed = isAuthed();
   const displayName = authed && email ? email.split("@")[0] : "ACCOUNT";
 
@@ -108,10 +60,33 @@ const Header = () => {
     navigate("/login");
   };
 
-  // ===== Autocomplete / fuzzy helpers (lightweight copy from ShopPage) =====
+  // ===== path / active helper =====
+  const path = (location.pathname || "").toLowerCase();
+  const isHome = path === "/" || path.startsWith("/home");
+  const isShop = path.startsWith("/shop");
+  const isWishlist = path.startsWith("/wishlist");
+  const isCart = path.startsWith("/cart");
+  const isAccountRelated =
+    path.startsWith("/login") ||
+    path.startsWith("/register") ||
+    path.startsWith("/profile") ||
+    path.startsWith("/account") ||
+    path.startsWith("/history");
+
+  // ===================== SEARCH HELPERS =====================
+
+  const normalizeText = (s = "") =>
+    String(s)
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .trim();
+
   const levenshtein = (a = "", b = "") => {
-    const m = a.length;
-    const n = b.length;
+    const A = normalizeText(a);
+    const B = normalizeText(b);
+    const m = A.length;
+    const n = B.length;
     if (m === 0) return n;
     if (n === 0) return m;
     const v0 = new Array(n + 1).fill(0).map((_, i) => i);
@@ -119,7 +94,7 @@ const Header = () => {
     for (let i = 0; i < m; i++) {
       v1[0] = i + 1;
       for (let j = 0; j < n; j++) {
-        const cost = a[i] === b[j] ? 0 : 1;
+        const cost = A[i] === B[j] ? 0 : 1;
         v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
       }
       for (let k = 0; k <= n; k++) v0[k] = v1[k];
@@ -129,25 +104,73 @@ const Header = () => {
 
   const fuzzyMatch = (q = "", text = "") => {
     if (!q) return false;
-    const A = String(q).toLowerCase();
-    const B = String(text).toLowerCase();
+    const A = normalizeText(q);
+    const B = normalizeText(text);
     if (B.includes(A)) return true;
+
     const tokens = B.split(/\s+/).filter(Boolean);
     const qLen = A.length;
     const maxDist = qLen <= 4 ? 1 : Math.max(1, Math.floor(qLen * 0.3));
+
     for (const t of tokens) {
-      const dist = levenshtein(A, t.slice(0, Math.max(A.length + 2, t.length)));
+      const dist = levenshtein(A, t);
       if (dist <= maxDist) return true;
     }
-    const distFull = levenshtein(A, B.slice(0, Math.max(A.length + 2, B.length)));
+    const distFull = levenshtein(A, B);
     return distFull <= maxDist;
+  };
+
+  const expandQuery = (q = "") => {
+    const normQ = normalizeText(q);
+    const extra = [];
+    // compare using normalized forms so different unicode compositions
+    // like "นํ้า" (combining marks) still match correctly
+    const namNorm = normalizeText("น้ำ");
+    if (namNorm && normQ.includes(namNorm)) {
+      // product-level synonyms
+      extra.push("น้ำดื่ม", "water", "drinking water");
+      // category-level keywords so any product in beverage category matches
+      extra.push("beverage", "เครื่องดื่ม", "เครื่อง ดื่ม");
+    }
+    if (normQ.includes("water")) {
+      extra.push("น้ำ", "น้ํา", "น้ำดื่ม", "drinking water");
+      extra.push("beverage", "เครื่องดื่ม");
+    }
+    
+    // map 'เนื้อ' to meats category + related synonyms
+    const neuNorm = normalizeText("เนื้อ");
+    if (neuNorm && normQ.includes(neuNorm)) {
+      extra.push("เนื้อสัตว์", "meat", "meats", "beef", "pork", "chicken");
+      extra.push("meats", "meat-products", "เนื้อ");
+    }
+    return [q, ...extra];
+  };
+
+  const matchProductWithQuery = (row, q) => {
+    if (!q) return true;
+    const name = String(row.name || row.title || "").trim();
+    const brand = String(row.brand || row.brandName || "").trim();
+    const cat = String(row.category || row.cat || "").trim();
+    if (!name && !brand && !cat) return false;
+
+    const variants = expandQuery(q);
+    const fields = [name, brand, cat].filter(Boolean);
+
+    for (const v of variants) {
+      for (const f of fields) {
+        if (fuzzyMatch(v, f)) return true;
+      }
+    }
+    return false;
   };
 
   // fetch products once for autocomplete suggestions
   const ensureProducts = async () => {
     if (productsCache) return productsCache;
     try {
-      const r = await fetch(`${API_URL}/api/products`, { headers: { Accept: "application/json" } });
+      const r = await fetch(`${API_URL}/api/products`, {
+        headers: { Accept: "application/json" },
+      });
       if (!r.ok) return [];
       const js = await r.json();
       setProductsCache(js || []);
@@ -164,44 +187,44 @@ const Header = () => {
       return;
     }
     const list = await ensureProducts();
-    const normQ = String(q).toLowerCase().trim();
     const hits = [];
+
     for (const row of list) {
-      const name = String(row.name || row.title || "").trim();
-      const brand = String(row.brand || row.brandName || "").trim();
-      const cat = String(row.category || row.cat || "").trim();
-      if (!name && !brand && !cat) continue;
-      if (name.toLowerCase().includes(normQ) || brand.toLowerCase().includes(normQ) || cat.toLowerCase().includes(normQ)) {
-        hits.push({ type: "product", label: name, row });
-      } else if (fuzzyMatch(normQ, name) || fuzzyMatch(normQ, brand) || fuzzyMatch(normQ, cat)) {
-        hits.push({ type: "product", label: name, row });
+      if (matchProductWithQuery(row, q)) {
+        const name = String(row.name || row.title || "").trim();
+        hits.push({ type: "product", label: name || q, row });
       }
       if (hits.length >= 8) break;
     }
     setSuggestions(hits.slice(0, 8));
   };
 
+  // ===================== RENDER =====================
   return (
     <>
-      {/* Top stripe (ของเดิม) */}
+      {/* Top stripe */}
       <div className="pm-topbar" />
 
       <header className="pm-header" ref={wrapRef}>
         <div className="pm-header__inner">
-          {/* Logo (ของเดิม) */}
-          <a href="/home" className="pm-logo" aria-label="Pure Mart">
+          {/* Logo */}
+          <Link to="/home" className="pm-logo" aria-label="Pure Mart">
             <img src="/assets/logo.png" alt="PURE MART" />
-          </a>
+          </Link>
 
-          {/* Nav (ของเดิม) */}
+          {/* Nav */}
           <nav className={`pm-nav ${navOpen ? "is-open" : ""}`} aria-label="Primary">
-            <a href="/home">Home</a>
-            <a href="/shop">Shop</a>
+            <Link to="/home" className={isHome ? "active" : ""}>
+              Home
+            </Link>
+            <Link to="/shop" className={isShop ? "active" : ""}>
+              Shop
+            </Link>
             <a href="/home#best-sellers">Best Sellers</a>
             <a href="/home#categories">Categories</a>
           </nav>
 
-          {/* Search (scoped) */}
+          {/* Search */}
           <form
             className="pm-search"
             role="search"
@@ -224,7 +247,6 @@ const Header = () => {
               onChange={(e) => {
                 const v = e.target.value;
                 setSearchQ(v);
-                // debounce suggestions
                 clearTimeout(suggestTimer.current);
                 suggestTimer.current = setTimeout(() => doSuggest(v), 250);
                 setSuggestOpen(true);
@@ -246,8 +268,11 @@ const Header = () => {
                   setSearchQ("");
                   setSuggestions([]);
                   setSuggestOpen(false);
-                  // navigate to shop without search param to reset results
-                  navigate(`/shop`);
+
+                  // ถ้าอยู่หน้า /shop ให้ลบ ?search=... ออกจาก URL ด้วย
+                  if (isShop) {
+                    navigate("/shop");
+                  }
                 }}
               >
                 ×
@@ -262,7 +287,9 @@ const Header = () => {
                     key={i}
                     type="button"
                     className="search-suggestion-item"
-                    onMouseDown={(ev) => { ev.preventDefault(); }}
+                    onMouseDown={(ev) => {
+                      ev.preventDefault();
+                    }}
                     onClick={() => {
                       const q = s.label || (s.row && s.row.name) || searchQ;
                       setSearchQ(q);
@@ -278,12 +305,12 @@ const Header = () => {
             )}
           </form>
 
-          {/* Right icons (ของเดิม + แค่เพิ่ม logic account) */}
+          {/* Right icons */}
           <div className="pm-right">
             {/* Account Dropdown */}
             <div className="pm-dropdown-wrapper">
               <button
-                className="pm-icon pm-account"
+                className={`pm-icon pm-account ${isAccountRelated ? "active" : ""}`}
                 aria-haspopup="true"
                 aria-expanded={accOpen ? "true" : "false"}
                 aria-controls="account-menu"
@@ -295,7 +322,6 @@ const Header = () => {
                   <path d="M4 20a8 8 0 0 1 16 0" />
                 </svg>
 
-                {/* ▼ แสดงชื่อผู้ใช้แทนคำว่า ACCOUNT เมื่อมีอีเมล */}
                 <span className="pm-icon__label">
                   <span className="pm-name">{displayName}</span>
                 </span>
@@ -353,23 +379,31 @@ const Header = () => {
               </div>
             </div>
 
-            {/* Wishlist (ของเดิม) */}
-            <a href="/wishlist" className="pm-icon" aria-label="Wishlist">
+            {/* Wishlist */}
+            <Link
+              to="/wishlist"
+              className={`pm-icon ${isWishlist ? "active" : ""}`}
+              aria-label="Wishlist"
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M20.8 7.1a5 5 0 0 0-7.1 0L12 8.8l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.1 8.8-8.1a5 5 0 0 0 0-7.1Z" />
               </svg>
-            </a>
+            </Link>
 
-            {/* Cart (ของเดิม) */}
-            <a href="/cart" className="pm-icon" aria-label="Cart">
+            {/* Cart */}
+            <Link
+              to="/cart"
+              className={`pm-icon ${isCart ? "active" : ""}`}
+              aria-label="Cart"
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="9" cy="21" r="1.6" />
                 <circle cx="18" cy="21" r="1.6" />
                 <path d="M3 3h2l2.2 11.2A2 2 0 0 0 9.2 16h8.7a2 2 0 0 0 2-1.6L22 7H6" />
               </svg>
-            </a>
+            </Link>
 
-            {/* Hamburger (ของเดิม) */}
+            {/* Hamburger */}
             <button
               className="pm-burger"
               aria-label="Open menu"
@@ -377,7 +411,9 @@ const Header = () => {
               type="button"
               onClick={() => setNavOpen((v) => !v)}
             >
-              <span></span><span></span><span></span>
+              <span></span>
+              <span></span>
+              <span></span>
             </button>
           </div>
         </div>
