@@ -61,6 +61,28 @@ export default function AdminAddProductPage() {
   const [alertList, setAlertList] = useState([]);
   const showAlert = (items) => { setAlertList(items); setAlertOpen(true); };
 
+  // ✅ NEW: modal สำหรับ confirm ลบรูปภาพ
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMsg, setConfirmMsg] = useState("");
+  const confirmActionRef = useRef(null);
+
+  const openConfirm = (msg, onConfirm) => {
+    setConfirmMsg(msg);
+    confirmActionRef.current = onConfirm;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmOk = () => {
+    if (confirmActionRef.current) confirmActionRef.current();
+    setConfirmOpen(false);
+    confirmActionRef.current = null;
+  };
+
+  const handleConfirmCancel = () => {
+    setConfirmOpen(false);
+    confirmActionRef.current = null;
+  };
+
   const [qtyError, setQtyError] = useState("");
   const [nameError, setNameError] = useState("");
   const [priceError, setPriceError] = useState("");
@@ -81,8 +103,8 @@ export default function AdminAddProductPage() {
   const digitsOnly = (s) => (s ?? "").toString().replace(/\D/g, "");
   const validateProductId = (raw) => {
     const v = digitsOnly(raw);
-    if (v.length === 0) return { ok: false, msg: "กรุณากรอกตัวเลข 1–5 หลัก" };
-    if (v.length > 5) return { ok: false, msg: "ห้ามเกิน 5 หลัก" };
+    if (v.length === 0) return { ok: false, msg: "Please enter a number with 1 to 5 digits" };
+    if (v.length > 5) return { ok: false, msg: "Max 5 digits" };
     return { ok: true, msg: "", value: v };
   };
 
@@ -155,17 +177,20 @@ export default function AdminAddProductPage() {
       btn.textContent = "×";
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        const ok = window.confirm("ภาพจะถูกลบ ต้องการลบหรือไม่?");
-        if (!ok) return;
+       // ✅ ใช้ confirm modal แบบ custom แทน window.confirm
+        openConfirm(
+          "This image is about to be deleted. Are you sure you want to continue?",
+          () => {
+            // ถ้ากด “ตกลง” ค่อยลบจริง
+            setCoverFile(null);
+            setServerCoverUrl("");
 
-        // ในหน้า Add ยังไม่มีรูปบนเซิร์ฟเวอร์ → เคลียร์สถานะในฟอร์มพอ
-        setCoverFile(null);
-        setServerCoverUrl("");
-
-        dz.style.backgroundImage = "";
-        dz.classList.remove("cover", "has-image");
-        if (hintRef.current) hintRef.current.style.display = "";
-        removeRemoveBtn();
+            dz.style.backgroundImage = "";
+            dz.classList.remove("cover", "has-image");
+            if (hintRef.current) hintRef.current.style.display = "";
+            removeRemoveBtn();
+          }
+        );
       });
       dz.appendChild(btn);
     }
@@ -202,12 +227,12 @@ export default function AdminAddProductPage() {
 
   const validateQuantity = (raw) => {
     if (raw === "" || raw === null || raw === undefined) {
-      return { ok: false, msg: "กรุณากรอกจำนวนสต็อก" };
+      return { ok: false, msg: "Please enter the stock quantity" };
     }
     const n = toInt(raw);
-    if (n === null || Number.isNaN(n)) return { ok: false, msg: "จำนวนต้องเป็นตัวเลขจำนวนเต็ม" };
-    if (n < 0) return { ok: false, msg: "ห้ามจำนวนติดลบ" };
-    if (n > 1000000) return { ok: false, msg: "ห้ามเกิน 1,000,000 ชิ้น" };
+    if (n === null || Number.isNaN(n)) return { ok: false, msg: "Stock quantity must be an integer" };
+    if (n < 0) return { ok: false, msg: "Stock quantity cannot be negative" };
+    if (n > 1000000) return { ok: false, msg: "Stock quantity must not exceed 1,000,000 units" };
     return { ok: true, msg: "" };
   };
 
@@ -277,7 +302,7 @@ export default function AdminAddProductPage() {
 
       // ถ้ามีรหัสสินค้าซ้ำ
       if (dup) {
-        setPidError("รหัสสินค้านี้ถูกใช้แล้ว");
+        setPidError("This product code has already been assigned");
         productIdRef.current?.focus();
         return;
       }
@@ -337,11 +362,6 @@ export default function AdminAddProductPage() {
   };
 
 
-
-
-
-
-
   // บังคับ inStock ตามจำนวน: 0 -> false, ≥1 -> true
   useEffect(() => {
     const n = toInt(form.quantity);
@@ -374,32 +394,32 @@ export default function AdminAddProductPage() {
 
     // name
     if (!String(form.name || "").trim()) {
-      setNameError("กรุณากรอกชื่อสินค้า");
-      missing.push("กรุณากรอกชื่อสินค้า");
+      setNameError("Please enter the product name");
+      missing.push("Please enter the product name");
       firstFocus ||= nameRef.current;
     }
 
     // price > 0
     // ---- Price ----
     if (form.price === "") {
-      const msg = "กรุณากรอกราคา";
+      const msg = "Please enter a price";
       setPriceError(msg);
       missing.push(msg);
       firstFocus ||= priceRef.current;
     } else {
       const nPrice = Number(form.price);
       if (!Number.isFinite(nPrice)) {
-        const msg = "ราคาต้องเป็นตัวเลขเท่านั้น";
+        const msg = "Price must be a numeric value only";
         setPriceError(msg);
         missing.push(msg);
         firstFocus ||= priceRef.current;
       } else if (nPrice <= 0) {
-        const msg = "ราคาต้องมากกว่า 0";
+        const msg = "Price must be greater than 0";
         setPriceError(msg);
         missing.push(msg);
         firstFocus ||= priceRef.current;
       } else if (nPrice > 10000) {
-        const msg = "ราคาห้ามเกิน 10,000";
+        const msg = "Price must not exceed 10,000";
         setPriceError(msg);
         missing.push(msg);
         firstFocus ||= priceRef.current;
@@ -409,8 +429,8 @@ export default function AdminAddProductPage() {
 
     // quantity (จำนวนสต็อก)
     if (form.quantity === "") {
-      setQtyError("กรุณากรอกจำนวนสต็อก");
-      missing.push("กรุณากรอกจำนวนสต็อก");
+      setQtyError("Please enter the stock quantity");
+      missing.push("Please enter the stock quantity");
       firstFocus ||= qtyRef.current;
     } else {
       const qRes = validateQuantity(form.quantity);
@@ -422,8 +442,8 @@ export default function AdminAddProductPage() {
     }
 
     // category / brand
-    if (!form.categoryId) missing.push("กรุณาเลือก Category");
-    if (!form.brandId) missing.push("กรุณาเลือก Brand");
+    if (!form.categoryId) missing.push("Please select a category");
+    if (!form.brandId) missing.push("Please select a brand");
 
     // ถ้ายังขาดอย่างใดอย่างหนึ่ง → แจ้งทั้งหมดทีเดียวแล้วโฟกัสช่องแรก
     if (missing.length) {
@@ -445,7 +465,7 @@ export default function AdminAddProductPage() {
     // กันซ้ำฝั่ง client
     const dupOnClient = await clientCheckDuplicateProductId(pidRes.value);
     if (dupOnClient) {
-      setPidError("รหัสสินค้านี้ถูกใช้แล้ว");
+      setPidError("This product code is already in use");
       productIdRef.current?.focus();
       return;
     }
@@ -473,10 +493,10 @@ export default function AdminAddProductPage() {
       });
 
       if (resCreate.status === 409) {
-        setPidError("รหัสสินค้านี้ถูกใช้แล้ว");
-        window.alert("Product ID ซ้ำ: กรุณาใช้หมายเลขอื่น");
+        setPidError("This product code is already in use");
+        window.alert("Duplicate Product ID: Please use a different number");
         productIdRef.current?.focus();
-        throw new Error("ไม่สามารถเพิ่มสินค้าได้: Product ID ซ้ำ");
+        throw new Error("Cannot add product: Product ID already exists");
       }
 
       if (!resCreate.ok) {
@@ -496,11 +516,11 @@ export default function AdminAddProductPage() {
         );
         if (!upImg.ok) {
           const t = await upImg.text().catch(() => "");
-          setMsg(`เพิ่มสินค้าสำเร็จ แต่รูปอัปโหลดไม่สำเร็จ: ${t || upImg.status}`);
+          setMsg(`Product added successfully, but image upload failed: ${t || upImg.status}`);
         }
       }
 
-      setMsg("เพิ่มสินค้าเรียบร้อย");
+      setMsg("Product added successfully");
       navigate("/admin/products");
     } catch (err) {
       setMsg(String(err?.message || err));
@@ -535,7 +555,7 @@ export default function AdminAddProductPage() {
                   inputMode="numeric"
                   pattern="\d{1,5}"
                   maxLength={5}
-                  placeholder="เช่น 00001 (ตัวเลขไม่เกิน 5 หลัก)"
+                  placeholder="For example: 00001 (up to 5 digits)"
                   value={form.productId}
                   onChange={onProductIdChange}
                   onBlur={onProductIdBlur}                 // ← เปลี่ยนมาใช้ handler ใหม่
@@ -633,7 +653,7 @@ export default function AdminAddProductPage() {
 
                 {/* Stock + validations */}
                 <div className="field">
-                  <label>Stock (จำนวนคงเหลือ) *</label>
+                  <label>Stock *</label>
                   <input
                     name="quantity"
                     type="number"
@@ -740,33 +760,61 @@ export default function AdminAddProductPage() {
           </p>
 
         </div>
-        {alertOpen && (
-          <div style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 9999
-          }}>
-            <div style={{
-              width: "min(560px, 92vw)", background: "#fff", borderRadius: 16,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.25)", padding: 24
-            }}>
-              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>โปรดตรวจสอบ</h3>
-              <ul style={{ margin: "14px 0 0 18px" }}>
-                {alertList.map((m, i) => <li key={i} style={{ marginBottom: 6 }}>{m}</li>)}
-              </ul>
-              <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+                {confirmOpen && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10000,
+            }}
+          >
+            <div
+              style={{
+                width: "min(480px, 92vw)",
+                background: "#fff",
+                borderRadius: 16,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+                padding: 24,
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
+                Please Confirm
+              </h3>
+              <p style={{ marginTop: 16 }}>{confirmMsg}</p>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 12,
+                  marginTop: 24,
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={handleConfirmCancel}
+                  style={{ borderRadius: 10, padding: "10px 20px" }}
+                >
+                  Cancel
+                </button>
                 <button
                   type="button"
                   className="btn primary"
-                  onClick={() => setAlertOpen(false)}
-                  style={{ padding: "10px 28px", borderRadius: 10, fontWeight: 600, fontSize: 15 }}
+                  onClick={handleConfirmOk}
+                  style={{ borderRadius: 10, padding: "10px 28px" }}
                 >
-                  ตกลง
+                  Confirm
                 </button>
               </div>
             </div>
           </div>
         )}
+
 
       </main>
     </div>

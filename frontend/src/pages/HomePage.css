@@ -1415,18 +1415,25 @@ html {
   margin-right: 0 !important;
 }
 
+/* 🔴 ป้ายโปรโมชันหน้า Home (Best Sellers + All Products) */
 .product__promo-badge {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 8px;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  padding: 6px 14px;
   border-radius: 999px;
-  z-index: 2;
+  background: #ef4444;           /* ใช้แดงเดียวกับหน้า Shop */
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
 }
+
+/* ย้ำว่า thumb เป็น relative (เผื่อ style อื่นมา override) */
 .product__thumb {
   position: relative;
 }

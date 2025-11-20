@@ -112,9 +112,9 @@ function OrderCard({ o, onAgain, onView }) {
 
       <footer className="hx-card__foot">
         <div className="hx-foot-left">
-          <div className="hx-qty">จำนวนทั้งหมด {qtySum} ชิ้น</div>
+          <div className="hx-qty">Total Items {qtySum}</div>
           <div className="hx-total">
-            รวม: <strong>{THB(o.total)}</strong>
+            Total: <strong>{THB(o.total)}</strong>
           </div>
         </div>
         <div className="hx-actions">
