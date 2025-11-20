@@ -5,15 +5,16 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 const LS_KEY = "pm_wishlist";
+const LS_CART = "pm_cart"; // ใช้ key เดียวกับหน้า Detail
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 
-/* helpers */
+// helpers
 const clean = (s) => String(s ?? "").trim();
 const isAbs = (u) => /^https?:\/\//i.test(String(u || ""));
 const join = (base, path) =>
   base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
 
-/* pick cover image URL */
+// pick cover image URL
 const resolveImageUrl = (row) => {
   const id = row.id ?? row.productId ?? row.product_id;
   let u =
@@ -22,7 +23,7 @@ const resolveImageUrl = (row) => {
     row.image_url ||
     (Array.isArray(row.images)
       ? (row.images.find((i) => i.is_cover)?.image_url ||
-          row.images[0]?.image_url)
+        row.images[0]?.image_url)
       : null);
 
   if (u) {
@@ -37,7 +38,22 @@ function formatPrice(n) {
   return `฿ ${Number(n || 0).toFixed(2)}`;
 }
 
-/* Confirm Modal */
+// Cart helpers (ให้เหมือนหน้า Detail/Shop)
+const readCart = () => {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]");
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+};
+const saveCart = (arr) =>
+  localStorage.setItem(LS_CART, JSON.stringify(arr));
+
+const cartKey = (p) =>
+  String(p?.id ?? p?.productId ?? p?.product_id ?? "");
+
+// Confirm Modal – ใช้คลาส wl-modal แยกจากที่อื่นเลย
 function ConfirmModal({
   open,
   onOk,
@@ -53,22 +69,22 @@ function ConfirmModal({
     };
     if (open) document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, onCancel]);
 
   if (!open) return null;
 
   return (
-    <div id="confirm-modal" className="pm-modal">
-      <div className="pm-modal__overlay" onClick={onCancel}></div>
+    <div id="confirm-modal" className="wl-modal">
+      <div className="wl-modal__overlay" onClick={onCancel}></div>
       <div
-        className="pm-modal__dialog"
+        className="wl-modal__dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="cm-title"
       >
         <h3 id="cm-title">{title}</h3>
-        <p className="pm-modal__text">{message}</p>
-        <div className="pm-modal__actions">
+        <p className="wl-modal__text">{message}</p>
+        <div className="wl-modal__actions">
           <button className="btn" onClick={onCancel}>
             {cancelText}
           </button>
@@ -81,7 +97,7 @@ function ConfirmModal({
   );
 }
 
-/* localStorage helpers */
+// localStorage helpers
 function readWishIds() {
   try {
     const raw = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
@@ -98,7 +114,7 @@ function readWishIds() {
 function writeWishIds(ids) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify([...new Set(ids)]));
-  } catch {}
+  } catch { }
 }
 
 export default function WishListPage() {
@@ -107,6 +123,7 @@ export default function WishListPage() {
   const [sortBy, setSortBy] = useState("recent");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [addedId, setAddedId] = useState(null); // ใช้แสดง ADDED ชั่วคราว
 
   // Auto-sync with other tabs
   useEffect(() => {
@@ -124,14 +141,14 @@ export default function WishListPage() {
     };
   }, []);
 
-  /* FIX: แก้อาการ Clear All แล้วหน้าโล่ง เพราะ loading ค้าง true */
+  // โหลดสินค้าตาม wishIds
   useEffect(() => {
     let alive = true;
 
     if (!wishIds.length) {
       if (alive) {
         setItems([]);
-        setLoading(false); // *** FIX สำคัญ ***
+        setLoading(false);
       }
       return;
     }
@@ -192,9 +209,35 @@ export default function WishListPage() {
     setItems((prev) => prev.filter((x) => x.id !== id));
   };
 
+  //ADD TO CART ให้ทำงานเหมือนหน้า Detail/RELATED 
   const handleAddToCart = (id) => {
     const p = items.find((x) => x.id === id);
-    if (p) alert(`Added "${p.name}" to cart`);
+    if (!p) return;
+
+    const cart = readCart();
+    const key = cartKey(p);
+
+    const item = {
+      id: key,
+      name: p.name,
+      price: Number(p.price) || 0,
+      qty: 1,
+      img: p.img,
+    };
+
+    const idx = cart.findIndex((x) => String(x.id) === String(key));
+    if (idx >= 0) {
+      cart[idx] = {
+        ...cart[idx],
+        qty: (cart[idx].qty || 1) + 1,
+      };
+    } else {
+      cart.push(item);
+    }
+    saveCart(cart);
+
+    setAddedId(id);
+    setTimeout(() => setAddedId(null), 800);
   };
 
   const clearAll = () => setConfirmOpen(true);
@@ -203,7 +246,7 @@ export default function WishListPage() {
     setWishIds([]);
     setItems([]);
     setConfirmOpen(false);
-    setLoading(false); // กันเหนียวอีกชั้น
+    setLoading(false);
   };
 
   return (
@@ -319,7 +362,7 @@ export default function WishListPage() {
                     className="btn btn-primary"
                     onClick={() => handleAddToCart(item.id)}
                   >
-                    ADD TO CART
+                    {addedId === item.id ? "ADDED ✓" : "ADD TO CART"}
                   </button>
                 </div>
               </article>

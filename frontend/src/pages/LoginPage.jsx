@@ -3,10 +3,10 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import "./LoginPage.css";
 import { setAuth, isAuthed } from "../auth";
-import api from "../lib/api";               // ✅ ต้องมี import นี้!
+import api from "../lib/api";            
 
 export default function LoginPage() {
-  const [username, setUsername] = useState(""); // รองรับทั้ง email/username
+  const [username, setUsername] = useState(""); 
   const [password, setPassword] = useState("");
   const [pwdVisible, setPwdVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -39,7 +39,7 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      // --- ตรวจอินพุตให้ชัด ---
+      //  ตรวจอินพุตให้ชัด
       const emailInput = username.trim();
       if (!emailInput) {
         setErr("กรุณากรอกอีเมล");
@@ -53,7 +53,7 @@ export default function LoginPage() {
         return;
       }
 
-      // --- ยิง API จริง ---
+      //  ยิง API จริง
       const payload = { email, password };
       const res = await api.post("api/auth/login", payload);
 
@@ -76,7 +76,7 @@ export default function LoginPage() {
       // log ช่วยไล่ปัญหา (ดูใน Console)
       console.error("LOGIN ERROR:", err?.response?.status, err?.response?.data, err);
       const msg = err?.response?.status === 401
-        ? "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
+        ? "Incorrect username or password"
         : (typeof err?.response?.data === "string"
             ? err.response.data
             : "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");

@@ -5,14 +5,10 @@ import Footer from "./../components/Footer.jsx";
 import "./PlaceOrderPage.css";
 import "./breadcrumb.css";
 
-/* ===== Config / API ===== */
 const API = import.meta.env.VITE_API_URL || "http://localhost:8080";
-
-/* Storage keys */
 const LS_CART = "pm_cart";
 const LS_CHECKOUT = "pm_checkout_selection";
 
-/** หา userId จาก storage ต่าง ๆ */
 function resolveUserId() {
   const candidates = [
     () => JSON.parse(localStorage.getItem("auth_user") || "null")?.id,
@@ -24,10 +20,10 @@ function resolveUserId() {
     const v = fn();
     if (v && Number(v) > 0) return Number(v);
   }
-  return 1; // fallback dev/test
+  return 1;
 }
 
-/* ===== Utils ===== */
+// Utils
 function isValidThaiMobile(raw) {
   const digits = raw.replace(/\D/g, "");
   if (digits.startsWith("66")) {
@@ -56,7 +52,7 @@ function isValidZipCode(raw) {
   return /^\d{5}$/.test(d);
 }
 
-/* ===== Breadcrumb ===== */
+// Breadcrumb
 function Breadcrumb({ items = [] }) {
   if (!items.length) return null;
   return (
@@ -78,7 +74,7 @@ function Breadcrumb({ items = [] }) {
   );
 }
 
-/* ===== API helpers (addresses) ===== */
+// API helpers (addresses)
 async function apiGetAddresses(userId) {
   const res = await fetch(`${API}/api/addresses/${encodeURIComponent(userId)}`);
   if (!res.ok) throw new Error("โหลดที่อยู่ไม่สำเร็จ");
@@ -109,7 +105,7 @@ async function apiDeleteAddress(id) {
   if (!res.ok) throw new Error("ลบที่อยู่ไม่สำเร็จ");
 }
 
-/* ===== Mapper: FE <-> BE ===== */
+// Mapper: FE <-> BE
 function toRequest(addr) {
   return {
     name: addr.name,
@@ -125,7 +121,9 @@ function toRequest(addr) {
 }
 function fromResponse(r) {
   const phone = r.phoneNumber || "";
-  const text = `${r.address || ""}${r.street ? " " + r.street + "," : ""} ${r.subdistrict || ""}, ${r.district || ""}, ${r.province || ""} ${r.zipcode || ""} | Tel: ${phone}`;
+  const text = `${r.address || ""}${r.street ? " " + r.street + "," : ""} ${
+    r.subdistrict || ""
+  }, ${r.district || ""}, ${r.province || ""} ${r.zipcode || ""} | Tel: ${phone}`;
   return {
     id: r.id,
     name: r.name || "",
@@ -141,7 +139,7 @@ function fromResponse(r) {
   };
 }
 
-/* ===== Order API (จริง) ===== */
+// Order API (จริง)
 function toProductIdFk(item) {
   if (item == null) return null;
   if (typeof item.id === "string" && item.id.startsWith("#")) {
@@ -156,16 +154,31 @@ function toProductIdFk(item) {
     (Number.isFinite(Number(item.id)) ? Number(item.id) : null)
   );
 }
-async function apiCreateOrder({ customerName, customerPhone, shippingAddress, cart }) {
+
+async function apiCreateOrder({
+  customerName,
+  customerPhone,
+  shippingAddress,
+  cart,
+  subtotal,
+  discountTotal,
+  shippingFee,
+  grandTotal,
+}) {
   const payload = {
     customerName,
     customerPhone,
     shippingAddress,
+    subtotal,
+    discountTotal,
+    shippingFee,
+    grandTotal,
     orderItems: cart.map((it) => ({
       productIdFk: toProductIdFk(it),
       quantity: Number(it.qty || 1),
     })),
   };
+
   const res = await fetch(`${API}/api/orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -178,7 +191,137 @@ async function apiCreateOrder({ customerName, customerPhone, shippingAddress, ca
   return res.json();
 }
 
-/* ===== Address Form ===== */
+/* ---------- Promotion helpers (อ่านจาก backend) ---------- */
+
+function normalizePromotion(p) {
+  if (!p) return null;
+  return {
+    id: p.id ?? null,
+    promoType: p.promo_type ?? p.promoType ?? "PERCENT_OFF",
+    scope: p.scope ?? "ORDER",
+    percentOff: Number(p.percent_off ?? p.percentOff ?? 0) || 0,
+    amountOff: Number(p.amount_off ?? p.amountOff ?? 0) || 0,
+    fixedPrice: p.fixed_price ?? p.fixedPrice ?? null,
+    buyQty: p.buy_qty ?? p.buyQty ?? null,
+    getQty: p.get_qty ?? p.getQty ?? null,
+    minOrderAmount: Number(p.min_order_amount ?? p.minOrderAmount ?? 0) || 0,
+    minQuantity: p.min_quantity ?? p.minQuantity ?? null,
+  };
+}
+
+async function apiListActivePromotions() {
+  const res = await fetch(`${API}/api/promotions?status=ACTIVE`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "load promotion failed");
+    throw new Error(txt || "load promotion failed");
+  }
+  const raw = await res.json();
+  const arr = Array.isArray(raw)
+    ? raw
+    : raw?.items || raw?.data || raw?.content || raw?.results || [];
+  return arr.map(normalizePromotion).filter(Boolean);
+}
+
+async function apiListProductsOfPromotion(promoId) {
+  const res = await fetch(
+    `${API}/api/promotions/${encodeURIComponent(promoId)}/products`,
+    { headers: { Accept: "application/json" } }
+  );
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "load promo products failed");
+    throw new Error(txt || "load promo products failed");
+  }
+  const raw = await res.json();
+  return Array.isArray(raw)
+    ? raw
+    : raw?.items || raw?.data || raw?.content || raw?.results || [];
+}
+
+// คำนวณส่วนลดต่อบรรทัด จาก promotion ระดับสินค้า
+function calcLineDiscount(unitPrice, qty, promo) {
+  const price = Number(unitPrice) || 0;
+  const q = Math.max(1, Number(qty) || 1);
+  const lineTotal = price * q;
+  if (!promo) return 0;
+
+  const type = promo.promoType;
+  if (type === "PERCENT_OFF") {
+    const pct = promo.percentOff || 0;
+    if (pct <= 0) return 0;
+    return (lineTotal * pct) / 100;
+  }
+  if (type === "AMOUNT_OFF") {
+    const off = promo.amountOff || 0;
+    if (off <= 0) return 0;
+    return Math.min(lineTotal, off * q);
+  }
+  if (type === "FIXED_PRICE") {
+    if (promo.fixedPrice == null) return 0;
+    const fp = Number(promo.fixedPrice) || 0;
+    if (fp <= 0 || fp >= price) return 0;
+    return (price - fp) * q;
+  }
+  if (type === "BUY_X_GET_Y") {
+    const bx = Number(promo.buyQty || 0);
+    const gy = Number(promo.getQty || 0);
+    if (bx <= 0 || gy <= 0) return 0;
+    const group = bx + gy;
+    const fullGroups = Math.floor(q / group);
+    const freeQty = fullGroups * gy;
+    return freeQty * price;
+  }
+  return 0;
+}
+
+/* ---------- helper รวมสูตร subtotal / discount ใช้ทั้ง FE + ส่งเข้า backend ---------- */
+function computeCartTotals(cart, productPromosByProductId, orderPromos) {
+  let subtotal = 0;
+  let itemsCount = 0;
+  let productDiscountTotal = 0;
+
+  for (const it of cart) {
+    const price = Number(it.price) || 0;
+    const qty = Math.max(1, Number(it.qty) || 1);
+    const lineTotal = price * qty;
+
+    subtotal += lineTotal;
+    itemsCount += qty;
+
+    const key = String(it.productId ?? it.id ?? "");
+    const promosForProduct =
+      (productPromosByProductId && productPromosByProductId[key]) || [];
+    if (promosForProduct.length > 0) {
+      const promo = promosForProduct[0]; // ตอนนี้สมมติ 1 โปรต่อสินค้า
+      productDiscountTotal += calcLineDiscount(price, qty, promo);
+    }
+  }
+
+  let orderDiscount = 0;
+  const baseAfterProduct = subtotal - productDiscountTotal;
+  if (orderPromos && orderPromos.length && baseAfterProduct > 0) {
+    for (const promo of orderPromos) {
+      const minAmt = promo.minOrderAmount || 0;
+      if (minAmt > 0 && baseAfterProduct < minAmt) continue;
+
+      let d = 0;
+      if (promo.promoType === "PERCENT_OFF") {
+        const pct = promo.percentOff || 0;
+        if (pct > 0) d = (baseAfterProduct * pct) / 100;
+      } else if (promo.promoType === "AMOUNT_OFF") {
+        const off = promo.amountOff || 0;
+        if (off > 0) d = Math.min(baseAfterProduct, off);
+      }
+      if (d > orderDiscount) orderDiscount = d;
+    }
+  }
+
+  const totalDiscount = productDiscountTotal + orderDiscount;
+  return { subtotal, itemsCount, discount: totalDiscount };
+}
+
+// Address Form
 function AddressForm({ initial, onCancel, onSave, onError }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
@@ -231,7 +374,13 @@ function AddressForm({ initial, onCancel, onSave, onError }) {
     <form className="address-form" onSubmit={submit} noValidate>
       <label>
         <span className="label-text">Full name</span>
-        <input id="addr-name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+        <input
+          id="addr-name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
       </label>
 
       <label>
@@ -250,29 +399,52 @@ function AddressForm({ initial, onCancel, onSave, onError }) {
 
       <label>
         <span className="label-text">House / Building / Village</span>
-        <input type="text" value={house} onChange={(e) => setHouse(e.target.value)} required />
+        <input
+          type="text"
+          value={house}
+          onChange={(e) => setHouse(e.target.value)}
+          required
+        />
       </label>
 
       <label>
         <span className="label-text">Street / Soi</span>
-        <input type="text" value={street} onChange={(e) => setStreet(e.target.value)} />
+        <input
+          type="text"
+          value={street}
+          onChange={(e) => setStreet(e.target.value)}
+        />
       </label>
 
       <div className="form-row">
         <label>
           <span className="label-text">Subdistrict</span>
-          <input type="text" value={subdistrict} onChange={(e) => setSubdistrict(e.target.value)} required />
+          <input
+            type="text"
+            value={subdistrict}
+            onChange={(e) => setSubdistrict(e.target.value)}
+            required
+          />
         </label>
         <label>
           <span className="label-text">District</span>
-          <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} required />
+          <input
+            type="text"
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            required
+          />
         </label>
       </div>
 
       <div className="form-row">
         <label>
           <span className="label-text">Province</span>
-          <select value={province} onChange={(e) => setProvince(e.target.value)} required>
+          <select
+            value={province}
+            onChange={(e) => setProvince(e.target.value)}
+            required
+          >
             <option value="">-- Select province --</option>
             <option>Bangkok</option>
             <option>Chiang Mai</option>
@@ -296,7 +468,11 @@ function AddressForm({ initial, onCancel, onSave, onError }) {
       </div>
 
       <label className="inline">
-        <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={isDefault}
+          onChange={(e) => setIsDefault(e.target.checked)}
+        />
         <span>Save as default address</span>
       </label>
 
@@ -306,48 +482,100 @@ function AddressForm({ initial, onCancel, onSave, onError }) {
             Back
           </button>
         )}
-        <button type="submit" className="btn-save">Save address</button>
+        <button type="submit" className="btn-save">
+          Save address
+        </button>
       </div>
     </form>
   );
 }
 
-/* ===== Address List ===== */
+// Address List
 function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
   if (!addresses.length) return null;
+
+  // กรณีมีที่อยู่เดียวและไม่มีตัวไหนเป็น default ให้ถือว่าอันนั้นถูกเลือกอัตโนมัติ
+  const singleAndNoDefault =
+    addresses.length === 1 && !addresses[0]?.isDefault;
+
   return (
     <div className="saved-addresses">
-      {addresses.map((addr) => (
-        <label key={addr.id} className="address-option">
-          <input type="radio" name="address" checked={!!addr.isDefault} readOnly />
-          <div className="address-box" style={{ position: "relative" }}>
-            {addr.isDefault ? (
-              <span className="tag default">Default</span>
-            ) : (
-              <button type="button" className="link set-default-link" onClick={() => onSetDefault(addr.id)}>
-                Set as default
-              </button>
-            )}
-            <p className="addr-name">{addr.name}</p>
-            <p className="addr-text">{addr.text}</p>
-            <div className="addr-actions">
-              <button type="button" className="icon-btn" onClick={() => onEdit(addr)} aria-label="Edit address">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-                </svg>
-                <span>Edit</span>
-              </button>
+      {addresses.map((addr, index) => {
+        const isSelected =
+          addr.isDefault || (singleAndNoDefault && index === 0);
 
-              <button type="button" className="icon-btn danger" onClick={() => onDelete(addr.id)} aria-label="Delete address">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
-                </svg>
-                <span>Delete</span>
-              </button>
+        return (
+          <label key={addr.id} className="address-option">
+            <input
+              type="radio"
+              name="address"
+              checked={isSelected}
+              readOnly
+            />
+            <div className="address-box" style={{ position: "relative" }}>
+              {isSelected ? (
+                <span className="tag default">Default</span>
+              ) : (
+                <button
+                  type="button"
+                  className="link set-default-link"
+                  onClick={() => onSetDefault(addr.id)}
+                >
+                  Set as default
+                </button>
+              )}
+
+              <p className="addr-name">{addr.name}</p>
+              <p className="addr-text">{addr.text}</p>
+              <div className="addr-actions">
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => onEdit(addr)}
+                  aria-label="Edit address"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                  <span>Edit</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="icon-btn danger"
+                  onClick={() => onDelete(addr.id)}
+                  aria-label="Delete address"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  <span>Delete</span>
+                </button>
+              </div>
             </div>
-          </div>
-        </label>
-      ))}
+          </label>
+        );
+      })}
       <button
         type="button"
         className="btn-add-inline"
@@ -360,24 +588,60 @@ function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
   );
 }
 
-/* ===== Order Summary ===== */
-function OrderSummary({ cart, canConfirm, onConfirm }) {
-  const { subtotal, itemsCount } = useMemo(() => {
-    let subtotal = 0, itemsCount = 0;
-    for (const it of cart) {
-      subtotal += (Number(it.price) || 0) * (Number(it.qty) || 0);
-      itemsCount += Number(it.qty) || 0;
-    }
-    return { subtotal, itemsCount };
-  }, [cart]);
-  const shipping = 0, discount = 0, total = subtotal - discount + shipping;
+// Confirm Dialog
+function ConfirmDialog({
+  open,
+  title,
+  message,
+  cancelText = "Cancel",
+  confirmText = "Delete",
+  onCancel,
+  onConfirm,
+}) {
+  if (!open) return null;
+  return (
+    <div className="pm-modal-backdrop">
+      <div className="pm-modal" role="dialog" aria-modal="true">
+        <h3 className="pm-modal__title">{title}</h3>
+        <p className="pm-modal__body">{message}</p>
+        <div className="pm-modal__actions">
+          <button
+            type="button"
+            className="btn-outline"
+            onClick={onCancel}
+          >
+            {cancelText}
+          </button>
+          <button
+            type="button"
+            className="btn-danger"
+            onClick={onConfirm}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Order Summary
+function OrderSummary({ cart, canConfirm, onConfirm, productPromos, orderPromos }) {
+  const { subtotal, itemsCount, discount } = useMemo(
+    () => computeCartTotals(cart, productPromos, orderPromos),
+    [cart, productPromos, orderPromos]
+  );
+
+  const shipping = 0;
+  const total = subtotal - discount + shipping;
 
   return (
     <aside className="card summary-card">
       <h2 className="section-title">Your order</h2>
       <div id="order-list">
         {cart.map((item, idx) => {
-          const t = (Number(item.price) || 0) * (Number(item.qty) || 0);
+          const t =
+            (Number(item.price) || 0) * (Number(item.qty) || 0);
           return (
             <div key={item.id ?? idx} className="order-item">
               <img src={item.img} alt="" />
@@ -390,7 +654,9 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
               <div>
                 <p className="order-item__price">
                   {currencyTHB(t)}
-                  <span className="unit-price">{currencyTHB(Number(item.price) || 0)} each</span>
+                  <span className="unit-price">
+                    {currencyTHB(Number(item.price) || 0)} each
+                  </span>
                 </p>
               </div>
             </div>
@@ -399,12 +665,27 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
       </div>
 
       <div className="totals">
-        <div className="line"><span>Item(s) total</span><span>{currencyTHB(subtotal)}</span></div>
-        <div className="line"><span>Shop-discount</span><span>−{currencyTHB(discount)}</span></div>
-        <div className="line"><span>Subtotal</span><span>{currencyTHB(subtotal)}</span></div>
-        <div className="line"><span>Shipping</span><span>{currencyTHB(shipping)}</span></div>
+        <div className="line">
+          <span>Item(s) total</span>
+          <span>{currencyTHB(subtotal)}</span>
+        </div>
+        <div className="line">
+          <span>Shop-discount</span>
+          <span>−{currencyTHB(discount)}</span>
+        </div>
+        <div className="line">
+          <span>Subtotal</span>
+          <span>{currencyTHB(subtotal - discount)}</span>
+        </div>
+        <div className="line">
+          <span>Shipping</span>
+          <span>{currencyTHB(shipping)}</span>
+        </div>
         <div className="line total">
-          <span> Total ({itemsCount} item{itemsCount > 1 ? "s" : ""}) </span>
+          <span>
+            {" "}
+            Total ({itemsCount} item{itemsCount > 1 ? "s" : ""}){" "}
+          </span>
           <span className="price">{currencyTHB(total)}</span>
         </div>
       </div>
@@ -414,7 +695,11 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
           className="btn-primary"
           disabled={!canConfirm}
           onClick={onConfirm}
-          title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
+          title={
+            canConfirm
+              ? "Confirm order"
+              : "Please add/select a shipping address first"
+          }
         >
           Place Order
         </button>
@@ -423,11 +708,11 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
   );
 }
 
-/* ===== แปลงแหล่งข้อมูลไปเป็น cart shape เดียวกัน ===== */
+// แปลงแหล่งข้อมูลไปเป็น cart shape เดียวกัน
 function mapSelectionToCartItems(selItems = []) {
   return selItems.map((r, i) => ({
     id: r.productId ?? r.id ?? r.key ?? `sel-${i}`,
-    productId: r.productId,   // เผื่อใช้หา productIdFk
+    productId: r.productId,
     name: r.title ?? r.name ?? `#${r.productId ?? r.id ?? (i + 1)}`,
     price: Number(r.price) || 0,
     qty: Math.max(1, Number(r.qty) || 1),
@@ -435,8 +720,7 @@ function mapSelectionToCartItems(selItems = []) {
   }));
 }
 
-/** จาก pm_cart เดิม (หลายรูปแบบ field)
- * ให้ normalize เป็น { id, name, price, qty, img } */
+// จาก pm_cart เดิม (หลายรูปแบบ field)
 function mapCartStorageToCartItems(raw = []) {
   return raw.map((x, i) => {
     const id =
@@ -457,7 +741,8 @@ function mapCartStorageToCartItems(raw = []) {
       "/assets/products/placeholder.jpg";
     return {
       id,
-      productId: x.productId ?? x.product_id ?? x.productIdFk ?? x.product_id_fk,
+      productId:
+        x.productId ?? x.product_id ?? x.productIdFk ?? x.product_id_fk,
       name,
       price: Number(x.price) || 0,
       qty: Math.max(1, Number(x.qty) || 1),
@@ -466,7 +751,7 @@ function mapCartStorageToCartItems(raw = []) {
   });
 }
 
-/* ===== Main Page ===== */
+// Main Page
 export default function PlaceOrderPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -483,44 +768,42 @@ export default function PlaceOrderPage() {
     return () => document.body.classList.remove("po-page");
   }, []);
 
-  const defaultCart = [
-    { id: '#00001', name: "ข้าวขาวหอมมะลิใหม่100% 5กก.", price: 165.0, qty: 1, img: "/assets/products/001.jpg" },
-    { id: '#00007', name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3", price: 180.0, qty: 4, img: "/assets/products/007.jpg" },
-    { id: '#00018', name: "มะม่วงน้ำดอกไม้สุก", price: 120.0, qty: 2, img: "/assets/products/018.jpg" },
-    { id: '#00011', name: "ซีพี ชิคแชค เนื้อไก่ปรุงรสทอดกรอบแช่แข็ง 800 กรัม", price: 179.0, qty: 2, img: "/assets/products/011.jpg" },
-    { id: '#00004', name: "โกกิแป้งทอดกรอบ 500ก.", price: 45.0, qty: 2, img: "/assets/products/004.jpg" },
-  ];
-
   const [cart, setCart] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [mode, setMode] = useState("list");
   const [editing, setEditing] = useState(null);
   const [loadingAddr, setLoadingAddr] = useState(true);
 
-  /* โหลดสินค้า — ลำดับความสำคัญ:
-     1) pm_checkout_selection (เฉพาะที่เลือก)
-     2) route.state.from === "buy-now"
-     3) session pm_order_preview (history)
-     4) pm_cart ทั้งหมด
-     5) defaultCart (dev)
-  */
+  // promotion state
+  const [productPromosByProductId, setProductPromosByProductId] = useState({});
+  const [orderLevelPromos, setOrderLevelPromos] = useState([]);
+
+  // state สำหรับ popup ลบ
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
   useEffect(() => {
     let initialCart = null;
 
-    // (1) จาก selection
+    // จาก selection
     try {
-      const sel = JSON.parse(localStorage.getItem(LS_CHECKOUT) || "null");
+      const sel = JSON.parse(
+        localStorage.getItem(LS_CHECKOUT) || "null"
+      );
       if (sel && Array.isArray(sel.items) && sel.items.length > 0) {
         initialCart = mapSelectionToCartItems(sel.items);
       }
     } catch {}
 
-    // (2) จาก buy-now
-    if (!initialCart && location.state?.from === "buy-now" && location.state?.item) {
+    // จาก buy-now
+    if (
+      !initialCart &&
+      location.state?.from === "buy-now" &&
+      location.state?.item
+    ) {
       initialCart = [location.state.item];
     }
 
-    // (3) จาก history preview
+    // จาก history preview
     if (!initialCart) {
       const fromHistory = location.state?.from === "history";
       const raw = sessionStorage.getItem("pm_order_preview");
@@ -540,19 +823,62 @@ export default function PlaceOrderPage() {
       }
     }
 
-    // (4) จาก pm_cart ทั้งหมด
+    // จาก pm_cart ทั้งหมด
     if (!initialCart) {
       try {
         const ls = JSON.parse(localStorage.getItem(LS_CART) || "[]");
-        if (Array.isArray(ls) && ls.length) initialCart = mapCartStorageToCartItems(ls);
+        if (Array.isArray(ls) && ls.length)
+          initialCart = mapCartStorageToCartItems(ls);
       } catch {}
     }
 
-    setCart(initialCart || defaultCart);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setCart(initialCart || []);
+  }, [location.state]);
 
-  /* โหลด Address จาก DB */
+  // โหลด promotion ตามสินค้าใน cart
+  useEffect(() => {
+    if (!cart || cart.length === 0) {
+      setProductPromosByProductId({});
+      setOrderLevelPromos([]);
+      return;
+    }
+
+    (async () => {
+      try {
+        const promos = await apiListActivePromotions();
+        const orderPromos = promos.filter((p) => p.scope === "ORDER");
+        const productPromos = promos.filter((p) => p.scope === "PRODUCT");
+
+        const map = {};
+        for (const promo of productPromos) {
+          try {
+            const products = await apiListProductsOfPromotion(promo.id);
+            for (const prod of products) {
+              const pid =
+                prod.id ??
+                prod.productId ??
+                prod.product_id ??
+                prod.productIdFk ??
+                prod.product_id_fk;
+              if (pid == null) continue;
+              const key = String(pid);
+              if (!map[key]) map[key] = [];
+              map[key].push(promo);
+            }
+          } catch (e) {
+            console.warn("load products of promo failed", e);
+          }
+        }
+
+        setProductPromosByProductId(map);
+        setOrderLevelPromos(orderPromos);
+      } catch (e) {
+        console.warn("load promotions failed", e);
+      }
+    })();
+  }, [cart]);
+
+  // โหลด Address จาก DB
   const refreshAddresses = async () => {
     setLoadingAddr(true);
     try {
@@ -570,7 +896,6 @@ export default function PlaceOrderPage() {
   };
   useEffect(() => {
     refreshAddresses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const breadcrumbItems = [
@@ -598,17 +923,28 @@ export default function PlaceOrderPage() {
     setEditing(addr);
     setMode("edit");
   };
-  const handleDelete = async (id) => {
+
+  // เมื่อกดปุ่ม Delete ใน list ให้แค่เปิด popup
+  const handleRequestDelete = (id) => {
     const target = addresses.find((a) => a.id === id);
     if (!target) return;
-    if (!window.confirm(`Delete address of "${target.name}" ?`)) return;
+    setDeleteTarget(target);
+  };
+
+  // กดยืนยันลบใน popup
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await apiDeleteAddress(id);
+      await apiDeleteAddress(deleteTarget.id);
+      setDeleteTarget(null);
       await refreshAddresses();
     } catch (e) {
       showToast(e.message);
     }
   };
+
+  const handleCancelDelete = () => setDeleteTarget(null);
+
   const handleSave = async (payload) => {
     try {
       if (payload.id) {
@@ -624,9 +960,10 @@ export default function PlaceOrderPage() {
     }
   };
 
-  const canConfirm = addresses.some((a) => a.isDefault);
+  // set address
+  const canConfirm =
+    addresses.length === 1 || addresses.some((a) => a.isDefault);
 
-  /* สร้างออเดอร์จริง */
   const handleConfirm = async () => {
     const selectedAddress =
       addresses.find((a) => a.isDefault) || addresses[0] || null;
@@ -642,12 +979,25 @@ export default function PlaceOrderPage() {
       selectedAddress.province || ""
     } ${selectedAddress.zipcode || ""}`.trim();
 
+    // ✅ คำนวณ subtotal / discount จาก cart + promotions เดียวกับที่โชว์ในหน้า
+    const { subtotal, itemsCount, discount } = computeCartTotals(
+      cart,
+      productPromosByProductId,
+      orderLevelPromos
+    );
+    const shippingFee = 0; // ตอนนี้ fix 0 ก่อน
+    const grandTotal = subtotal - discount + shippingFee;
+
     try {
       const created = await apiCreateOrder({
         customerName: selectedAddress.name,
         customerPhone: selectedAddress.phone,
         shippingAddress,
         cart,
+        subtotal,
+        discountTotal: discount,
+        shippingFee,
+        grandTotal,
       });
 
       const orderPayload = {
@@ -660,7 +1010,6 @@ export default function PlaceOrderPage() {
         sessionStorage.setItem("pm_last_order", JSON.stringify(orderPayload));
       } catch {}
 
-      // เคลียร์ snapshot ของ selection (ถ้ามี)
       try {
         localStorage.removeItem(LS_CHECKOUT);
       } catch {}
@@ -675,13 +1024,38 @@ export default function PlaceOrderPage() {
     <div className="place-order-page">
       <Header />
       {toast && (
-        <div className={`pm-toast pm-toast--${toast.type}`} role="status" aria-live="polite">
+        <div
+          className={`pm-toast pm-toast--${toast.type}`}
+          role="status"
+          aria-live="polite"
+        >
           <div className="pm-toast__body">
             <span>{toast.message}</span>
-            <button className="pm-toast__close" onClick={() => setToast(null)} aria-label="Close">×</button>
+            <button
+              className="pm-toast__close"
+              onClick={() => setToast(null)}
+              aria-label="Close"
+            >
+              ×
+            </button>
           </div>
         </div>
       )}
+
+      {/* popup ลบ address */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete address"
+        message={
+          deleteTarget
+            ? `Are you sure you want to delete address of "${deleteTarget.name}" ?`
+            : ""
+        }
+        cancelText="Cancel"
+        confirmText="Delete"
+        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+      />
 
       <main className="container">
         <Breadcrumb items={breadcrumbItems} />
@@ -699,14 +1073,16 @@ export default function PlaceOrderPage() {
                 onSetDefault={handleSetDefault}
                 onAddNew={handleAddNew}
                 onEdit={handleEdit}
-                onDelete={handleDelete}
+                onDelete={handleRequestDelete}
               />
             )}
 
             {!loadingAddr && mode === "add" && (
               <AddressForm
                 initial={null}
-                onCancel={() => (addresses.length ? setMode("list") : null)}
+                onCancel={() =>
+                  addresses.length ? setMode("list") : null
+                }
                 onSave={handleSave}
                 onError={showToast}
               />
@@ -725,7 +1101,13 @@ export default function PlaceOrderPage() {
             )}
           </section>
 
-          <OrderSummary cart={cart} canConfirm={canConfirm} onConfirm={handleConfirm} />
+          <OrderSummary
+            cart={cart}
+            canConfirm={canConfirm}
+            onConfirm={handleConfirm}
+            productPromos={productPromosByProductId}
+            orderPromos={orderLevelPromos}
+          />
         </div>
       </main>
 
@@ -737,7 +1119,11 @@ export default function PlaceOrderPage() {
           className="btn-primary"
           disabled={!canConfirm}
           onClick={handleConfirm}
-          title={canConfirm ? "Confirm order" : "Please add/select a shipping address first"}
+          title={
+            canConfirm
+              ? "Confirm order"
+              : "Please add/select a shipping address first"
+          }
         >
           Place Order
         </button>

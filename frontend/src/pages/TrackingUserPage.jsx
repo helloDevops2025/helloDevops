@@ -1,4 +1,4 @@
-import "./TrackingUserPage.css";
+import "./TrackingUserPage.css"; 
 import "../components/header.css";
 import "./breadcrumb.css";
 
@@ -141,21 +141,15 @@ function normalizeStatus(s) {
   return String(s || "").trim().toUpperCase();
 }
 
-/**
- * แปลงสถานะจากฐานข้อมูลให้เป็น steps ที่หน้า User ใช้
- * นโยบายเหมือน Admin:
- * - ถ้า CANCELLED → ไม่ติ๊กขั้นใด ๆ และติดป้าย "Cancelled" ทุกขั้น
- * - คำนิยามขั้น: PREPARING → READY_TO_SHIP → SHIPPING → DELIVERED
- */
 function buildStepsFromStatus(rawStatus) {
   const st = normalizeStatus(rawStatus);
 
   // โครงตามลำดับเดียวกับ Admin
   const base = [
-    { label: "Preparing",     sub: "",           done: false },
-    { label: "Ready to Ship", sub: "",           done: false },
-    { label: "Shipping",      sub: "Processing", done: false },
-    { label: "Delivered",     sub: "Pending",    done: false },
+    { label: "Preparing", sub: "", done: false },
+    { label: "Ready to Ship", sub: "", done: false },
+    { label: "Shipping", sub: "Processing", done: false },
+    { label: "Delivered", sub: "Pending", done: false },
   ];
 
   // ยกเลิก = ไม่ติ๊ก และปัก "Cancelled" ทุกขั้น
@@ -219,6 +213,9 @@ export default function TrackingUserPage() {
     cart: [],
     shippingFee: 0,
     tax: 0,
+    // ✅ ฟิลด์ใหม่: ดึงจาก backend เพื่อให้รู้ส่วนลด +ยอดหลังลด
+    discountTotal: 0,
+    grandTotal: 0,
     status: "PENDING",
   });
 
@@ -264,6 +261,9 @@ export default function TrackingUserPage() {
           cart: mappedItems,
           shippingFee: Number(data.shippingFee ?? data.shipping_fee ?? 0),
           tax: Number(data.taxTotal ?? data.tax_total ?? 0),
+          // ✅ ดึงส่วนลด + ยอดหลังลด จาก backend
+          discountTotal: Number(data.discountTotal ?? data.discount_total ?? 0),
+          grandTotal: Number(data.grandTotal ?? data.grand_total ?? 0),
           status: normalizeStatus(data.orderStatus ?? data.status ?? "PENDING"),
         };
 
@@ -281,6 +281,7 @@ export default function TrackingUserPage() {
     };
   }, [orderId]);
 
+  // ✅ ใช้ grandTotal / discountTotal จาก backend
   const totals = useMemo(() => {
     let subtotal = 0,
       items = 0;
@@ -288,8 +289,18 @@ export default function TrackingUserPage() {
       subtotal += (it.price || 0) * (it.qty || 0);
       items += it.qty || 0;
     }
-    const total = subtotal + (order.shippingFee || 0) + (order.tax || 0);
-    return { subtotal, items, total };
+
+    const discount = Number(order.discountTotal || 0);
+    const shipping = Number(order.shippingFee || 0);
+    const tax = Number(order.tax || 0);
+
+    // ถ้ามี grandTotal จาก DB ให้ใช้เลย (ราคา "หลังลด")
+    let total = Number(order.grandTotal || 0);
+    if (!total) {
+      total = subtotal - discount + shipping + tax;
+    }
+
+    return { subtotal, items, discount, shipping, tax, total };
   }, [order]);
 
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -334,9 +345,9 @@ export default function TrackingUserPage() {
     const shippingText = order.address ? order.address.text : "-";
     const paymentMethod = order.paymentMethod || "-";
 
-    const shippingFee = order.shippingFee || 0;
-    the
-    const tax = order.tax || 0;
+    // ✅ ใช้ totals ที่คำนวณจาก grandTotal / discountTotal แล้ว
+    const shippingFee = totals.shipping;
+    const tax = totals.tax;
     const grandTotal = totals.total;
 
     const html = `
@@ -393,6 +404,9 @@ export default function TrackingUserPage() {
             <div class="totals-wrap">
               <div class="totals-card">
                 <div class="row"><div class="muted">Subtotal</div><div>${THB(totals.subtotal)}</div></div>
+                <!-- ถ้าอยากโชว์จำนวนส่วนลดชัด ๆ สามารถเพิ่มบรรทัดนี้ได้ภายหลัง
+                <div class="row"><div class="muted">Discount</div><div>−${THB(totals.discount)}</div></div>
+                -->
                 <div class="row"><div class="muted">Shipping Fee</div><div>${THB(shippingFee)}</div></div>
                 <div class="row"><div class="muted">Tax / VAT</div><div>${THB(tax)}</div></div>
                 <div class="grand">Grand Total&nbsp;&nbsp;${THB(grandTotal)}</div>
@@ -451,7 +465,7 @@ export default function TrackingUserPage() {
     );
   }
 
-  // ✅ แปลงสถานะจริงจาก Admin เพื่อสร้างขั้นตอน + ธงยกเลิก
+  // แปลงสถานะจริงจาก Admin เพื่อสร้างขั้นตอน + ธงยกเลิก
   const { steps, cancelled } = buildStepsFromStatus(order.status);
 
   return (

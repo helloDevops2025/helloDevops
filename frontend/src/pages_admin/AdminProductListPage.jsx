@@ -7,6 +7,10 @@ export default function AdminProductListPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [pendingProduct, setPendingProduct] = useState(null);
+
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
   console.log("[AdminProductList] API_URL =", API_URL);
 
@@ -106,7 +110,7 @@ export default function AdminProductListPage() {
 
     // ----- Search setup -----
     const input = document.querySelector(".action-bar .search input");
-    const scope = document.querySelector(".action-bar .search select"); // dropdown ใหม่
+    const scope = document.querySelector(".action-bar .search select"); 
     const table = document.querySelector(".table-card");
     const rows = Array.from(table?.querySelectorAll(".table-row") ?? []);
     const hint = table?.querySelector(".hint");
@@ -144,7 +148,7 @@ export default function AdminProductListPage() {
       const qty = parseInt(String(qtyRaw).replace(/[^\d-]/g, ""), 10);
       const isIn = Number.isFinite(qty) && qty > 0;
 
-      // ทำ field สำหรับค้นหา Stock (คำไทย/อังกฤษ)
+     
       const stockText = isIn
         ? "in stock มีสินค้า พร้อมส่ง มีของ"
         : "out of stock หมดสต็อก หมด ไม่มีของ ไม่มีสินค้า";
@@ -187,10 +191,10 @@ export default function AdminProductListPage() {
       if (!input || !scope) return;
       const mode = scope.value;
       const map = {
-        name: "ค้นหาชื่อสินค้า…",
-        productId: "ค้นหา Product ID…",
-        category: "ค้นหา Category…",
-        stock: "ค้นหา Stock (มี/หมด)…",
+        name: "Search product name",
+        productId: "Search Product ID",
+        category: "Search category",
+        stock: "Search stock",
       };
       input.placeholder = map[mode] || "Search…";
     };
@@ -298,79 +302,144 @@ export default function AdminProductListPage() {
     const n = parseInt(String(v ?? "").replace(/[^\d-]/g, ""), 10);
     return Number.isFinite(n) ? n : 0;
   };
-  const isInStock = (p) => toInt(p.quantity) > 0;
-  const stockLabelOf = (p) => (isInStock(p) ? "In Stock" : "Out of stock");
-  const stockStyleOf = (p) =>
-    isInStock(p)
-      ? {
-          display: "inline-block",
-          padding: "4px 10px",
-          borderRadius: "999px",
-          fontSize: 12,
-          lineHeight: 1,
-          border: "1px solid #a7f3d0",
-          background: "#ecfdf5",
-          color: "#065f46",
-        }
-      : {
-          display: "inline-block",
-          padding: "4px 10px",
-          borderRadius: "999px",
-          fontSize: 12,
-          lineHeight: 1,
-          border: "1px solid #fecaca",
-          background: "#fef2f2",
-          color: "#7f1d1d",
-        };
+  // ใช้ threshold สำหรับ "Low Stock"
+  const LOW_STOCK_THRESHOLD = 10;
+
+  const qtyOf = (p) => {
+    const n = parseInt(String(p.quantity ?? 0).replace(/[^\d-]/g, ""), 10);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  // ฟังก์ชันกำหนด label
+  const stockLabelOf = (p) => {
+    const qty = qtyOf(p);
+    if (qty === 0) return "Out of Stock";
+    if (qty <= LOW_STOCK_THRESHOLD) return "Low Stock";
+    return "In Stock";
+  };
+
+  // ฟังก์ชันกำหนดสีป้าย
+  const stockStyleOf = (p) => {
+    const qty = qtyOf(p);
+    if (qty === 0)
+      return {
+        display: "inline-block",
+        padding: "4px 10px",
+        borderRadius: "999px",
+        fontSize: 12,
+        lineHeight: 1,
+        border: "1px solid #fecaca",
+        background: "#fef2f2",
+        color: "#7f1d1d",
+      };
+    if (qty <= LOW_STOCK_THRESHOLD)
+      return {
+        display: "inline-block",
+        padding: "4px 10px",
+        borderRadius: "999px",
+        fontSize: 12,
+        lineHeight: 1,
+        border: "1px solid #fde68a",
+        background: "#fffbeb",
+        color: "#92400e",
+      };
+    return {
+      display: "inline-block",
+      padding: "4px 10px",
+      borderRadius: "999px",
+      fontSize: 12,
+      lineHeight: 1,
+      border: "1px solid #a7f3d0",
+      background: "#ecfdf5",
+      color: "#065f46",
+    };
+  };
 
   // ---------- DELETE ----------
   // ช่วยฟอร์แมตรหัสสินค้าให้เป็น #00001
-const fmtCode = (v) => "#" + String(v ?? "").replace(/\D/g, "").padStart(5, "0");
+  const fmtCode = (v) =>
+    "#" + String(v ?? "").replace(/\D/g, "").padStart(5, "0");
 
-async function handleDelete(p) {
-  const dbId = p?.id ?? null;                           // id ในฐานข้อมูล
-  const code = String(p?.productId ?? "");              // รหัสสินค้า 5 หลัก (string/number ก็ได้)
-  const codeClean = code.replace(/\D/g, "");
-  const label = `${p?.name ?? "-"} – ${code ? fmtCode(code) : ""}`;
+  // 👉 1) เปิดกล่องยืนยัน
+  function openConfirmDelete(p) {
+    if (!p) return;
+    const code = p.productId ?? p.id;
+    const label = `${p.name ?? "-"} – ${code ? fmtCode(code) : ""}`;
 
-  if (!confirm(`Delete product: ${label} ?`)) return;
-
-  try {
-    let done = false;
-
-    // 1) พยายามลบด้วย "id" ก่อน (กรณีปกติ)
-    if (dbId != null) {
-      const r = await fetch(`${API_URL}/api/products/${encodeURIComponent(dbId)}`, { method: "DELETE" });
-      if (r.ok) done = true;
-      else if (r.status !== 404) throw new Error(`DELETE by id failed: HTTP ${r.status}`);
-    }
-
-    // 2) ถ้ายังไม่สำเร็จและมี productId → ลองลบด้วย productId (รองรับหลายรูปแบบ endpoint)
-    if (!done && codeClean) {
-      const candidates = [
-        `${API_URL}/api/products/byProductId/${encodeURIComponent(codeClean)}`,
-        `${API_URL}/api/products/code/${encodeURIComponent(codeClean)}`,
-        `${API_URL}/api/products/${encodeURIComponent(codeClean)}?by=productId`,
-      ];
-      for (const url of candidates) {
-        try {
-          const r = await fetch(url, { method: "DELETE" });
-          if (r.ok) { done = true; break; }
-        } catch {}
-      }
-    }
-
-    if (!done) throw new Error("ไม่พบ endpoint สำหรับลบรายการนี้");
-
-    // 3) ลบออกจาก state ทั้งตาม id และ productId เพื่อความแน่นอน
-    setItems((prev) =>
-      prev.filter((x) => x.id !== dbId && String(x.productId).replace(/\D/g, "") !== codeClean)
-    );
-  } catch (e) {
-    console.error(e);
-    alert(e.message || "Delete failed.");
+    setPendingProduct(p);
+    setConfirmText(`Delete product: ${label} ?`);
+    setConfirmOpen(true);
   }
-}
+
+  // 👉 2) ยืนยันลบ
+  async function handleConfirmDelete() {
+    if (!pendingProduct) {
+      setConfirmOpen(false);
+      return;
+    }
+
+    const p = pendingProduct;
+    const dbId = p?.id ?? null;
+    const code = String(p?.productId ?? "");
+    const codeClean = code.replace(/\D/g, "");
+
+    try {
+      let done = false;
+
+      // ลบด้วย id ก่อน
+      if (dbId != null) {
+        const r = await fetch(
+          `${API_URL}/api/products/${encodeURIComponent(dbId)}`,
+          { method: "DELETE" }
+        );
+        if (r.ok) done = true;
+        else if (r.status !== 404)
+          throw new Error(`DELETE by id failed: HTTP ${r.status}`);
+      }
+
+      // ถ้าไม่สำเร็จลองลบด้วย productId
+      if (!done && codeClean) {
+        const candidates = [
+          `${API_URL}/api/products/byProductId/${encodeURIComponent(codeClean)}`,
+          `${API_URL}/api/products/code/${encodeURIComponent(codeClean)}`,
+          `${API_URL}/api/products/${encodeURIComponent(codeClean)}?by=productId`,
+        ];
+        for (const url of candidates) {
+          try {
+            const r = await fetch(url, { method: "DELETE" });
+            if (r.ok) {
+              done = true;
+              break;
+            }
+          } catch { }
+        }
+      }
+
+      if (!done) throw new Error("ไม่พบ endpoint สำหรับลบรายการนี้");
+
+      // ลบออกจาก state
+      setItems((prev) =>
+        prev.filter(
+          (x) =>
+            x.id !== dbId &&
+            String(x.productId).replace(/\D/g, "") !== codeClean
+        )
+      );
+    } catch (e) {
+      console.error(e);
+      alert(e.message || "Delete failed.");
+    } finally {
+      setConfirmOpen(false);
+      setPendingProduct(null);
+    }
+  }
+
+  // 👉 3) ยกเลิก
+  function handleCancelDelete() {
+    setConfirmOpen(false);
+    setPendingProduct(null);
+  }
+
 
 
   return (
@@ -390,7 +459,7 @@ async function handleDelete(p) {
                   <option value="category">Category</option>
                   <option value="stock">Stock</option>
                 </select>
-                <input type="text" placeholder="ค้นหาชื่อสินค้า…" />
+                <input type="text" placeholder="Search product name" />
               </div>
               <Link to="/admin/products/new" className="btn-add">
                 <span className="box">
@@ -459,7 +528,7 @@ async function handleDelete(p) {
                     type="button"
                     aria-label="Delete product"
                     title="Delete"
-                    onClick={() => handleDelete(p)}
+                    onClick={() => openConfirmDelete(p)}
                     style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer" }}
                   >
                     <i className="fa-solid fa-trash" />
@@ -483,6 +552,33 @@ async function handleDelete(p) {
           </div>
         </div>
       </main>
+      {confirmOpen && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Please confirm product deletion</h3>
+            <p style={{ marginTop: 10 }}>{confirmText}</p>
+
+            <div className="modal-buttons">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={handleCancelDelete}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-confirm"
+                onClick={handleConfirmDelete}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }
