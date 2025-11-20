@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import "./ShopPage.css";
 import Footer from "./../components/Footer.jsx";
 
+
 // Config & helpers
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 const norm = (s) => String(s ?? "").trim().toLowerCase();
@@ -46,7 +47,7 @@ const addItemToCart = ({ id, name, price, qty = 1, img }) => {
     window.dispatchEvent(
       new CustomEvent("pm_cart_updated", { detail: { count } })
     );
-  } catch { }
+  } catch {}
 };
 
 // Wishlist helpers (global, ไม่ผูกกับ card เดียว)
@@ -103,7 +104,7 @@ const resolveImageUrl = (row) => {
     row.image_url ||
     (Array.isArray(row.images)
       ? (row.images.find((i) => i.is_cover || i.isCover)?.image_url ||
-        row.images[0]?.image_url)
+          row.images[0]?.image_url)
       : null);
 
   if (u) {
@@ -122,6 +123,97 @@ const isOutOfStock = (p) => {
   const q = Number(qVal);
   if (flag === false) return true;
   if (Number.isFinite(q) && q <= 0) return true;
+  return false;
+};
+
+// ===================== SEARCH HELPERS (tolerant + น้ำ → water) =====================
+
+// normalize เอาไว้เทียบภาษา/ตัวสะกดแบบทน accent + วรรณยุกต์
+const normalizeText = (s = "") =>
+  String(s)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "") // ตัดวรรณยุกต์/accents
+    .trim();
+
+// Levenshtein สำหรับ typo เล็ก ๆ เช่น "watar" → "water"
+const levenshtein = (a = "", b = "") => {
+  const A = normalizeText(a);
+  const B = normalizeText(b);
+  const m = A.length;
+  const n = B.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const v0 = new Array(n + 1).fill(0).map((_, i) => i);
+  const v1 = new Array(n + 1).fill(0);
+  for (let i = 0; i < m; i++) {
+    v1[0] = i + 1;
+    for (let j = 0; j < n; j++) {
+      const cost = A[i] === B[j] ? 0 : 1;
+      v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+    }
+    for (let k = 0; k <= n; k++) v0[k] = v1[k];
+  }
+  return v1[n];
+};
+
+// fuzzy match: ใช้กับแต่ละ field (name/brand/cat/code)
+const fuzzyMatch = (q = "", text = "") => {
+  if (!q) return false;
+  const A = normalizeText(q);
+  const B = normalizeText(text);
+  if (B.includes(A)) return true;
+
+  const tokens = B.split(/\s+/).filter(Boolean);
+  const qLen = A.length;
+  const maxDist = qLen <= 4 ? 1 : Math.max(1, Math.floor(qLen * 0.3));
+
+  for (const t of tokens) {
+    const dist = levenshtein(A, t);
+    if (dist <= maxDist) return true;
+  }
+  const distFull = levenshtein(A, B);
+  return distFull <= maxDist;
+};
+
+// ขยาย query: เช่น "น้ำ" → ["น้ำ","น้ำดื่ม","water","drinking water"]
+const expandQuery = (q = "") => {
+  const normQ = normalizeText(q);
+  const extra = [];
+
+  if (normQ.includes("น้ำ") || normQ.includes("น้ํา")) {
+    extra.push("น้ำดื่ม", "water", "drinking water");
+  }
+  if (normQ.includes("water")) {
+    extra.push("น้ำ", "น้ํา", "น้ำดื่ม", "drinking water");
+  }
+
+  // สามารถเพิ่ม mapping อื่น ๆ ได้ เช่น โค้ก/coke, นม/milk ฯลฯ
+  // if (normQ.includes("โค้ก")) extra.push("coke", "coca cola");
+  // if (normQ.includes("coke")) extra.push("โค้ก", "โคคาโคล่า");
+
+  return [q, ...extra];
+};
+
+// เช็คว่า product ตัวหนึ่ง match กับ search query หรือไม่
+const matchProductWithQuery = (p, searchQ) => {
+  if (!searchQ) return true;
+
+  const name = String(p.name || "").trim();
+  const brand = String(p.brand || "").trim();
+  const cat = String(p.cat || "").trim();
+  const code = String(p.productCode || p.id || "").trim();
+
+  if (!name && !brand && !cat && !code) return false;
+
+  const fields = [name, brand, cat, code].filter(Boolean);
+  const variants = expandQuery(searchQ);
+
+  for (const v of variants) {
+    for (const f of fields) {
+      if (fuzzyMatch(v, f)) return true;
+    }
+  }
   return false;
 };
 
@@ -259,9 +351,7 @@ export default function ShopPage() {
         setBRANDS_MASTER(
           (brands || []).map((b) => ({ id: Number(b.id), name: clean(b.name) }))
         );
-        setPROMO_LIST(
-          [...promoLabelSet].sort((a, b) => a.localeCompare(b))
-        );
+        setPROMO_LIST([...promoLabelSet].sort((a, b) => a.localeCompare(b)));
       } catch (e) {
         setLoadErr(e.message || "Failed to load data");
       } finally {
@@ -307,6 +397,10 @@ export default function ShopPage() {
     );
     return fromMaster.sort((a, b) => a.localeCompare(b));
   }, [PRODUCTS, BRANDS_MASTER]);
+
+  // อ่าน search term จาก query string เช่น /shop?search=น้ำ
+  const searchQ = (searchParams.get("search") || "").trim();
+  const hasSearch = searchQ.length > 0;
 
   useEffect(() => {
     const catParam = searchParams.get("cat");
@@ -393,20 +487,6 @@ export default function ShopPage() {
     setPage(1);
   };
 
-  // Searching placeholders (not used now)
-  const hasSearch = false;
-  const searchQ = "";
-  const searchScope = "all";
-  const normalize = (s) =>
-    String(s ?? "")
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/\p{Diacritic}/gu, "")
-      .replace(/[^\w\s-]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  const fuzzyMatch = () => false;
-
   // Filter, sort, paginate
   const filtered = useMemo(() => {
     const f = filters;
@@ -419,51 +499,8 @@ export default function ShopPage() {
       const pBrand = norm(p.brand);
       const pPromo = norm(p.promo);
 
-      if (hasSearch) {
-        const q = normalize(searchQ).replace(/^#/, "");
-        if (searchScope === "productid" || searchScope === "product_id") {
-          if (
-            !String(p.productCode || p.id || "")
-              .toLowerCase()
-              .includes(q)
-          )
-            return false;
-        } else if (searchScope === "category") {
-          if (!normalize(p.cat || "").includes(q)) return false;
-        } else if (searchScope === "stock") {
-          const sq = q.replace(/\s+/g, "");
-          if (/(in|instock|available)/.test(sq)) {
-            if (!(p.stock && Number(p.stock) > 0)) return false;
-          } else if (/(out|outofstock|soldout)/.test(sq)) {
-            if (p.stock && Number(p.stock) > 0) return false;
-          } else {
-            return false;
-          }
-        } else {
-          const name = normalize(p.name || "");
-          const brand = normalize(p.brand || "");
-          const cat = normalize(p.cat || "");
-          const code = String(p.productCode || "").toLowerCase();
-          const terms = (normalize(searchQ) || "")
-            .split(" ")
-            .filter(Boolean);
-          const ok = terms.every((t) => {
-            if (
-              name.includes(t) ||
-              code.includes(t) ||
-              brand.includes(t) ||
-              cat.includes(t)
-            )
-              return true;
-            if (fuzzyMatch(t, name)) return true;
-            if (brand && fuzzyMatch(t, brand)) return true;
-            if (cat && fuzzyMatch(t, cat)) return true;
-            if (code && fuzzyMatch(t, code)) return true;
-            return false;
-          });
-          if (!ok) return false;
-        }
-      }
+      // 🔍 ใช้ tolerant search + synonym น้ำ ↔ water
+      if (hasSearch && !matchProductWithQuery(p, searchQ)) return false;
 
       if (catSet.size && !catSet.has(pCat)) return false;
       if (brandSet.size && !brandSet.has(pBrand)) return false;
@@ -476,7 +513,7 @@ export default function ShopPage() {
       }
       return true;
     });
-  }, [filters, PRODUCTS]);
+  }, [filters, PRODUCTS, hasSearch, searchQ]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -503,9 +540,11 @@ export default function ShopPage() {
     if (filters.priceMinC != null || filters.priceMaxC != null)
       out.push({
         key: "price",
-        label: `฿${filters.priceMinC != null ? fromCents(filters.priceMinC) : "0.00"
-          }–${filters.priceMaxC != null ? fromCents(filters.priceMaxC) : "∞"
-          }`,
+        label: `฿${
+          filters.priceMinC != null ? fromCents(filters.priceMinC) : "0.00"
+        }–${
+          filters.priceMaxC != null ? fromCents(filters.priceMaxC) : "∞"
+        }`,
       });
     return out;
   }, [filters]);
@@ -554,8 +593,8 @@ export default function ShopPage() {
     const btnLabel = out
       ? "OUT OF STOCK"
       : added
-        ? "ADDED ✓"
-        : "ADD TO CART";
+      ? "ADDED ✓"
+      : "ADD TO CART";
 
     const onAdd = () => {
       if (out) return;
@@ -737,7 +776,13 @@ export default function ShopPage() {
 
             <div className="toolbar-row">
               <p className="result-count">
-                {loading ? "Loading…" : `${filtered.length} items found`}
+                {loading
+                  ? "Loading…"
+                  : `${filtered.length} items found${
+                      hasSearch && searchQ
+                        ? ` for "${searchQ}"`
+                        : ""
+                    }`}
               </p>
               <div className="sort-area">
                 <label className="sr-only" htmlFor="sort">
