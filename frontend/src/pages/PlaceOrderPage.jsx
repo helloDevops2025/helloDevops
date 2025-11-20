@@ -121,8 +121,9 @@ function toRequest(addr) {
 }
 function fromResponse(r) {
   const phone = r.phoneNumber || "";
-  const text = `${r.address || ""}${r.street ? " " + r.street + "," : ""} ${r.subdistrict || ""
-    }, ${r.district || ""}, ${r.province || ""} ${r.zipcode || ""} | Tel: ${phone}`;
+  const text = `${r.address || ""}${r.street ? " " + r.street + "," : ""} ${
+    r.subdistrict || ""
+  }, ${r.district || ""}, ${r.province || ""} ${r.zipcode || ""} | Tel: ${phone}`;
   return {
     id: r.id,
     name: r.name || "",
@@ -153,16 +154,31 @@ function toProductIdFk(item) {
     (Number.isFinite(Number(item.id)) ? Number(item.id) : null)
   );
 }
-async function apiCreateOrder({ customerName, customerPhone, shippingAddress, cart }) {
+
+async function apiCreateOrder({
+  customerName,
+  customerPhone,
+  shippingAddress,
+  cart,
+  subtotal,
+  discountTotal,
+  shippingFee,
+  grandTotal,
+}) {
   const payload = {
     customerName,
     customerPhone,
     shippingAddress,
+    subtotal,
+    discountTotal,
+    shippingFee,
+    grandTotal,
     orderItems: cart.map((it) => ({
       productIdFk: toProductIdFk(it),
       quantity: Number(it.qty || 1),
     })),
   };
+
   const res = await fetch(`${API}/api/orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -173,6 +189,136 @@ async function apiCreateOrder({ customerName, customerPhone, shippingAddress, ca
     throw new Error(txt || "สร้างคำสั่งซื้อไม่สำเร็จ");
   }
   return res.json();
+}
+
+/* ---------- Promotion helpers (อ่านจาก backend) ---------- */
+
+function normalizePromotion(p) {
+  if (!p) return null;
+  return {
+    id: p.id ?? null,
+    promoType: p.promo_type ?? p.promoType ?? "PERCENT_OFF",
+    scope: p.scope ?? "ORDER",
+    percentOff: Number(p.percent_off ?? p.percentOff ?? 0) || 0,
+    amountOff: Number(p.amount_off ?? p.amountOff ?? 0) || 0,
+    fixedPrice: p.fixed_price ?? p.fixedPrice ?? null,
+    buyQty: p.buy_qty ?? p.buyQty ?? null,
+    getQty: p.get_qty ?? p.getQty ?? null,
+    minOrderAmount: Number(p.min_order_amount ?? p.minOrderAmount ?? 0) || 0,
+    minQuantity: p.min_quantity ?? p.minQuantity ?? null,
+  };
+}
+
+async function apiListActivePromotions() {
+  const res = await fetch(`${API}/api/promotions?status=ACTIVE`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "load promotion failed");
+    throw new Error(txt || "load promotion failed");
+  }
+  const raw = await res.json();
+  const arr = Array.isArray(raw)
+    ? raw
+    : raw?.items || raw?.data || raw?.content || raw?.results || [];
+  return arr.map(normalizePromotion).filter(Boolean);
+}
+
+async function apiListProductsOfPromotion(promoId) {
+  const res = await fetch(
+    `${API}/api/promotions/${encodeURIComponent(promoId)}/products`,
+    { headers: { Accept: "application/json" } }
+  );
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "load promo products failed");
+    throw new Error(txt || "load promo products failed");
+  }
+  const raw = await res.json();
+  return Array.isArray(raw)
+    ? raw
+    : raw?.items || raw?.data || raw?.content || raw?.results || [];
+}
+
+// คำนวณส่วนลดต่อบรรทัด จาก promotion ระดับสินค้า
+function calcLineDiscount(unitPrice, qty, promo) {
+  const price = Number(unitPrice) || 0;
+  const q = Math.max(1, Number(qty) || 1);
+  const lineTotal = price * q;
+  if (!promo) return 0;
+
+  const type = promo.promoType;
+  if (type === "PERCENT_OFF") {
+    const pct = promo.percentOff || 0;
+    if (pct <= 0) return 0;
+    return (lineTotal * pct) / 100;
+  }
+  if (type === "AMOUNT_OFF") {
+    const off = promo.amountOff || 0;
+    if (off <= 0) return 0;
+    return Math.min(lineTotal, off * q);
+  }
+  if (type === "FIXED_PRICE") {
+    if (promo.fixedPrice == null) return 0;
+    const fp = Number(promo.fixedPrice) || 0;
+    if (fp <= 0 || fp >= price) return 0;
+    return (price - fp) * q;
+  }
+  if (type === "BUY_X_GET_Y") {
+    const bx = Number(promo.buyQty || 0);
+    const gy = Number(promo.getQty || 0);
+    if (bx <= 0 || gy <= 0) return 0;
+    const group = bx + gy;
+    const fullGroups = Math.floor(q / group);
+    const freeQty = fullGroups * gy;
+    return freeQty * price;
+  }
+  return 0;
+}
+
+/* ---------- helper รวมสูตร subtotal / discount ใช้ทั้ง FE + ส่งเข้า backend ---------- */
+function computeCartTotals(cart, productPromosByProductId, orderPromos) {
+  let subtotal = 0;
+  let itemsCount = 0;
+  let productDiscountTotal = 0;
+
+  for (const it of cart) {
+    const price = Number(it.price) || 0;
+    const qty = Math.max(1, Number(it.qty) || 1);
+    const lineTotal = price * qty;
+
+    subtotal += lineTotal;
+    itemsCount += qty;
+
+    const key = String(it.productId ?? it.id ?? "");
+    const promosForProduct =
+      (productPromosByProductId && productPromosByProductId[key]) || [];
+    if (promosForProduct.length > 0) {
+      const promo = promosForProduct[0]; // ตอนนี้สมมติ 1 โปรต่อสินค้า
+      productDiscountTotal += calcLineDiscount(price, qty, promo);
+    }
+  }
+
+  let orderDiscount = 0;
+  const baseAfterProduct = subtotal - productDiscountTotal;
+  if (orderPromos && orderPromos.length && baseAfterProduct > 0) {
+    for (const promo of orderPromos) {
+      const minAmt = promo.minOrderAmount || 0;
+      if (minAmt > 0 && baseAfterProduct < minAmt) continue;
+
+      let d = 0;
+      if (promo.promoType === "PERCENT_OFF") {
+        const pct = promo.percentOff || 0;
+        if (pct > 0) d = (baseAfterProduct * pct) / 100;
+      } else if (promo.promoType === "AMOUNT_OFF") {
+        const off = promo.amountOff || 0;
+        if (off > 0) d = Math.min(baseAfterProduct, off);
+      }
+      if (d > orderDiscount) orderDiscount = d;
+    }
+  }
+
+  const totalDiscount = productDiscountTotal + orderDiscount;
+  return { subtotal, itemsCount, discount: totalDiscount };
 }
 
 // Address Form
@@ -480,19 +626,14 @@ function ConfirmDialog({
 }
 
 // Order Summary
-function OrderSummary({ cart, canConfirm, onConfirm }) {
-  const { subtotal, itemsCount } = useMemo(() => {
-    let subtotal = 0,
-      itemsCount = 0;
-    for (const it of cart) {
-      subtotal += (Number(it.price) || 0) * (Number(it.qty) || 0);
-      itemsCount += Number(it.qty) || 0;
-    }
-    return { subtotal, itemsCount };
-  }, [cart]);
-  const shipping = 0,
-    discount = 0,
-    total = subtotal - discount + shipping;
+function OrderSummary({ cart, canConfirm, onConfirm, productPromos, orderPromos }) {
+  const { subtotal, itemsCount, discount } = useMemo(
+    () => computeCartTotals(cart, productPromos, orderPromos),
+    [cart, productPromos, orderPromos]
+  );
+
+  const shipping = 0;
+  const total = subtotal - discount + shipping;
 
   return (
     <aside className="card summary-card">
@@ -534,7 +675,7 @@ function OrderSummary({ cart, canConfirm, onConfirm }) {
         </div>
         <div className="line">
           <span>Subtotal</span>
-          <span>{currencyTHB(subtotal)}</span>
+          <span>{currencyTHB(subtotal - discount)}</span>
         </div>
         <div className="line">
           <span>Shipping</span>
@@ -627,49 +768,15 @@ export default function PlaceOrderPage() {
     return () => document.body.classList.remove("po-page");
   }, []);
 
-  const defaultCart = [
-    {
-      id: "#00001",
-      name: "ข้าวขาวหอมมะลิใหม่100% 5กก.",
-      price: 165.0,
-      qty: 1,
-      img: "/assets/products/001.jpg",
-    },
-    {
-      id: "#00007",
-      name: "ซูเปอร์เชฟ หมูเด้ง แช่แข็ง 220 กรัม แพ็ค 3",
-      price: 180.0,
-      qty: 4,
-      img: "/assets/products/007.jpg",
-    },
-    {
-      id: "#00018",
-      name: "มะม่วงน้ำดอกไม้สุก",
-      price: 120.0,
-      qty: 2,
-      img: "/assets/products/018.jpg",
-    },
-    {
-      id: "#00011",
-      name: "ซีพี ชิคแชค เนื้อไก่ปรุงรสทอดกรอบแช่แข็ง 800 กรัม",
-      price: 179.0,
-      qty: 2,
-      img: "/assets/products/011.jpg",
-    },
-    {
-      id: "#00004",
-      name: "โกกิแป้งทอดกรอบ 500ก.",
-      price: 45.0,
-      qty: 2,
-      img: "/assets/products/004.jpg",
-    },
-  ];
-
   const [cart, setCart] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [mode, setMode] = useState("list");
   const [editing, setEditing] = useState(null);
   const [loadingAddr, setLoadingAddr] = useState(true);
+
+  // promotion state
+  const [productPromosByProductId, setProductPromosByProductId] = useState({});
+  const [orderLevelPromos, setOrderLevelPromos] = useState([]);
 
   // state สำหรับ popup ลบ
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -685,7 +792,7 @@ export default function PlaceOrderPage() {
       if (sel && Array.isArray(sel.items) && sel.items.length > 0) {
         initialCart = mapSelectionToCartItems(sel.items);
       }
-    } catch { }
+    } catch {}
 
     // จาก buy-now
     if (
@@ -712,7 +819,7 @@ export default function PlaceOrderPage() {
               img: it.thumb || "/assets/products/placeholder.jpg",
             }));
           }
-        } catch { }
+        } catch {}
       }
     }
 
@@ -722,11 +829,54 @@ export default function PlaceOrderPage() {
         const ls = JSON.parse(localStorage.getItem(LS_CART) || "[]");
         if (Array.isArray(ls) && ls.length)
           initialCart = mapCartStorageToCartItems(ls);
-      } catch { }
+      } catch {}
     }
 
-    setCart(initialCart || defaultCart);
-  }, []);
+    setCart(initialCart || []);
+  }, [location.state]);
+
+  // โหลด promotion ตามสินค้าใน cart
+  useEffect(() => {
+    if (!cart || cart.length === 0) {
+      setProductPromosByProductId({});
+      setOrderLevelPromos([]);
+      return;
+    }
+
+    (async () => {
+      try {
+        const promos = await apiListActivePromotions();
+        const orderPromos = promos.filter((p) => p.scope === "ORDER");
+        const productPromos = promos.filter((p) => p.scope === "PRODUCT");
+
+        const map = {};
+        for (const promo of productPromos) {
+          try {
+            const products = await apiListProductsOfPromotion(promo.id);
+            for (const prod of products) {
+              const pid =
+                prod.id ??
+                prod.productId ??
+                prod.product_id ??
+                prod.productIdFk ??
+                prod.product_id_fk;
+              if (pid == null) continue;
+              const key = String(pid);
+              if (!map[key]) map[key] = [];
+              map[key].push(promo);
+            }
+          } catch (e) {
+            console.warn("load products of promo failed", e);
+          }
+        }
+
+        setProductPromosByProductId(map);
+        setOrderLevelPromos(orderPromos);
+      } catch (e) {
+        console.warn("load promotions failed", e);
+      }
+    })();
+  }, [cart]);
 
   // โหลด Address จาก DB
   const refreshAddresses = async () => {
@@ -823,10 +973,20 @@ export default function PlaceOrderPage() {
       return;
     }
 
-    const shippingAddress = `${selectedAddress.house || ""}${selectedAddress.street ? " " + selectedAddress.street + "," : ""
-      } ${selectedAddress.subdistrict || ""}, ${selectedAddress.district || ""
-      }, ${selectedAddress.province || ""} ${selectedAddress.zipcode || ""
-      }`.trim();
+    const shippingAddress = `${selectedAddress.house || ""}${
+      selectedAddress.street ? " " + selectedAddress.street + "," : ""
+    } ${selectedAddress.subdistrict || ""}, ${selectedAddress.district || ""}, ${
+      selectedAddress.province || ""
+    } ${selectedAddress.zipcode || ""}`.trim();
+
+    // ✅ คำนวณ subtotal / discount จาก cart + promotions เดียวกับที่โชว์ในหน้า
+    const { subtotal, itemsCount, discount } = computeCartTotals(
+      cart,
+      productPromosByProductId,
+      orderLevelPromos
+    );
+    const shippingFee = 0; // ตอนนี้ fix 0 ก่อน
+    const grandTotal = subtotal - discount + shippingFee;
 
     try {
       const created = await apiCreateOrder({
@@ -834,6 +994,10 @@ export default function PlaceOrderPage() {
         customerPhone: selectedAddress.phone,
         shippingAddress,
         cart,
+        subtotal,
+        discountTotal: discount,
+        shippingFee,
+        grandTotal,
       });
 
       const orderPayload = {
@@ -844,11 +1008,11 @@ export default function PlaceOrderPage() {
       };
       try {
         sessionStorage.setItem("pm_last_order", JSON.stringify(orderPayload));
-      } catch { }
+      } catch {}
 
       try {
         localStorage.removeItem(LS_CHECKOUT);
-      } catch { }
+      } catch {}
 
       navigate(`/tracking-user/${created.id}`, { state: orderPayload });
     } catch (e) {
@@ -941,6 +1105,8 @@ export default function PlaceOrderPage() {
             cart={cart}
             canConfirm={canConfirm}
             onConfirm={handleConfirm}
+            productPromos={productPromosByProductId}
+            orderPromos={orderLevelPromos}
           />
         </div>
       </main>

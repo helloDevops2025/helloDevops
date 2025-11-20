@@ -1,4 +1,3 @@
-// src/pages_admin/AdminOrderDetailPage.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
@@ -21,15 +20,17 @@ function fmtDateTime(isoLike) {
   try {
     const d = new Date(isoLike);
 
-    const datePart = new Intl.DateTimeFormat(
-      "en-GB-u-ca-gregory",
-      { day: "2-digit", month: "short", year: "numeric" }
-    ).format(d);
+    const datePart = new Intl.DateTimeFormat("en-GB-u-ca-gregory", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(d);
 
-    const timePart = new Intl.DateTimeFormat(
-      "en-US-u-ca-gregory",
-      { hour: "2-digit", minute: "2-digit", hour12: true }
-    ).format(d);
+    const timePart = new Intl.DateTimeFormat("en-US-u-ca-gregory", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(d);
 
     return `${datePart} • ${timePart}`;
   } catch {
@@ -54,7 +55,10 @@ async function updateOrderStatusFlexible(orderId, code) {
 
   const payloads = [{ status: s }, { orderStatus: s }, { order_status: s }];
   const endpoints = [
-    { url: `${API_URL}/api/orders/${encodeURIComponent(orderId)}/status`, methods: ["PUT", "PATCH"] },
+    {
+      url: `${API_URL}/api/orders/${encodeURIComponent(orderId)}/status`,
+      methods: ["PUT", "PATCH"],
+    },
     { url: `${API_URL}/api/orders/${encodeURIComponent(orderId)}`, methods: ["PUT", "PATCH"] },
   ];
 
@@ -66,21 +70,44 @@ async function updateOrderStatusFlexible(orderId, code) {
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify(body),
         }).catch(() => null);
-        if (res && res.ok) { try { return await res.json(); } catch { return { ok: true }; } }
-        else if (res) { const txt = await res.text().catch(() => ""); console.warn(`[updateOrderStatusFlexible] ${method} ${ep.url}`, body, res.status, txt); }
+        if (res && res.ok) {
+          try {
+            return await res.json();
+          } catch {
+            return { ok: true };
+          }
+        } else if (res) {
+          const txt = await res.text().catch(() => "");
+          console.warn(
+            `[updateOrderStatusFlexible] ${method} ${ep.url}`,
+            body,
+            res.status,
+            txt
+          );
+        }
       }
     }
   }
 
   // fallback: form-urlencoded
   for (const ep of endpoints) {
-    const form = new URLSearchParams(); form.set("status", s);
+    const form = new URLSearchParams();
+    form.set("status", s);
     const res = await fetch(ep.url, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
       body: form.toString(),
     }).catch(() => null);
-    if (res && res.ok) { try { return await res.json(); } catch { return { ok: true }; } }
+    if (res && res.ok) {
+      try {
+        return await res.json();
+      } catch {
+        return { ok: true };
+      }
+    }
   }
 
   throw new Error("Backend rejected all payloads/endpoints");
@@ -95,7 +122,8 @@ export default function AdminOrderDetailPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [statusDraft, setStatusDraft] = useState(""); // เก็บค่า code จาก select
-  // ★ popup แบบเดียวกับหน้า Add Product
+
+  // popup แจ้งเตือน
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertList, setAlertList] = useState([]);
 
@@ -122,8 +150,8 @@ export default function AdminOrderDetailPage() {
         const orderItems = Array.isArray(data.orderItems)
           ? data.orderItems
           : Array.isArray(data.items)
-            ? data.items
-            : [];
+          ? data.items
+          : [];
 
         // ✅ รองรับหลายชื่อคีย์ของเวลา
         const orderedAt =
@@ -135,15 +163,16 @@ export default function AdminOrderDetailPage() {
           data.order_date ??
           null;
 
-        const updatedAt =
-          data.updatedAt ??
-          data.updated_at ??
-          null;
+        const updatedAt = data.updatedAt ?? data.updated_at ?? null;
+
+        // ✅ รับ discount จาก backend (รองรับหลายชื่อฟิลด์)
+        const discountTotalRaw = data.discount_total ?? data.discountTotal ?? 0;
 
         const normalized = {
           ...data,
           orderedAt,
           updatedAt,
+          discountTotal: Number(discountTotalRaw) || 0,
           orderItems: orderItems.map((it) => ({
             productName:
               it.productName ||
@@ -154,12 +183,14 @@ export default function AdminOrderDetailPage() {
             priceEach: Number(it.priceEach ?? it.price ?? it.unitPrice ?? 0),
             totalPrice: Number(
               it.totalPrice ??
-              (Number(it.priceEach ?? it.price ?? 0) * Number(it.quantity || 0))
+                (Number(it.priceEach ?? it.price ?? 0) * Number(it.quantity || 0))
             ),
             brandName: it.brandName || it?.product?.brandName || "",
           })),
-          totalAmount: Number(data.totalAmount ?? data.total ?? 0),
-          shippingCost: Number(data.shippingCost ?? 0),
+          // totalAmount / shippingCost / status รองรับหลายชื่อ field
+          totalAmount:
+            data.totalAmount ?? data.total ?? null, // อนุญาตให้เป็น null เพื่อคำนวณเองตอนหลัง
+          shippingCost: Number(data.shippingCost ?? data.shipping_cost ?? 0),
           orderStatus: String(data.orderStatus || data.status || "PENDING").toUpperCase(),
         };
 
@@ -175,7 +206,9 @@ export default function AdminOrderDetailPage() {
     }
 
     load();
-    return () => { abort = true; };
+    return () => {
+      abort = true;
+    };
   }, [id]);
 
   // ===== Derived totals =====
@@ -185,26 +218,39 @@ export default function AdminOrderDetailPage() {
       0
     ) || 0;
 
+  const discountTotal = Number(order?.discountTotal ?? 0) || 0;
+
+  const shippingCost = Number(order?.shippingCost ?? 0) || 0;
+
+  // ถ้า backend มี totalAmount/grandTotal ให้ใช้เลย
+  // ถ้าไม่มี ให้ใช้ subtotal - discount + shipping
   const totalAmount =
-    Number(order?.totalAmount || 0) || Number(subtotal + (order?.shippingCost || 0));
+    order?.grandTotal ??
+    order?.grand_total ??
+    (order?.totalAmount != null
+      ? Number(order.totalAmount)
+      : subtotal - discountTotal + shippingCost);
 
   // ===== Change status =====
   async function handleChangeStatus() {
     if (!order) return;
     const code = String(statusDraft || "").toUpperCase();
-    if (!code) { alert("กรุณาเลือกสถานะก่อน"); return; }
-    if (!ALL_STATUS_CODES.includes(code)) { alert("รูปแบบสถานะไม่ถูกต้อง"); return; }
+    if (!code) {
+      alert("please select status");
+      return;
+    }
+    if (!ALL_STATUS_CODES.includes(code)) {
+      alert("incorrect format");
+      return;
+    }
 
     try {
       setSaving(true);
       await updateOrderStatusFlexible(order.id ?? id, code);
       setOrder((prev) => (prev ? { ...prev, orderStatus: code } : prev));
-      // ★ แจ้งสำเร็จด้วย popup
-      showAlert("อัปเดตสถานะเรียบร้อย");
+      showAlert("Status Complaete");
     } catch (e) {
       console.error(e);
-
-      // ★ แจ้ง error ด้วย popup
       showAlert(
         "❌ อัปเดตสถานะไม่สำเร็จ — กรุณาตรวจสอบ log ใน Console/Network"
       );
@@ -270,7 +316,6 @@ export default function AdminOrderDetailPage() {
               <span>{order.orderCode || "-"}</span>
             </div>
 
-            {/* ✅ เพิ่มวัน-เวลา (อยู่ในกล่อง Summary เดิม, ไม่เปลี่ยนดีไซน์) */}
             <div className="info">
               <p>Ordered At :</p>
               <span title={order.orderedAt || ""}>{fmtDateTime(order.orderedAt)}</span>
@@ -280,7 +325,6 @@ export default function AdminOrderDetailPage() {
               <p>Last Update :</p>
               <span title={order.updatedAt || ""}>{fmtDateTime(order.updatedAt)}</span>
             </div>
-            {/* ✅ จบส่วนที่เพิ่ม */}
 
             <div className="info">
               <p>Customer :</p>
@@ -329,8 +373,13 @@ export default function AdminOrderDetailPage() {
             </div>
 
             <div className="info">
+              <p>Discount :</p>
+              <span>{THB(discountTotal)}</span>
+            </div>
+
+            <div className="info">
               <p>Shipping :</p>
-              <span>{THB(order.shippingCost || 0)}</span>
+              <span>{THB(shippingCost)}</span>
             </div>
 
             <div className="info">
@@ -388,7 +437,11 @@ export default function AdminOrderDetailPage() {
             <div className="status-card">
               <div className="status-text">
                 <h3>Edit Status</h3>
-                <p>{TITLE_BY_STATUS[order.orderStatus] ?? order.orderStatus ?? "Pending"}</p>
+                <p>
+                  {TITLE_BY_STATUS[order.orderStatus] ??
+                    order.orderStatus ??
+                    "Pending"}
+                </p>
               </div>
               <div className="status">
                 <div className="selection-wrapper">
@@ -423,7 +476,9 @@ export default function AdminOrderDetailPage() {
               <h2>Status Timeline</h2>
               <button
                 className="tracking-btn"
-                onClick={() => navigate(`/admin/orders/tracking/${order.id}`)}
+                onClick={() =>
+                  navigate(`/admin/orders/tracking/${order.id}`)
+                }
               >
                 <i className="fa-solid fa-truck" id="icon-track"></i>
                 <h2>Tracking</h2>
@@ -431,7 +486,8 @@ export default function AdminOrderDetailPage() {
             </div>
           </div>
         </aside>
-        {/* ★ Popup แบบโปรดตรวจสอบ */}
+
+        {/* Popup แจ้งเตือน */}
         {alertOpen && (
           <div
             style={{
@@ -474,9 +530,14 @@ export default function AdminOrderDetailPage() {
                   type="button"
                   className="btn primary"
                   onClick={() => setAlertOpen(false)}
-                  style={{ padding: "10px 28px", borderRadius: 10, fontWeight: 600, fontSize: 15, }}
+                  style={{
+                    padding: "10px 28px",
+                    borderRadius: 10,
+                    fontWeight: 600,
+                    fontSize: 15,
+                  }}
                 >
-                  ตกลง
+                  confirm
                 </button>
               </div>
             </div>
