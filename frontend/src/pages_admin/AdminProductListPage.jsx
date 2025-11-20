@@ -110,7 +110,7 @@ export default function AdminProductListPage() {
 
     // ----- Search setup -----
     const input = document.querySelector(".action-bar .search input");
-    const scope = document.querySelector(".action-bar .search select"); // dropdown ใหม่
+    const scope = document.querySelector(".action-bar .search select"); 
     const table = document.querySelector(".table-card");
     const rows = Array.from(table?.querySelectorAll(".table-row") ?? []);
     const hint = table?.querySelector(".hint");
@@ -148,7 +148,7 @@ export default function AdminProductListPage() {
       const qty = parseInt(String(qtyRaw).replace(/[^\d-]/g, ""), 10);
       const isIn = Number.isFinite(qty) && qty > 0;
 
-      // ทำ field สำหรับค้นหา Stock (คำไทย/อังกฤษ)
+     
       const stockText = isIn
         ? "in stock มีสินค้า พร้อมส่ง มีของ"
         : "out of stock หมดสต็อก หมด ไม่มีของ ไม่มีสินค้า";
@@ -191,10 +191,10 @@ export default function AdminProductListPage() {
       if (!input || !scope) return;
       const mode = scope.value;
       const map = {
-        name: "ค้นหาชื่อสินค้า…",
-        productId: "ค้นหา Product ID…",
-        category: "ค้นหา Category…",
-        stock: "ค้นหา Stock (มี/หมด)…",
+        name: "Search product name",
+        productId: "Search Product ID",
+        category: "Search category",
+        stock: "Search stock",
       };
       input.placeholder = map[mode] || "Search…";
     };
@@ -459,7 +459,7 @@ export default function AdminProductListPage() {
                   <option value="category">Category</option>
                   <option value="stock">Stock</option>
                 </select>
-                <input type="text" placeholder="ค้นหาชื่อสินค้า…" />
+                <input type="text" placeholder="Search product name" />
               </div>
               <Link to="/admin/products/new" className="btn-add">
                 <span className="box">
@@ -555,7 +555,7 @@ export default function AdminProductListPage() {
       {confirmOpen && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3>โปรดยืนยันการลบสินค้า</h3>
+            <h3>Please confirm product deletion</h3>
             <p style={{ marginTop: 10 }}>{confirmText}</p>
 
             <div className="modal-buttons">
