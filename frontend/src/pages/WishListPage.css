@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* ========== THEME ========== */
+/*  THEME  */
 :root {
   --pm-primary: #3E40AE;
   --pm-text: #111827;
@@ -12,7 +12,7 @@
   --pm-max: 1280px;
 }
 
-/* ========== PAGE ========== */
+/*  PAGE */
 .wl-page {
   background: var(--pm-bg);
   font-family: "Poppins", system-ui, sans-serif;
@@ -35,7 +35,7 @@
   margin: 0;
 }
 
-/* ===== breadcrumb ===== */
+/* breadcrumb */
 .custom-breadcrumb ol {
   list-style: none;
   display: inline-flex;
@@ -52,7 +52,7 @@
   letter-spacing: .3px;
 }
 
-.custom-breadcrumb__item + .custom-breadcrumb__item {
+.custom-breadcrumb__item+.custom-breadcrumb__item {
   margin-left: 0;
 }
 
@@ -73,7 +73,7 @@
   opacity: .9;
 }
 
-/* ========== TOOLBAR ========== */
+/*  TOOLBAR  */
 .wl-toolbar {
   background: #fff;
   border: 1px solid #E9ECF5;
@@ -120,7 +120,8 @@
   height: 44px;
   padding: 0 18px;
   background: #ffffff;
-  border: 1.8px solid #d3d6e0;  /* ขอบเข้มขึ้น */
+  border: 1.8px solid #d3d6e0;
+  /* ขอบเข้มขึ้น */
   border-radius: 12px;
   font: 700 14px "Poppins";
   color: #3E40AE;
@@ -172,7 +173,7 @@
   background: #F9FAFB;
 }
 
-/* ========== GRID ========== */
+/*  GRID  */
 .wl-wrap {
   max-width: var(--pm-max);
   margin: 0 auto 56px;
@@ -190,18 +191,20 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
 @media (max-width:780px) {
   .wl-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
 @media (max-width:520px) {
   .wl-grid {
     grid-template-columns: 1fr;
   }
 }
 
-/* ========== CARD ========== */
+/*  CARD  */
 .wl-card {
   background: var(--pm-card);
   border: 1px solid #e8ebf4;
@@ -210,7 +213,7 @@
   box-shadow: 0 8px 18px rgba(17, 24, 39, .08);
   display: flex;
   flex-direction: column;
-  height: 100%;                          /* ✅ การ์ดสูงเต็มแถว */
+  height: 100%;
   transition: transform .18s ease, box-shadow .18s ease;
 }
 
@@ -259,10 +262,10 @@
   stroke-width: 2;
 }
 
-/* ========== CONTENT ========== */
+/*  CONTENT  */
 .wl-body {
   padding: 16px 18px 0;
-  flex: 1 0 auto;                        /* ✅ เนื้อหาโตได้ ดันปุ่มลงล่าง */
+  flex: 1 0 auto;
 }
 
 .wl-name {
@@ -273,10 +276,9 @@
   color: #0f172a;
 }
 
-/* ชื่อสินค้าในการ์ด Wishlist ให้ดูเป็นปกติ ไม่ม่วง ไม่ขีดเส้นใต้ */
 .wl-name a {
-  color: #0f172a;          /* สีตัวหนังสือปกติ */
-  text-decoration: none;   /* ตัดเส้นใต้ทิ้ง */
+  color: #0f172a;
+  text-decoration: none;
 }
 
 /* กดแล้วก็ยังสีเดิม ไม่เป็นม่วง */
@@ -323,7 +325,7 @@
   display: flex;
   justify-content: center;
   padding: 0px 16px 14px;
-  margin-top: auto;                      /* ✅ ดันปุ่มให้ชิดล่างเสมอ */
+  margin-top: auto;
   flex: 0 0 auto;
 }
 
@@ -358,7 +360,7 @@
   transform: translateY(1px) !important;
 }
 
-/* ========== EMPTY ========== */
+/*  EMPTY  */
 .wl-empty {
   text-align: center;
   color: var(--pm-muted);
@@ -366,13 +368,13 @@
   font-size: 14px;
 }
 
-/* ========== MODAL (เฉพาะ Wishlist) ========== */
+/*  MODAL (เฉพาะ Wishlist)  */
 
 .wl-modal {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  pointer-events: none; /* ให้ overlay/dialog เป็นตัวรับคลิก */
+  pointer-events: none;
 }
 
 /* พื้นหลังเทาโปร่ง ๆ คลุมทั้งจอ */
@@ -418,14 +420,13 @@
   gap: 10px;
 }
 
-/* ----------------------------- */
-/* ปุ่ม Cancel (ซ้าย)           */
-/* ----------------------------- */
+/* button cancle */
 .wl-modal__actions .btn {
   height: 44px;
   padding: 0 22px;
   border-radius: 12px;
-  border: 1.8px solid #d3d6e0;   /* ขอบเทาเข้มขึ้น */
+  border: 1.8px solid #d3d6e0;
+  /* ขอบเทาเข้มขึ้น */
   background: #f7f8fb;
   color: #4b5563;
   font: 600 14px "Poppins";
@@ -438,14 +439,13 @@
   border-color: #cfd2dc;
 }
 
-/* ----------------------------- */
-/* ปุ่ม Clear all (แดง)          */
-/* ----------------------------- */
+
+/* button clear all */
 .wl-modal__actions .btn.btn-danger {
   height: 44px;
   padding: 0 22px;
   border-radius: 12px;
-  border: 1.8px solid #ef4444;   /* ขอบแดงสวย ๆ */
+  border: 1.8px solid #ef4444;
   background: #ef4444;
   color: #fff;
   font: 700 14px "Poppins";
@@ -458,7 +458,7 @@
   border-color: #dc2626;
 }
 
-/* ========== RESPONSIVE ========== */
+/*  RESPONSIVE  */
 @media (max-width: 480px) {
   .wl-actions .btn.btn-primary {
     min-width: 150px !important;

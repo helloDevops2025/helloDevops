@@ -1,9 +1,5 @@
-/* โหลดฟอนต์ Poppins */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 
-/* ------------------------
-   VARIABLES
-------------------------- */
 :root {
   --primary: #3E40AE;
   --text: #7e8595;
@@ -16,9 +12,6 @@
   --max: 1280px;
 }
 
-/* ------------------------
-   GLOBAL
-------------------------- */
 body {
   margin: 0;
   font-family: "Poppins", system-ui, sans-serif;
@@ -65,9 +58,6 @@ body {
   font: 600 18px/1.2 "Poppins", system-ui, sans-serif;
 }
 
-/* ------------------------
-   ADDRESS FORM
-------------------------- */
 .address-form {
   display: grid;
   gap: 8px;
@@ -168,9 +158,6 @@ body {
   background: #e3e8f2;
 }
 
-/* ------------------------
-   ADDRESS LIST
-------------------------- */
 .saved-addresses {
   display: grid;
   gap: 16px;
@@ -297,9 +284,7 @@ body {
   background: #f0f3ff;
 }
 
-/* ------------------------
-   ORDER SUMMARY
-------------------------- */
+
 .order-item {
   display: grid;
   grid-template-columns: 80px 1fr auto;
@@ -485,9 +470,6 @@ body {
 }
 
 
-/* ------------------------
-   PAGE WRAPPER
-------------------------- */
 .place-order-page {
   min-height: 100vh;
   background: var(--bg);
@@ -499,7 +481,7 @@ body {
   max-width: var(--max);
 }
 
-/* ====== ULTRA-COMPACT FORM SPACING (override) ====== */
+/*  ULTRA-COMPACT FORM SPACING (override)  */
 .place-order-page .address-form {
   row-gap: 6px;
 }
@@ -664,9 +646,7 @@ label span {
   font-size: 14px;
 }
 
-/* ------------------------
-   Sticky bottom action (mobile)
-------------------------- */
+
 .sticky-checkout-bar {
   position: sticky;
   bottom: 0;

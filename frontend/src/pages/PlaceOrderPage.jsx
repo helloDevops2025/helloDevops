@@ -138,7 +138,7 @@ function fromResponse(r) {
   };
 }
 
-/* ===== Order API (จริง) ===== */
+// Order API (จริง)
 function toProductIdFk(item) {
   if (item == null) return null;
   if (typeof item.id === "string" && item.id.startsWith("#")) {
@@ -175,7 +175,7 @@ async function apiCreateOrder({ customerName, customerPhone, shippingAddress, ca
   return res.json();
 }
 
-/* ===== Address Form ===== */
+// Address Form
 function AddressForm({ initial, onCancel, onSave, onError }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
@@ -579,7 +579,7 @@ function mapSelectionToCartItems(selItems = []) {
   }));
 }
 
-/** จาก pm_cart เดิม (หลายรูปแบบ field) */
+// จาก pm_cart เดิม (หลายรูปแบบ field)
 function mapCartStorageToCartItems(raw = []) {
   return raw.map((x, i) => {
     const id =
@@ -610,7 +610,7 @@ function mapCartStorageToCartItems(raw = []) {
   });
 }
 
-/* ===== Main Page ===== */
+// Main Page
 export default function PlaceOrderPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -726,10 +726,9 @@ export default function PlaceOrderPage() {
     }
 
     setCart(initialCart || defaultCart);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* โหลด Address จาก DB */
+  // โหลด Address จาก DB
   const refreshAddresses = async () => {
     setLoadingAddr(true);
     try {
@@ -747,7 +746,6 @@ export default function PlaceOrderPage() {
   };
   useEffect(() => {
     refreshAddresses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const breadcrumbItems = [
