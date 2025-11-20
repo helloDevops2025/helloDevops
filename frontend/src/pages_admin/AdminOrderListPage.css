@@ -1,91 +1,159 @@
-/* AdminOrderListPage */
-body { font-family: system-ui, Arial, sans-serif; }
-h1 { margin: 24px; text-align: center; font-size: 28px; }
-/* --- Popup Overlay --- */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
+/* AdminOrderListPage popup + search/reload alignment */
+
+/* (ถ้า body, h1 ของไฟล์นี้ไม่จำเป็น สามารถลบได้ แต่คงไว้ให้ก่อน) */
+body {
+  font-family: system-ui, Arial, sans-serif;
 }
 
-/* --- Popup Box --- */
+h1 {
+  margin: 24px;
+  text-align: center;
+  font-size: 28px;
+}
+
+/* ───────────────── Popup Overlay ───────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+/* Popup Box */
 .modal {
-    background: #fff;
-    border-radius: 12px;
-    padding: 24px 32px;
-    width: 320px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px 32px;
+  width: 320px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .modal h3 {
-    margin-bottom: 12px;
-    font-size: 18px;
-    color: #333;
+  margin-bottom: 12px;
+  font-size: 18px;
+  color: #333;
 }
 
 .modal p {
-    margin-bottom: 20px;
-    color: #666;
+  margin-bottom: 20px;
+  color: #666;
 }
 
 .modal-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
 }
 
-/* ✅ ปุ่มยกเลิก / ยืนยัน */
+/* ปุ่มยกเลิก / ยืนยัน */
 .btn-cancel,
 .btn-confirm {
-    flex: 1;                        /* ให้ขนาดเท่ากัน */
-    min-width: 120px;               /* กำหนดขนาดขั้นต่ำ */
-    padding: 12px 0;                /* เพิ่มความสูง */
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;                /* ขนาดตัวอักษรใหญ่ขึ้น */
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.25s ease;
+  flex: 1;
+  min-width: 120px;
+  padding: 12px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s ease;
 }
 
 .btn-cancel {
-    background: #d1d1d1;
-    color: #333;
+  background: #d1d1d1;
+  color: #333;
 }
+
 .btn-cancel:hover {
-    background: #bcbcbc;
+  background: #bcbcbc;
 }
 
 .btn-confirm {
-    background: #dc3545;
-    color: #fff;
-}
-.btn-confirm:hover {
-    background: #c82333;
+  background: #dc3545;
+  color: #fff;
 }
 
-/* ✅ ปุ่ม OK */
-.btn-ok {
-    background: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 12px 40px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.25s ease;
-    margin-top: 16px;
+.btn-confirm:hover {
+  background: #c82333;
 }
+
+/* ปุ่ม OK */
+.btn-ok {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 40px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s ease;
+  margin-top: 16px;
+}
+
 .btn-ok:hover {
-    background: #0069d9;
+  background: #0069d9;
+}
+
+/* ───────────────── Search + Reload alignment ───────────────── */
+/* NOTE: data-page="AdminProductListPage" ตาม JSX ของ AdminOrderListPage.jsx */
+
+.app[data-page="AdminProductListPage"] .action-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* กล่อง search ทั้งก้อน (แว่นขยาย + select + input) */
+.app[data-page="AdminProductListPage"] .search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;        /* ลด padding ให้เตี้ยลง */
+  height: 40px;             /* ความสูงเท่าปุ่ม Reload */
+  background: #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06);
+  box-sizing: border-box;
+}
+
+/* ไอคอนแว่นขยายใน search */
+.app[data-page="AdminProductListPage"] .search i {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+/* dropdown เลือก field (Order Code / Customer / Status) */
+.app[data-page="AdminProductListPage"] .search select {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #374151;
+  outline: none;
+}
+
+/* ช่อง input คำค้น */
+.app[data-page="AdminProductListPage"] .search input {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  outline: none;
+  min-width: 120px;
+}
+
+/* ปุ่ม Reload ให้สูงเท่ากับ search */
+.app[data-page="AdminProductListPage"] .action-bar .btn {
+  height: 40px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }

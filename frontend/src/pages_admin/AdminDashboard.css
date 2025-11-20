@@ -8,7 +8,7 @@
 /* Header */
 .app[data-page="AdminDashboard"] .admin-dashboard .header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
@@ -23,88 +23,34 @@
   margin: 0;
   font-size: 14px;
 }
-
-/* 1) จัดกึ่งกลางทุกอย่างในแถบปุ่ม */
 .app[data-page="AdminDashboard"] .admin-dashboard .header-actions {
   display: flex;
-  align-items: flex-end;
-  /* align-items: center; */
-  gap: 10px;
+  align-items: center; /* <<< ทำให้ทุกอย่างอยู่ระดับเดียวกัน */
+  gap: 14px;
 }
 
-/* 2) ปุ่มให้สูงเท่ากันทุกปุ่ม + ไม่ให้ padding เพิ่มความสูง */
+
 .app[data-page="AdminDashboard"] .admin-dashboard .btn {
   border: 1px solid #e2e8f0;
   background: #ffffff;
   border-radius: 10px;
-  height: 44px;           /* ความสูงคงที่ */
-  padding: 0 14px;        /* มีเฉพาะซ้าย/ขวา เพื่อไม่เพิ่มความสูง */
-  box-sizing: border-box; /* รวม padding/border ใน 44px */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  padding: 10px 14px;
   font-size: 14px;
   cursor: pointer;
   box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+  line-height: 1.2;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .btn:hover { background: #f8fafc; }
-.app[data-page="AdminDashboard"] .admin-dashboard .btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+.app[data-page="AdminDashboard"] .admin-dashboard .btn.primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
 .app[data-page="AdminDashboard"] .admin-dashboard .btn.ghost { background: transparent; }
-
-/* 3) กล่องปฏิทินให้เท่าปุ่ม */
-/* .app[data-page="AdminDashboard"] .admin-dashboard .daterange {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  height: 44px;           
-  padding: 0 14px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
-  box-sizing: border-box;
-} */
-
-
-/* ปรับกล่องปฏิทินให้ขนาดเท่ากับปุ่ม Export CSV / Print */
-.app[data-page="AdminDashboard"] .admin-dashboard .daterange {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 10px;
-  height: 44px; /* ✅ ให้เท่ากับปุ่ม */
-  padding: 0 14px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
-}
-
-.app[data-page="AdminDashboard"] .admin-dashboard .daterange label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: #334155;
-  font-weight: 600;
-}
-
-.app[data-page="AdminDashboard"] .admin-dashboard .daterange input[type="date"] {
-  height: 30px;
-  padding: 0 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  background: #fff;
-  color: #0f172a;
-  outline: none;
-  min-width: 140px; /* ✅ เพิ่มให้ช่องมีขนาดเท่ากัน */
-}
-
-.app[data-page="AdminDashboard"] .admin-dashboard .daterange input[type="date"]:focus {
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 3px #93c5fd40;
-}
-
 
 /* KPI Grid */
 .app[data-page="AdminDashboard"] .admin-dashboard .kpi-grid {
@@ -165,17 +111,26 @@
   }
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .card .card-head {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 8px;
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .card h3 {
-  margin: 0; font-size: 16px; font-weight: 700;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
 }
-.app[data-page="AdminDashboard"] .admin-dashboard .mini-hint { color: #94a3b8; font-size: 12px; }
+.app[data-page="AdminDashboard"] .admin-dashboard .mini-hint {
+  color: #94a3b8;
+  font-size: 12px;
+}
 
 /* Bar chart (pure CSS) */
 .app[data-page="AdminDashboard"] .admin-dashboard .bars {
-  display: grid; gap: 8px;
+  display: grid;
+  gap: 8px;
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .bar-row {
   display: grid;
@@ -184,26 +139,40 @@
   gap: 10px;
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .bar-label {
-  color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .bar-track {
-  height: 12px; background: #f1f5f9; border-radius: 999px; overflow: hidden;
+  height: 12px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .bar-fill {
   height: 100%;
   background: linear-gradient(90deg, #60a5fa, #2563eb);
   border-radius: 999px;
 }
-.app[data-page="AdminDashboard"] .admin-dashboard .bar-value { text-align: right; font-weight: 700; }
+.app[data-page="AdminDashboard"] .admin-dashboard .bar-value {
+  text-align: right;
+  font-weight: 700;
+}
 
 /* Notes / Suggestion list */
 .app[data-page="AdminDashboard"] .admin-dashboard .notes .suggest {
-  margin: 8px 0 0; padding-left: 18px;
+  margin: 8px 0 0;
+  padding-left: 18px;
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .notes li {
   margin-bottom: 10px;
 }
-.app[data-page="AdminDashboard"] .admin-dashboard .muted { color: #94a3b8; font-size: 12px; margin-top: 2px; }
+.app[data-page="AdminDashboard"] .admin-dashboard .muted {
+  color: #94a3b8;
+  font-size: 12px;
+  margin-top: 2px;
+}
 
 /* Table */
 .app[data-page="AdminDashboard"] .admin-dashboard .table-wrap .search {
@@ -219,25 +188,277 @@
 .app[data-page="AdminDashboard"] .admin-dashboard .thead,
 .app[data-page="AdminDashboard"] .admin-dashboard .trow {
   display: grid;
-  grid-template-columns: 3fr 1.2fr 1.4fr 1.2fr 1fr 1fr 1.2fr 1.4fr 1.6fr;
+  grid-template-columns: 3fr 1.2fr 1.4fr 1.2fr 1fr 1fr 1.2fr 1.4fr 1.6fr 0.8fr;
   gap: 10px;
   padding: 12px 10px;
 }
 .app[data-page="AdminDashboard"] .admin-dashboard .thead {
-  background: #f1f5f9; border-radius: 12px; font-weight: 700; color: #334155;
+  background: #f1f5f9;
+  border-radius: 12px;
+  font-weight: 700;
+  color: #334155;
+  /* text-align: center;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: space-evenly; */
 }
+
+/* จัดหัวคอลัมน์ที่เป็นตัวเลขให้กลาง เหมือน .cell.num */
+.app[data-page="AdminDashboard"] .admin-dashboard .thead > div:nth-child(2),  /* Product ID */
+.app[data-page="AdminDashboard"] .admin-dashboard .thead > div:nth-child(5),  /* Price */
+.app[data-page="AdminDashboard"] .admin-dashboard .thead > div:nth-child(6),  /* In Stock */
+.app[data-page="AdminDashboard"] .admin-dashboard .thead > div:nth-child(7),  /* Sold (Week) */
+.app[data-page="AdminDashboard"] .admin-dashboard .thead > div:nth-child(9)   /* Last Restocked */
+{
+  background: #f1f5f9;
+  border-radius: 12px;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
 .app[data-page="AdminDashboard"] .admin-dashboard .trow {
+  /* border-bottom: 1px dashed #e2e8f0;
+   */
   border-bottom: 1px dashed #e2e8f0;
+  min-height: 50px;
+  align-items: center;
 }
-.app[data-page="AdminDashboard"] .admin-dashboard .trow:last-child { border-bottom: 0; }
-.app[data-page="AdminDashboard"] .admin-dashboard .cell.num { text-align: right; }
-.app[data-page="AdminDashboard"] .admin-dashboard .cell.name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app[data-page="AdminDashboard"] .admin-dashboard .trow:last-child {
+  border-bottom: 0;
+  
+}
+.app[data-page="AdminDashboard"] .admin-dashboard .cell.num {
+  text-align: center;        /* เดิมเป็น right → center */
+  justify-content: center;   /* สำหรับ flex/grid alignment */
+  align-items: center;
+  display: flex; 
+}
+.app[data-page="AdminDashboard"] .admin-dashboard .cell.name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .app[data-page="AdminDashboard"] .admin-dashboard .pill {
-  display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
 }
-.app[data-page="AdminDashboard"] .admin-dashboard .pill.ok { background: #dcfce7; color: #14532d; }
-.app[data-page="AdminDashboard"] .admin-dashboard .pill.warn { background: #fef9c3; color: #713f12; }
-.app[data-page="AdminDashboard"] .admin-dashboard .pill.danger { background: #fee2e2; color: #7f1d1d; }
+.app[data-page="AdminDashboard"] .admin-dashboard .pill.ok {
+  background: #dcfce7;
+  color: #14532d;
+}
+.app[data-page="AdminDashboard"] .admin-dashboard .pill.warn {
+  background: #fef9c3;
+  color: #713f12;
+}
+.app[data-page="AdminDashboard"] .admin-dashboard .pill.danger {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
 
 /* utilities */
-.app[data-page="AdminDashboard"] .admin-dashboard .hide { display: none; }
+.app[data-page="AdminDashboard"] .admin-dashboard .hide {
+  display: none;
+}
+
+
+/* ========================================================== */
+/* Date range picker (header-actions) - รุ่นปรับขนาดเตี้ย   */
+/* ========================================================== */
+
+/* กล่องรวม From / To / Apply */
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .daterange {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  /* background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 6px 8px;
+  box-shadow: 0 2px 4px rgba(2, 6, 23, 0.06);
+  height: 36px;/ */
+}
+
+
+
+/* label + input อยู่ในแถวเดียวกัน */
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .dr-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #475569; /* slate-600 */
+  line-height: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: max-content;
+  /* ไม่ต้อง flex-direction: column แล้ว */
+}
+
+/* เอา margin ล่างออก เพราะเราไม่ต้องการวางซ้อนแนวตั้ง */
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .dr-label span {
+  margin-bottom: 0;
+  font-weight: 500;
+  color: #475569;
+}
+
+/* กล่องวันที่ */
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .dr-label input[type="date"] {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: #0f172a;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+  min-width: 130px;
+  height: 36px; 
+  cursor: pointer;
+}
+
+/* ตัวคั่น "–" */
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .dr-sep {
+  color: #94a3b8;
+  font-weight: 500;
+  padding: 0 4px;
+  font-size: 13px;
+  user-select: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  line-height: 1;
+}
+
+/* ปุ่ม Apply */
+/* .app[data-page="AdminDashboard"] .admin-dashboard .header-actions .btn.inline {
+  height: 36px; 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 0 12px;
+} */
+
+/* disabled state */
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline{
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 100%;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  line-height: 1.1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option input[type="radio"]{
+  margin: 0;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option .label-text{
+  line-height: 1;         /* ลด line-height ไม่ให้ดันขึ้นบน */
+  display: inline-flex;
+  align-items: center;
+  
+}
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #2563eb; /* เปลี่ยนสีวงกลมถ้าต้องการ (เช่น blue-600) */
+  cursor: pointer;
+}
+
+
+/* กัน style label ทั่วระบบที่ใส่ margin/block */
+.app[data-page="AdminDashboard"] .admin-dashboard .header label{
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .btn-edit-inline {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .btn-edit-inline:hover {
+  background: #1e40af;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline {
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option .label-text {
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+
+/* responsive: ถ้าหน้าจอแคบ ให้ wrap */
+@media (max-width: 900px) {
+  .app[data-page="AdminDashboard"] .admin-dashboard .header-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: nowrap;
+    align-items: center;
+    height: 36px;
+  }
+
+  .app[data-page="AdminDashboard"] .admin-dashboard .header-actions .daterange {
+    width: 100%;
+    justify-content: center;
+    height: auto; 
+  }
+  
+}
+
+
