@@ -118,11 +118,14 @@ jobs:
       - name: Debug TAG before build
         run: echo "TAG value is ${{ env.TAG }}"
 
-      # Build Docker image
+     # Build Docker image
       - name: Build Docker image
         run: |
           cd frontend
-          docker build -t u6687032/hello-devops-frontend:${{ env.TAG }} --build-arg MODE=production  . 
+          docker build -t u6687032/hello-devops-frontend:${{ env.TAG }} \
+            --build-arg MODE=production \
+            --build-arg VITE_API_URL=https://hellodevops.muict.app/api \
+            .
 
       # 🔐 Login Docker Hub
       - name: Login to Docker Hub

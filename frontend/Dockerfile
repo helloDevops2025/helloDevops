@@ -6,6 +6,8 @@ RUN npm ci
 
 # คัดลอก source code ทั้งหมด
 COPY . .
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
 # ✅ ใช้ ARG เพื่อเลือก mode
 ARG MODE=production

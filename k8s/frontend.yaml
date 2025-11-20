@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: hellodevops-fe
-        image: u6687032/hellodevops-frontend:latest   # ✅ ใช้ image ของคุณ
+        image: u6687032/hello-devops-frontend:latest   # ✅ ใช้ image ของคุณ
         imagePullPolicy: Always                       # ดึงอิมเมจใหม่ทุกครั้ง
         ports:
         - containerPort: 80
