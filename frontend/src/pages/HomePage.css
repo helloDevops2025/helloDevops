@@ -23,7 +23,7 @@
 }
 
 /* =====================================
-   🟣 BEST SELLERS SECTION
+   BEST SELLERS SECTION
    ===================================== */
 .best-sellers {
   background: var(--primary);
@@ -58,7 +58,7 @@
 }
 
 /* =====================================
-   🟣 PRODUCT GRID (3 COLUMNS)
+   PRODUCT GRID (3 COLUMNS)
    ===================================== */
 .products {
   display: grid !important;
@@ -79,7 +79,7 @@
 }
 
 /* =====================================
-   🟣 PRODUCT CARD (Anchor as Card)
+   PRODUCT CARD (Anchor as Card)
    ===================================== */
 .product {
   position: relative;
@@ -99,9 +99,7 @@
   box-shadow: 0 10px 20px rgba(0, 0, 0, .15);
 }
 
-/* =====================================
-   🟣 PRODUCT IMAGE (FULL + CENTERED)
-   ===================================== */
+/* PRODUCT IMAGE (FULL + CENTERED) */
 .product__thumb {
   position: relative !important;
   width: 100% !important;
@@ -113,17 +111,15 @@
 
 .product__thumb img {
   position: absolute !important;
-  inset: 0 !important; /* top, right, bottom, left = 0 */
+  inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  object-fit: cover !important; /* รูปเต็มกรอบ */
-  object-position: center !important; /* อยู่กลางเสมอ */
+  object-fit: cover !important;
+  object-position: center !important;
   display: block !important;
 }
 
-/* =====================================
-   🟣 PRODUCT BODY
-   ===================================== */
+/* PRODUCT BODY */
 .product__body {
   flex-grow: 1;
   padding: 16px;
@@ -133,24 +129,23 @@
   justify-content: space-between;
 }
 
-/* =====================================
-   🟣 TITLE & PRICE
-   ===================================== */
+/* TITLE & PRICE */
 .product__title {
   font: 500 15px/1.45 "Poppins", system-ui, sans-serif !important;
   color: #222 !important;
   margin: 0 0 8px !important;
-  white-space: normal !important; /* แสดงหลายบรรทัดได้ */
+  white-space: normal !important;
   overflow: visible !important;
   text-overflow: clip !important;
-  word-break: keep-all !important; /* ภาษาไทยไม่ตัดกลางคำ */
+  word-break: keep-all !important;
   overflow-wrap: anywhere !important;
 }
 
 /* when title would collide with the floating fab, shorten to 2 lines */
 .product__title.title--shorten {
   display: -webkit-box !important;
-  -webkit-line-clamp: 2; /* 2 lines when shortened */
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -162,9 +157,7 @@
   white-space: nowrap !important;
 }
 
-/* =====================================
-   🟣 ADD TO CART BUTTON
-   ===================================== */
+/* ADD TO CART BUTTON */
 .add-to-cart {
   position: absolute;
   right: 16px;
@@ -194,21 +187,18 @@
   font-size: 18px;
 }
 
-/* =====================================
-   🟣 HERO BANNER (KEEP ORIGINAL)
-   ===================================== */
-.hero-banner{
+.hero-banner {
   width: 100%;
   border-radius: 14px;
   overflow: hidden;
   box-shadow: var(--shadow);
   position: relative;
-  padding-top: 33.3333%; /* 3:1 ratio */
+  padding-top: 33.3333%;
   margin-bottom: 20px;
 }
 
 /* full-frame image inside banner */
-.hero-banner .hero-img{
+.hero-banner .hero-img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -218,7 +208,7 @@
   display: block;
 }
 
-.hero-banner .hero-content{
+.hero-banner .hero-content {
   position: absolute;
   inset: 0;
   display: flex;
@@ -227,8 +217,7 @@
   align-items: flex-start;
   padding: clamp(20px, 4vw, 48px);
   color: #ffffff;
-  /* stronger overlay so text reads clearly on busy images */
-  background: linear-gradient(180deg, rgba(0,0,0,0.60), rgba(0,0,0,0.30));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.60), rgba(0, 0, 0, 0.30));
   -webkit-font-smoothing: antialiased;
 }
 
@@ -257,76 +246,89 @@
   display: block;
 }
 
-/* If a particular hero image has an important subject on the right, keep it visible
-   when the banner is constrained. Use the modifier class on the anchor:
-   <a class="hero-card hero-card--focus-right">...
-*/
 .hero-card--focus-right img {
   object-position: right center !important;
 }
 
 /* also support the new hero-banner image modifier */
-.hero-img--focus-right{
+.hero-img--focus-right {
   object-position: right center !important;
 }
 
 /* small hero button styles (kept minimal) */
-.hero-ctas{ display:flex; gap:12px; margin-top:16px; }
-.hero-btn{
-  display:inline-block;
-  padding:10px 16px;
-  border-radius:10px;
+.hero-ctas {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.hero-btn {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 10px;
   background: #fff;
   color: var(--primary);
-  text-decoration:none;
-  font-weight:600;
-  box-shadow: 0 8px 26px rgba(0,0,0,0.18);
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.18);
 }
+
 /* ghost button should be light on top of dark overlay */
-.hero-btn--ghost{
+.hero-btn--ghost {
   background: transparent;
-  color: rgba(255,255,255,0.95);
-  border: 1px solid rgba(255,255,255,0.18);
+  color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 /* Headline: white, bold, with shadow & slight stroke for max legibility */
-.hero-banner--main .hero-content h1{
+.hero-banner--main .hero-content h1 {
   color: #ffffff !important;
   font-weight: 700;
   margin: 0 0 8px;
   font-size: clamp(22px, 3.5vw, 48px);
   max-width: 75%;
   line-height: 1.05;
-  text-shadow: 0 6px 18px rgba(0,0,0,0.65), 0 1px 0 rgba(255,255,255,0.02);
-  -webkit-text-stroke: 0.3px rgba(0,0,0,0.25);
+  text-shadow: 0 6px 18px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.02);
+  -webkit-text-stroke: 0.3px rgba(0, 0, 0, 0.25);
 }
 
 /* Subtext: strong white with shadow */
-.hero-content .hero-sub{
+.hero-content .hero-sub {
   margin: 0 0 14px;
-  color: rgba(255,255,255,0.95) !important;
-  text-shadow: 0 4px 12px rgba(0,0,0,0.55);
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
   max-width: 70%;
 }
 
 @media (max-width: 640px) {
-  .hero-content { padding: 16px; }
-  .hero-content h1 { font-size: 20px; max-width: 100%; }
-  .hero-content .hero-sub { font-size: 14px; max-width: 100%; }
+  .hero-content {
+    padding: 16px;
+  }
+
+  .hero-content h1 {
+    font-size: 20px;
+    max-width: 100%;
+  }
+
+  .hero-content .hero-sub {
+    font-size: 14px;
+    max-width: 100%;
+  }
 }
 
 /* Larger headline for the second promo banner while keeping same aspect ratio */
-.hero-banner--promo .hero-content h1{
+.hero-banner--promo .hero-content h1 {
   font-size: clamp(28px, 4.8vw, 59px);
   max-width: 66%;
-  color: #000000; /* ขาว */
-  text-shadow: 0 2px 4px rgba(0,0,0,0.25);
-  margin-top: 0px  !important;
+  color: #000000;
+  /* ขาว */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  margin-top: 0px !important;
   margin-bottom: 9px;
   margin: 0 0 8px;
 }
 
-.hero-banner--promo .hero-content .hero-sub{
+.hero-banner--promo .hero-content .hero-sub {
   font-size: 21px;
   font-weight: 600;
   max-width: 54%;
@@ -335,114 +337,140 @@
   margin-bottom: 42px;
 }
 
-.hero-banner--promo .hero-content .hero-ctas .hero-btn{
+.hero-banner--promo .hero-content .hero-ctas .hero-btn {
   font-size: 22px;
   background-color: #4269E2;
   color: #ffffff;
-  
+
 }
 
-@media (max-width: 900px){
-  .hero-banner--promo .hero-content h1{ font-size: clamp(26px, 5.6vw, 48px); max-width: 72%; }
+@media (max-width: 900px) {
+  .hero-banner--promo .hero-content h1 {
+    font-size: clamp(26px, 5.6vw, 48px);
+    max-width: 72%;
+  }
 }
 
 @media (max-width: 640px) {
-  .hero-banner--promo .hero-content h1{ font-size: 28px; max-width: 100%; }
+  .hero-banner--promo .hero-content h1 {
+    font-size: 28px;
+    max-width: 100%;
+  }
 }
 
 /* === Overrides requested: no shadows and do not tint/change the promo image === */
 .hero-banner--promo {
-  box-shadow: none !important; /* remove outer card shadow */
+  box-shadow: none !important;
+  /* remove outer card shadow */
 }
 
 .hero-banner--promo .hero-content {
   /* remove dark gradient overlay so image colors remain untouched */
   background: none !important;
-  -webkit-text-stroke: 0 !important; /* do not apply stroke that can alter perceived color */
-  text-shadow: none !important; /* remove heading text shadow if any */
-  color: var(--text) !important; /* use dark text for readability over image */
+  -webkit-text-stroke: 0 !important;
+  text-shadow: none !important;
+  color: var(--text) !important;
 }
 
 .hero-banner--promo .hero-img {
-  /* ensure the image is displayed at original color with no filters or shadows */
   filter: none !important;
   box-shadow: none !important;
   transform: none !important;
 }
 
 .hero-banner--promo .hero-ctas .hero-btn {
-  box-shadow: none !important; /* CTA buttons shouldn't have drop shadow either */
+  box-shadow: none !important;
 }
 
 /* ให้ promo เล็กลงเล็กน้อยบนจอใหญ่ แต่ยังคงอัตราส่วนเดิม (padding-top = % ของความกว้าง) */
 .hero-banner--promo {
-  max-width: calc(var(--max) * 0.9); /* 90% ของความกว้างคอนเทนเนอร์ */
+  max-width: calc(var(--max) * 0.9);
   margin-left: auto;
   margin-right: auto;
 }
 
 @media (max-width: 1000px) {
-  .hero-banner--promo { max-width: 100%; }
+  .hero-banner--promo {
+    max-width: 100%;
+  }
 }
 
-/* =====================================
-   🟣 PROMO BANNER (restored second banner)
-   ===================================== */
-.promo-banner{
-  width:100%;
+.promo-banner {
+  width: 100%;
   margin: 24px 0 48px;
 }
-.promo-inner{
+
+.promo-inner {
   display: grid;
   grid-template-columns: 1fr 420px;
   gap: 24px;
   align-items: center;
-  background: #e8ecfb; /* soft lavender */
+  background: #e8ecfb;
   border-radius: 12px;
   padding: clamp(18px, 3vw, 34px);
-  box-shadow: 0 10px 24px rgba(20,24,80,0.08);
+  box-shadow: 0 10px 24px rgba(20, 24, 80, 0.08);
 }
-.promo-text h2{
-  margin:0 0 8px;
+
+.promo-text h2 {
+  margin: 0 0 8px;
   font-size: clamp(20px, 3vw, 34px);
-  line-height:1.05;
+  line-height: 1.05;
   color: #111;
 }
-.promo-desc{
+
+.promo-desc {
   margin: 0 0 6px;
   color: #4b4f6b;
-  font-weight:600;
+  font-weight: 600;
 }
-.promo-big{
+
+.promo-big {
   font-size: clamp(32px, 6vw, 56px);
-  font-weight:800;
-  color:#000;
+  font-weight: 800;
+  color: #000;
   margin: 6px 0 14px;
 }
-.promo-ctas{ margin-top:8px; }
-.promo-image img{
-  width:100%;
+
+.promo-ctas {
+  margin-top: 8px;
+}
+
+.promo-image img {
+  width: 100%;
   height: auto;
-  display:block;
-  border-radius:10px;
+  display: block;
+  border-radius: 10px;
   object-fit: cover;
 }
 
-@media (max-width: 900px){
-  .promo-inner{ grid-template-columns: 1fr 320px; }
-}
-@media (max-width: 720px){
-  .promo-inner{ grid-template-columns: 1fr; }
-  .promo-image{ order: 2; }
-  .promo-text{ order: 1; }
-  .promo-text h2{ font-size: 22px; }
-  .promo-big{ font-size: 34px; }
+@media (max-width: 900px) {
+  .promo-inner {
+    grid-template-columns: 1fr 320px;
+  }
 }
 
+@media (max-width: 720px) {
+  .promo-inner {
+    grid-template-columns: 1fr;
+  }
 
-/* =====================================
-   🟣 CATEGORY GRID (KEEP ORIGINAL)
-   ===================================== */
+  .promo-image {
+    order: 2;
+  }
+
+  .promo-text {
+    order: 1;
+  }
+
+  .promo-text h2 {
+    font-size: 22px;
+  }
+
+  .promo-big {
+    font-size: 34px;
+  }
+}
+
 .category {
   background: var(--primary);
   padding: 28px 0 36px;
@@ -476,7 +504,6 @@
 .category__grid {
   margin-top: 22px;
   display: grid;
-  /* show 5 categories per row on wide screens (added new category) */
   grid-template-columns: repeat(5, 1fr);
   gap: 28px;
   margin-left: 40px;
@@ -485,24 +512,22 @@
 
 @media (max-width: 1024px) {
   .category__grid {
-    /* medium-wide: 4 columns */
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
 @media (max-width: 768px) {
   .category__grid {
-    /* tablets: 3 columns */
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 @media (max-width: 480px) {
   .category__grid {
-    /* small screens: 2 columns */
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
 @media (max-width: 360px) {
   .category__grid {
     grid-template-columns: 1fr;
@@ -535,17 +560,18 @@
   display: block;
   border-radius: 12px;
 }
+
 /* ===== FIX Best Sellers to vertical cards (override any horizontal pill styles) ===== */
 
 /* กริด 3 คอลัมน์ */
-.best-sellers .products{
+.best-sellers .products {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(260px, 1fr)) !important;
   gap: 28px !important;
 }
 
 /* การ์ดต้องเป็นแนวตั้งเท่านั้น */
-.best-sellers .product{
+.best-sellers .product {
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
@@ -553,7 +579,7 @@
   border-radius: 12px;
   color: #111;
   text-decoration: none;
-  box-shadow: 0 6px 10px rgba(0,0,0,.12);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, .12);
   overflow: hidden;
   transition: transform .15s ease, box-shadow .15s ease;
 
@@ -562,13 +588,12 @@
   grid-auto-flow: initial !important;
 }
 
-.best-sellers .product:hover{
+.best-sellers .product:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(0,0,0,.15);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, .15);
 }
 
-/* กรอบรูป: จัตุรัส เต็ม และอยู่กลางจริง */
-.best-sellers .product__thumb{
+.best-sellers .product__thumb {
   position: relative !important;
   width: 100% !important;
   aspect-ratio: 1 / 1 !important;
@@ -577,7 +602,7 @@
   border-radius: 12px 12px 0 0 !important;
 }
 
-.best-sellers .product__thumb img{
+.best-sellers .product__thumb img {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
@@ -587,16 +612,16 @@
   display: block !important;
 }
 
-/* เนื้อการ์ดด้านล่าง */
-.best-sellers .product__body{
-  display: block !important;      /* กันโดนบังคับเป็น grid/row */
+.best-sellers .product__body {
+  display: block !important;
+  /* กันโดนบังคับเป็น grid/row */
   width: 100% !important;
   padding: 16px !important;
   border-top: 1px solid #eef0f4 !important;
 }
 
 /* ชื่อสินค้า: แสดงปกติ ไม่หั่นคำ */
-.best-sellers .product__title{
+.best-sellers .product__title {
   font: 500 15px/1.45 "Poppins", system-ui, sans-serif !important;
   color: #222 !important;
   margin: 0 0 8px !important;
@@ -608,14 +633,14 @@
 }
 
 /* ราคา */
-.best-sellers .product__price{
+.best-sellers .product__price {
   font: 800 17px/1 "Poppins", system-ui, sans-serif !important;
   color: #000 !important;
   white-space: nowrap !important;
 }
 
 /* ปุ่มตะกร้าให้ลอยมุมขวาล่างของการ์ดเสมอ */
-.best-sellers .add-to-cart{
+.best-sellers .add-to-cart {
   position: absolute !important;
   right: 16px !important;
   bottom: 16px !important;
@@ -629,24 +654,34 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 14px rgba(10,20,60,.18);
+  box-shadow: 0 6px 14px rgba(10, 20, 60, .18);
   cursor: pointer;
   transition: transform .12s ease, background .2s ease;
 }
-.best-sellers .add-to-cart:hover{ background:#2c2e8f; transform: translateY(-1px); }
+
+.best-sellers .add-to-cart:hover {
+  background: #2c2e8f;
+  transform: translateY(-1px);
+}
 
 /* รีสปอนซีฟ */
-@media (max-width:1024px){
-  .best-sellers .products{ grid-template-columns: repeat(2, minmax(220px, 1fr)) !important; }
+@media (max-width:1024px) {
+  .best-sellers .products {
+    grid-template-columns: repeat(2, minmax(220px, 1fr)) !important;
+  }
 }
-@media (max-width:640px){
-  .best-sellers .products{ grid-template-columns: 1fr !important; }
+
+@media (max-width:640px) {
+  .best-sellers .products {
+    grid-template-columns: 1fr !important;
+  }
 }
-/* ===== FIX ขนาดการ์ดสินค้าใน Best Sellers ===== */
+
+/*  FIX ขนาดการ์ดสินค้าใน Best Sellers  */
 .best-sellers .product {
-  width: 275px !important;      /* ความกว้าง 275 px */
-  height: 336.8px !important;   /* ความสูง 336.8 px */
-  flex: none !important;        /* ป้องกันการยืด */
+  width: 275px !important;
+  height: 336.8px !important;
+  flex: none !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important;
@@ -657,7 +692,7 @@
 .best-sellers .product__thumb {
   flex: none !important;
   width: 100% !important;
-  height: 200px !important;      /* ความสูงส่วนรูป (ประมาณ 60%) */
+  height: 200px !important;
   overflow: hidden !important;
   border-radius: 12px 12px 0 0 !important;
   position: relative !important;
@@ -697,42 +732,43 @@
   grid-template-columns: repeat(auto-fit, minmax(275px, 1fr)) !important;
   gap: 32px !important;
 }
-/* ===== Best Sellers: ล็อกคอลัมน์ 275px และลดช่องว่าง ===== */
-.best-sellers .products{
+
+.best-sellers .products {
   display: grid !important;
-  grid-template-columns: repeat(3, 275px) !important;  /* คอลัมน์คงที่ */
-  column-gap: 20px !important;                         /* ระยะห่างซ้ายขวา */
-  row-gap: 20px !important;                            /* ระยะห่างบนล่าง */
-  justify-content: start !important;                   /* ชิดซ้าย ไม่ดันถ่าง */
+  grid-template-columns: repeat(3, 275px) !important;
+  column-gap: 20px !important;
+  row-gap: 20px !important;
+  justify-content: start !important;
 }
 
 /* ตัวการ์ดไม่ต้องกำหนดความกว้างเอง ให้ตามกริด */
-.best-sellers .product{
+.best-sellers .product {
   width: auto !important;
-  height: 336.8px !important;      /* สูงตามที่ต้องการ */
+  height: 336.8px !important;
   flex: none !important;
 }
 
 /* กรอบรูปและเนื้อในให้พอดีกรอบใหม่ */
-.best-sellers .product__thumb{
-  height: 200px !important;        /* ถ้าต้องการปรับสัดส่วนรูป ลด/เพิ่มตัวนี้ได้ */
+.best-sellers .product__thumb {
+  height: 200px !important;
 }
 
-.best-sellers .product__body{
-  padding: 12px 14px !important;   /* ลด padding นิดหน่อยให้ดูแน่นขึ้น */
+.best-sellers .product__body {
+  padding: 12px 14px !important;
 }
-/* ===== Best Sellers: 4 ใบต่อแถว (275px คงที่) ===== */
-.best-sellers .products{
+
+/*  Best Sellers: 4 ใบต่อแถว (275px คงที่)  */
+.best-sellers .products {
   display: grid !important;
-  grid-template-columns: repeat(4, 275px) !important; /* 🔒 4 คอลัมน์ */
-  column-gap: 16px !important;                        /* ระยะห่างซ้ายขวา */
-  row-gap: 16px !important;                           /* ระยะห่างบนล่าง */
-  justify-content: start !important;                  /* ชิดซ้าย ไม่ถ่าง */
-  align-content: start !important;                    /* กัน content กระจายลงล่าง */
+  grid-template-columns: repeat(4, 275px) !important;
+  column-gap: 16px !important;
+  row-gap: 16px !important;
+  justify-content: start !important;
+  align-content: start !important;
 }
 
 /* ขนาดการ์ดให้พอดีกับช่อง */
-.best-sellers .product{
+.best-sellers .product {
   width: 275px !important;
   height: 336.8px !important;
   flex: none !important;
@@ -741,14 +777,15 @@
 }
 
 /* กรอบรูปและรูป */
-.best-sellers .product__thumb{
+.best-sellers .product__thumb {
   width: 100% !important;
   height: 200px !important;
   position: relative !important;
   overflow: hidden !important;
   border-radius: 12px 12px 0 0 !important;
 }
-.best-sellers .product__thumb img{
+
+.best-sellers .product__thumb img {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
@@ -759,32 +796,38 @@
 }
 
 /* ตัวเนื้อการ์ด */
-.best-sellers .product__body{
+.best-sellers .product__body {
   flex: 1 1 auto !important;
   padding: 12px 14px !important;
   border-top: 1px solid #eef0f4 !important;
 }
 
 /* ปุ่มตะกร้าลอยมุมขวาล่าง */
-.best-sellers .add-to-cart{
+.best-sellers .add-to-cart {
   position: absolute !important;
   right: 12px !important;
   bottom: 12px !important;
 }
 
-/* ===== Responsive: ค่อย ๆ ลดจำนวนคอลัมน์เมื่อพื้นที่ไม่พอ ===== */
-@media (max-width: 1200px){
-  .best-sellers .products{ grid-template-columns: repeat(3, 275px) !important; }
+/* Responsive: ค่อย ๆ ลดจำนวนคอลัมน์เมื่อพื้นที่ไม่พอ */
+@media (max-width: 1200px) {
+  .best-sellers .products {
+    grid-template-columns: repeat(3, 275px) !important;
+  }
 }
-@media (max-width: 920px){
-  .best-sellers .products{ grid-template-columns: repeat(2, 275px) !important; }
+
+@media (max-width: 920px) {
+  .best-sellers .products {
+    grid-template-columns: repeat(2, 275px) !important;
+  }
 }
-@media (max-width: 620px){
-  .best-sellers .products{ grid-template-columns: 275px !important; }
+
+@media (max-width: 620px) {
+  .best-sellers .products {
+    grid-template-columns: 275px !important;
+  }
 }
-/* =====================================
-   🟣 ALL PRODUCTS — STYLE LIKE BEST SELLERS
-   ===================================== */
+
 .all-products {
 
   color: var(--text);
@@ -813,13 +856,13 @@
   position: relative;
   background: var(--card);
   border-radius: 12px;
-  box-shadow: 0 6px 10px rgba(0,0,0,.12);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, .12);
   transition: transform .15s ease, box-shadow .15s ease;
 }
 
 .all-products .product:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(0,0,0,.15);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, .15);
 }
 
 .all-products .product__thumb {
@@ -858,7 +901,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 14px rgba(10,20,60,.18);
+  box-shadow: 0 6px 14px rgba(10, 20, 60, .18);
   cursor: pointer;
   transition: transform .12s ease, background .2s ease;
 }
@@ -869,26 +912,36 @@
 }
 
 /* Responsive */
-@media (max-width: 1200px){
-  .all-products .products{ grid-template-columns: repeat(3, 275px) !important; }
+@media (max-width: 1200px) {
+  .all-products .products {
+    grid-template-columns: repeat(3, 275px) !important;
+  }
 }
-@media (max-width: 920px){
-  .all-products .products{ grid-template-columns: repeat(2, 275px) !important; }
+
+@media (max-width: 920px) {
+  .all-products .products {
+    grid-template-columns: repeat(2, 275px) !important;
+  }
 }
-@media (max-width: 620px){
-  .all-products .products{ grid-template-columns: 275px !important; justify-content: center !important; }
+
+@media (max-width: 620px) {
+  .all-products .products {
+    grid-template-columns: 275px !important;
+    justify-content: center !important;
+  }
 }
 
 #all-title {
   font-size: 24px;
 }
-/* === ALL PRODUCTS underline (override ให้ตรงภาพ) === */
-.all-products .ap-head h3{
-  font: 700 56px/1.05 "Poppins", system-ui, sans-serif; /* ถ้าอยากให้หัวข้อใหญ่เท่าภาพ */
+
+/* ALL PRODUCTS underline (override ให้ตรงภาพ) */
+.all-products .ap-head h3 {
+  font: 700 56px/1.05 "Poppins", system-ui, sans-serif;
   margin: 0 0 12px;
 }
 
-.all-products .ap-underline{
+.all-products .ap-underline {
   width: 140px;
   height: 4px;
   background: #AAAAAA;
@@ -900,63 +953,81 @@
 
 .best-sellers .products {
   display: grid !important;
-  grid-template-columns: repeat(4, 275px) !important; /* 4 ใบคงที่ */
+  grid-template-columns: repeat(4, 275px) !important;
+  /* 4 ใบคงที่ */
   column-gap: 16px !important;
   row-gap: 16px !important;
 
-  /* ✅ แก้จาก start → center เพื่อจัดกลาง */
-  justify-content: center !important; 
+  /* แก้จาก start → center เพื่อจัดกลาง */
+  justify-content: center !important;
   align-content: start !important;
 }
 
-/* ===== Head ของ section ===== */
-.section-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;   /* ให้หัวข้อซ้าย ปุ่มขวา */
-  gap:16px;
-  margin-bottom:16px;
-  position:relative;
-  z-index:2;                        /* กันโดนบัง */
+/*  Head ของ section */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 2;
 }
 
-.section-title{
-  margin:0;
-  font-weight:600;
-  line-height:1.2;
+.section-title {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 /* ===== ปุ่ม Shop all (ดำ) ===== */
-.shop-all-btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  padding:10px 16px;
-  min-height:40px;
-  border-radius:12px;
-  background:#000;
-  color:#fff;
-  text-decoration:none;
-  font-weight:600;
-  line-height:1;
-  border:1px solid #000;
-  transition:transform .12s ease, opacity .12s ease;
-  white-space:nowrap;
+.shop-all-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  min-height: 40px;
+  border-radius: 12px;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid #000;
+  transition: transform .12s ease, opacity .12s ease;
+  white-space: nowrap;
 }
 
-.shop-all-btn:hover{ transform:translateY(-1px); opacity:.92; }
-.shop-all-btn:active{ transform:translateY(0); opacity:1; }
+.shop-all-btn:hover {
+  transform: translateY(-1px);
+  opacity: .92;
+}
+
+.shop-all-btn:active {
+  transform: translateY(0);
+  opacity: 1;
+}
 
 /* กันเคสธีมพื้นหลังเข้ม/ฟ้าให้ปุ่มยังดำชัด */
-.all-products .shop-all-btn{ background:#000; border-color:#000; color:#fff; }
-
-/* มือถือให้ปุ่มไม่หลุดขอบ */
-@media (max-width:600px){
-  .section-head{ gap:12px; }
-  .shop-all-btn{ padding:9px 14px; border-radius:10px; }
+.all-products .shop-all-btn {
+  background: #000;
+  border-color: #000;
+  color: #fff;
 }
 
-/* ===== ปุ่ม Scroll → ดำกลม ===== */
+/* มือถือให้ปุ่มไม่หลุดขอบ */
+@media (max-width:600px) {
+  .section-head {
+    gap: 12px;
+  }
+
+  .shop-all-btn {
+    padding: 9px 14px;
+    border-radius: 10px;
+  }
+}
+
+
 .scroll-next {
   position: absolute;
   right: 20px;
@@ -991,9 +1062,7 @@
   line-height: 1;
 }
 
-/* ============================================
-   🔘 ปุ่มดำกลมลูกศร (ข้างหัว All Products)
-   ============================================ */
+
 .ap-head {
   display: flex;
   align-items: center;
@@ -1065,9 +1134,6 @@
   }
 }
 
-/* ============================================
-   🔘 ปุ่มดำกลมลูกศร (ข้างหัว All Products)
-   ============================================ */
 .ap-head {
   display: flex;
   align-items: center;
@@ -1086,8 +1152,8 @@
 .arrow-btn {
   position: absolute;
   right: 0;
-  top: 50%;                        /* วางไว้กลางแนวดิ่งของ section */
-  transform: translateY(-20%) translateX(0);  /* ลดลงมานิด เพื่อให้อยู่ระดับกลางของการ์ด */
+  top: 50%;
+  transform: translateY(-20%) translateX(0);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1127,14 +1193,12 @@
   }
 }
 
-/* ============================================
-   🔘 ปุ่มดำกลมลูกศร (ข้างหัว All Products) — เวอร์ชันต่ำลง
-   ============================================ */
+
 .arrow-btn {
   position: absolute;
-  right: 40px;               /* ลอยออกนิดหน่อยให้บาลานซ์ */
-  top: 300%;                   /* ⬇️ ลดจาก 50% → 65% ให้อยู่กลางการ์ดจริง ๆ */
-  transform: translateY(-50%); /* ให้ศูนย์กลางปุ่มตรงกลางพอดี */
+  right: 40px;
+  top: 300%;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1163,7 +1227,7 @@
   opacity: 1;
 }
 
-/* ✅ มือถือ: ขยับขึ้นเล็กน้อยให้ไม่ชนขอบล่าง */
+/* ขยับขึ้นเล็กน้อยให้ไม่ชนขอบล่าง */
 @media (max-width: 768px) {
   .arrow-btn {
     width: 50px;
@@ -1179,50 +1243,49 @@ html {
   scroll-behavior: smooth;
 }
 
-/* บอก browser ว่าตอนเลื่อนด้วย hash (#) ให้เว้นระยะเท่าความสูง header */
-:root{
-  /* ปรับค่านี้ให้ตรงกับความสูง header ของจริง */
-  --header-height: 72px;   /* ถ้า topbar มีสูงอีก เช่น 8px ก็รวม: 80px */
+:root {
+
+  --header-height: 72px;
 }
 
 /* เป้าหมายที่จะถูกเลื่อนมาหยุด (มี id ตรงกับลิงก์) */
 #best-sellers,
 #categories {
-  /* เว้นหัวไว้เท่ากับความสูง header เพื่อไม่ให้หัวข้อโดนบัง */
   scroll-margin-top: calc(var(--header-height) + 70px);
 }
 
-/* ========== FIX: Best Sellers ไม่ล้นตอนจอเล็ก ========== */
-.best-sellers{
+.best-sellers {
   position: relative;
-  overflow: hidden;            /* ตัดเงา/ปุ่มที่ล้นขอบมนออก */
+  overflow: hidden;
 }
 
 /* มือถือ: ให้คอลัมน์เป็น 1fr และการ์ดกว้างเต็มช่อง ไม่ fix 275px */
-@media (max-width: 620px){
-  .best-sellers .products{
+@media (max-width: 620px) {
+  .best-sellers .products {
     grid-template-columns: 1fr !important;
     column-gap: 12px !important;
     row-gap: 12px !important;
     justify-content: stretch !important;
   }
-  .best-sellers .product{
-    width: 100% !important;    /* ยกเลิกความกว้างคงที่ */
+
+  .best-sellers .product {
+    width: 100% !important;
     height: auto !important;
   }
-  .best-sellers .product__thumb{
+
+  .best-sellers .product__thumb {
     height: auto !important;
-    aspect-ratio: 1 / 1 !important;  /* ให้รูปเป็นจัตุรัส ไม่ต้อง fix 200px */
+    aspect-ratio: 1 / 1 !important;
   }
 }
 
-/* ===== Best Sellers: ทำให้จัดอัตโนมัติแบบ responsive ===== */
-.best-sellers { 
+/*  Best Sellers: ทำให้จัดอัตโนมัติแบบ responsive  */
+.best-sellers {
   padding: clamp(12px, 2vw, 20px);
 }
 
 /* กล่องรวมการ์ด: ใช้ Grid auto-fit ให้หาช่องเองตามพื้นที่ที่เหลือ */
-.best-sellers .products{
+.best-sellers .products {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
   gap: 16px !important;
@@ -1230,7 +1293,7 @@ html {
 }
 
 /* ยกเลิกการ fix width/height ของการ์ด */
-.best-sellers .product{
+.best-sellers .product {
   width: auto !important;
   max-width: 100% !important;
   height: auto !important;
@@ -1239,99 +1302,98 @@ html {
 }
 
 /* รูปให้ยืดหยุ่นสูงสุด แต่คงสัดส่วนเท่ากันทุกใบ */
-.best-sellers .product__thumb{
-  aspect-ratio: 1 / 1;          /* สี่เหลี่ยมจัตุรัส */
+.best-sellers .product__thumb {
+  aspect-ratio: 1 / 1;
   width: 100%;
   overflow: hidden;
 }
-.best-sellers .product__thumb img{
+
+.best-sellers .product__thumb img {
   width: 100%;
   height: 100%;
-  object-fit: contain;           /* ภาพสินค้าไม่โดนตัด */
+  object-fit: contain;
 }
 
 /* เนื้อหาให้กินพื้นที่ที่เหลือ ดันปุ่มไปล่างได้ */
-.best-sellers .product__content{
+.best-sellers .product__content {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
 }
-.best-sellers .product__price-row{
-  margin-top: auto;              /* ดันลงล่าง */
+
+.best-sellers .product__price-row {
+  margin-top: auto;
 }
 
 /* ปุ่มลอยขวาล่างไม่ทะลุขอบ */
-.best-sellers .product__actions{
+.best-sellers .product__actions {
   position: relative;
 }
-.best-sellers .product__actions .fab{
+
+.best-sellers .product__actions .fab {
   position: absolute;
   right: 12px;
   bottom: 12px;
 }
 
 /* จอเล็กมาก: ลด min-width ของการ์ดลงเพื่อไม่ overflow */
-@media (max-width: 480px){
-  .best-sellers .products{
+@media (max-width: 480px) {
+  .best-sellers .products {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
     gap: 12px !important;
   }
 }
-/* ===== Browse by Category — Responsive & Auto-fit ===== */
 
-/* 1) ให้กรอบไม่ล้น และใช้ padding ของ .category__inner พอ */
-.category{
+.category {
   overflow: hidden;
 }
 
-/* 2) ใช้ CSS Grid แบบ auto-fit + minmax ให้จัดคอลัมน์อัตโนมัติ */
-.category__grid{
+.category__grid {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
   gap: clamp(12px, 2vw, 24px) !important;
-  margin-left: 0 !important;    /* ยกเลิก margin 40px ที่ทำให้จัดไม่สวย */
+  margin-left: 0 !important;
   margin-right: 0 !important;
-  align-items: stretch;          /* ให้การ์ดสูงเท่ากัน */
+  align-items: stretch;
   justify-items: stretch;
 }
 
-/* จอเล็กมาก ลด min-width ลงอีกนิด */
-@media (max-width: 480px){
-  .category__grid{
+
+@media (max-width: 480px) {
+  .category__grid {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
     gap: 12px !important;
   }
 }
 
-/* 3) การ์ดหมวดหมู่: ไม่ fix height และจัด layout ภายในด้วย flex */
-.category-card{
+
+.category-card {
   display: flex !important;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  height: auto !important;       /* ยกเลิก 300px คงที่ */
+  height: auto !important;
   padding: 20px !important;
 }
 
-/* 4) โซนรูปให้ได้สัดส่วนเท่ากันทุกใบ */
-.category-card img{
+.category-card img {
   width: 100% !important;
-  aspect-ratio: 3 / 4;           /* ปรับได้: 1/1, 4/5, 3/4 แล้วแต่ที่ชอบ */
+  aspect-ratio: 3 / 4;
   height: auto !important;
-  object-fit: contain !important; /* ไม่ตัดหัวรูป */
+  object-fit: contain !important;
   display: block;
 }
 
-/* 5) เงา/ขยับนิดหน่อยตอน hover แต่ไม่ให้ทะลุขอบ */
-.category-card:hover{
+
+.category-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(0,0,0,.16);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, .16);
 }
 
-/* ===== ปรับการจัดวางสินค้าให้ชิดซ้ายทั้งหมด ===== */
+/*  ปรับการจัดวางสินค้าให้ชิดซ้ายทั้งหมด  */
 .best-sellers .product__content {
-  text-align: left !important;        /* ทุกข้อความชิดซ้าย */
-  padding: 0 14px !important;         /* ระยะขอบซ้าย-ขวาให้ดูบาลานซ์ */
+  text-align: left !important;
+  padding: 0 14px !important;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -1357,50 +1419,61 @@ html {
 /* ปุ่มให้เริ่มชิดซ้ายด้วย */
 .best-sellers .product__actions {
   display: flex;
-  justify-content: flex-start;        /* จาก center → left */
+  justify-content: flex-start;
   align-items: center;
   margin-top: auto;
   padding-bottom: 10px;
 }
 
 
-/* ===== Normalized left gutter for every product card ===== */
-:root { --card-gutter-x: 18px; }
+/*  Normalized left gutter for every product card  */
+:root {
+  --card-gutter-x: 18px;
+}
 
 .best-sellers .products,
-.all-products .products{
-  justify-items: stretch !important;     /* การ์ดกว้างเท่าช่องเสมอ */
+.all-products .products {
+  justify-items: stretch !important;
 }
 
 .best-sellers .product,
-.all-products .product{
+.all-products .product {
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
   text-align: left !important;
 }
 
-/* ทำ “ร่องซ้ายเดียวกัน” ให้ทุกบล็อคข้อความ */
-
-
-/* ชื่อสินค้า */
+/* ===== ตรงนี้คือจุดสำคัญ: จำกัดบรรทัด + เผื่อที่ให้ปุ่มรถเข็น ===== */
 .best-sellers .product__title,
-.all-products .product__title{
+.all-products .product__title {
   font-weight: 500;
   line-height: 1.4;
   margin: 8px 0 4px !important;
+
+  /* กันไม่ให้ตัวหนังสือไปทับไอคอนรถเข็น */
+  padding-right: 60px !important;
+
+  /* ตัดให้เหลือ 2 บรรทัดแล้วขึ้น … */
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: normal !important;
 }
 
 /* ราคา */
 .best-sellers .product__price-row,
-.all-products .product__price-row{
+.all-products .product__price-row {
   font-weight: 700;
   margin: 4px 0 10px !important;
 }
 
 /* ปุ่มต้องเริ่มจากซ้ายเหมือนกันทุกใบ */
 .best-sellers .product__actions,
-.all-products .product__actions{
+.all-products .product__actions {
   display: flex !important;
   justify-content: flex-start !important;
   align-items: center;
@@ -1410,12 +1483,12 @@ html {
 
 /* กัน element อื่น ๆ ไปดันร่องซ้ายให้เพี้ยน */
 .best-sellers :where(img, hr, .divider, .product__thumb),
-.all-products :where(img, hr, .divider, .product__thumb){
+.all-products :where(img, hr, .divider, .product__thumb) {
   margin-left: 0 !important;
   margin-right: 0 !important;
 }
 
-/* 🔴 ป้ายโปรโมชันหน้า Home (Best Sellers + All Products) */
+/* ป้ายโปรโมชันหน้า Home (Best Sellers + All Products) */
 .product__promo-badge {
   position: absolute;
   top: 10px;
@@ -1423,7 +1496,7 @@ html {
   z-index: 3;
   padding: 6px 14px;
   border-radius: 999px;
-  background: #ef4444;           /* ใช้แดงเดียวกับหน้า Shop */
+  background: #ef4444;
   color: #ffffff;
   font-size: 0.78rem;
   font-weight: 600;
@@ -1436,4 +1509,16 @@ html {
 /* ย้ำว่า thumb เป็น relative (เผื่อ style อื่นมา override) */
 .product__thumb {
   position: relative;
+}
+
+/* ===== Animation: section เด้งเบา ๆ ตอนเลื่อนมาถึง ===== */
+.section-fade-in {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity .55s ease, transform .55s ease;
+}
+
+.section-fade-in.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }

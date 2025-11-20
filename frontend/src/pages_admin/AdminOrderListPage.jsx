@@ -331,14 +331,14 @@ export default function AdminOrderListPage() {
       {confirmOrder && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3>ยืนยันการลบรายการสั่งซื้อนี้หรือไม่?</h3>
+            <h3>Are you sure you want to delete this order?</h3>
             <p>Order: {showOrderCode(confirmOrder.orderCode)}</p>
             <div className="modal-buttons">
               <button className="btn-cancel" onClick={() => setConfirmOrder(null)}>
-                ยกเลิก
+                Cancel
               </button>
               <button className="btn-confirm" onClick={handleConfirmDelete}>
-                ยืนยัน
+                Delete
               </button>
             </div>
           </div>

@@ -3,13 +3,13 @@ import { Link, useLocation } from "react-router-dom";
 import "./HomePage.css";
 import Footer from "./../components/Footer.jsx";
 
-/* ===== Config & helpers ===== */
+//  Config & helpers
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 const isAbs = (u) => /^https?:\/\//i.test(String(u || ""));
 const join = (base, path) =>
   base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
 
-/* ===== Currency ===== */
+//  Currency
 const formatTHB = (n) => {
   const v = Number(n ?? 0);
   try {
@@ -19,7 +19,7 @@ const formatTHB = (n) => {
   }
 };
 
-/*  Cart (localStorage) helpers  */
+//  Cart (localStorage) helpers
 const LS_CART = "pm_cart";
 const readCart = () => {
   try {
@@ -49,10 +49,10 @@ const addItemToCart = ({ id, name, price, qty = 1, img }) => {
   const count = cart.reduce((s, it) => s + (Number(it.qty) || 0), 0);
   try {
     window.dispatchEvent(new CustomEvent("pm_cart_updated", { detail: { count } }));
-  } catch {}
+  } catch { }
 };
 
-/* ===== Image resolvers ===== */
+// Image resolvers
 const resolveCoverUrl = (p) => {
   const raw =
     p?.coverImageUrl ||
@@ -89,8 +89,8 @@ const resolveCategoryImage = (cat) => {
   return encodeURI(fePath);
 };
 
-/* ===== Stock helper ===== */
-/** ถือว่า out of stock ถ้า inStock/in_stock เป็น false หรือ quantity <= 0 */
+// Stock helper 
+// ถือว่า out of stock ถ้า inStock/in_stock เป็น false หรือ quantity <= 0 
 const isOutOfStock = (p) => {
   if (!p) return false;
   const flag = p.inStock ?? p.in_stock;
@@ -101,7 +101,6 @@ const isOutOfStock = (p) => {
   return false;
 };
 
-/* ===== 🔥 Promotion helpers (ใช้ร่วมกันทั้ง BestSellers + AllProducts) ===== */
 
 // เช็คว่าโปร active ตาม status + วันที่หรือยัง
 const isPromoActive = (promo) => {
@@ -190,7 +189,7 @@ async function fetchPromotionMap() {
   }
 }
 
-/* ===== Floating add-to-cart button (no useCart) ===== */
+// Floating add-to-cart button (no useCart)
 function ProductMiniCard({ id, name, price, img, disabled = false }) {
   const [added, setAdded] = useState(false);
 
@@ -210,8 +209,8 @@ function ProductMiniCard({ id, name, price, img, disabled = false }) {
   const label = disabled
     ? "Out of stock"
     : added
-    ? "Added ✓"
-    : "Add to cart";
+      ? "Added ✓"
+      : "Add to cart";
 
   return (
     <button
@@ -234,7 +233,7 @@ function ProductMiniCard({ id, name, price, img, disabled = false }) {
   );
 }
 
-/* ===== Best Sellers ===== */
+// Best Sellers
 function BestSellersSection() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -287,7 +286,7 @@ function BestSellersSection() {
           )
           .slice(0, 8);
 
-        // 🔥 เติมข้อมูล promotion ลงไป
+        // เติมข้อมูล promotion ลงไป
         const promoMap = await fetchPromotionMap();
         const withPromo = best.map((p) => {
           const id = p.id ?? p.productId ?? p.product_id;
@@ -352,7 +351,7 @@ function BestSellersSection() {
                 aria-label={name}
               >
                 <div className="product__thumb">
-                  {/* 🔥 badge โปรโมชั่น */}
+                  {/* badge โปรโมชั่น */}
                   {promoLabel && (
                     <span className="product__promo-badge">{promoLabel}</span>
                   )}
@@ -388,7 +387,7 @@ function BestSellersSection() {
   );
 }
 
-/* ===== Categories ===== */
+// Categories
 function CategoriesSection() {
   const [cats, setCats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -476,7 +475,7 @@ function CategoriesSection() {
   );
 }
 
-/* ===== Adjust title clamp in a list ===== */
+// Adjust title clamp in a list
 function useClampTitlesInList(listRef, deps = []) {
   useEffect(() => {
     const el = listRef?.current;
@@ -502,7 +501,7 @@ function useClampTitlesInList(listRef, deps = []) {
   }, deps);
 }
 
-/* ===== All products ===== */
+// All products
 function AllProductsSection({ listRef }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -523,7 +522,7 @@ function AllProductsSection({ listRef }) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
 
-        // 🔥 เติม promo map ให้ All Products
+        // เติม promo map ให้ All Products
         const promoMap = await fetchPromotionMap();
         const withPromo = list.map((p) => {
           const id = p.id ?? p.productId ?? p.product_id;
@@ -586,7 +585,7 @@ function AllProductsSection({ listRef }) {
                 aria-label={name}
               >
                 <div className="product__thumb">
-                  {/* 🔥 badge โปรแกรมที่นี่ด้วย */}
+                  {/* badge โปรแกรมที่นี่ด้วย */}
                   {promoLabel && (
                     <span className="product__promo-badge">{promoLabel}</span>
                   )}
@@ -623,7 +622,7 @@ function AllProductsSection({ listRef }) {
   );
 }
 
-/* ===== PAGE ===== */
+// PAGE
 export default function HomePage() {
   const allProductsRef = useRef(null);
   const { hash } = useLocation();

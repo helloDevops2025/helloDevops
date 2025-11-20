@@ -1,14 +1,13 @@
-// src/pages/DetailPage.jsx
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { isAuthed } from "../auth";
 import "./DetailPage.css";
 import Footer from "./../components/Footer.jsx";
 
-/* Config & helpers */
+
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 
-/* ===== Storage keys */
+/*  Storage keys */
 const LS_WISHLIST = "pm_wishlist";
 const LS_CART = "pm_cart";
 
@@ -28,7 +27,6 @@ const toSlug = (s) =>
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, "");
 
-/* ฟังก์ชันปรับแต่งชื่อให้ดูดี */
 const prettifyTitle = (s = "") =>
   s
     .replace(/(\d+)\s*(กก\.?)/g, "$1 $2")
@@ -36,7 +34,7 @@ const prettifyTitle = (s = "") =>
 
 const fmtPrice = (n) => Number(n || 0).toFixed(2);
 
-/* ===== Wishlist (LocalStorage) helpers ===== */
+/*  Wishlist (LocalStorage) helpers  */
 const loadWL = () => {
   try {
     const raw = localStorage.getItem(LS_WISHLIST);
@@ -98,7 +96,7 @@ function Breadcrumb({ categorySlug, categoryName, currentTitle }) {
   );
 }
 
-/* ===== shuffle แบบเร็ว ๆ เพื่อสุ่มเลือกสินค้าเติมให้ครบ 4 ===== */
+// shuffle เพื่อสุ่มเลือกสินค้าเติมให้ครบ 4
 const shuffle = (arr) => {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -108,7 +106,7 @@ const shuffle = (arr) => {
   return a;
 };
 
-/* ---------- Simple Popup (inline styles) ---------- */
+// Simple Popup (inline styles)
 function Popup({ open, title = "Warning", message, onClose }) {
   if (!open) return null;
 
@@ -181,7 +179,7 @@ export default function DetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  /* Main product */
+  // Main product
   const [product, setProduct] = useState({
     id: "",
     title: "",
@@ -196,7 +194,6 @@ export default function DetailPage() {
     categoryName: "",
     categorySlug: "all",
     excerpt: "",
-    // ✅ promotion badge text (เหมือนหน้า Shop)
     promotionText: "",
   });
 
@@ -208,11 +205,11 @@ export default function DetailPage() {
   const [added, setAdded] = useState(false); // ปุ่ม ADD TO CART หลัก
   const [relAddedId, setRelAddedId] = useState(null); // ปุ่ม ADD TO CART ของ RELATED
 
-  /* Related products */
+  // Related products
   const [related, setRelated] = useState([]);
   const [relLoading, setRelLoading] = useState(false);
 
-  /* Popup state */
+  // Popup state
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupMsg, setPopupMsg] = useState("");
 
@@ -225,7 +222,7 @@ export default function DetailPage() {
     document.title = "Details Page";
   }, []);
 
-  /*  Qty helpers (ล็อกไม่ให้เกิน stock และถ้า stock = 0 ให้ qty = 0) */
+  //  Qty helpers (ล็อกไม่ให้เกิน stock และถ้า stock = 0 ให้ qty = 0)
   const clampQty = (v, stock) => {
     const s = Math.max(0, Number(stock || 0));
     const n = Math.floor(Number.isFinite(v) ? v : 1);
@@ -251,7 +248,7 @@ export default function DetailPage() {
       setRelLoading(true);
       setErr("");
       try {
-        // 🔹 โหลด product หลัก + images + master data + promotions + allProducts (สำหรับ related)
+        // โหลด product หลัก + images + master data + promotions + allProducts (สำหรับ related)
         const [p, imgs, cats, brands, promos, allProducts] = await Promise.all([
           safeJson(`${API_URL}/api/products/${encodeURIComponent(id)}`),
           safeJson(
@@ -266,7 +263,7 @@ export default function DetailPage() {
         if (cancelled) return;
         if (!p) throw new Error("ไม่พบสินค้า หรือเรียก API ไม่สำเร็จ");
 
-        /* ===== สร้าง promoMap แบบเดียวกับหน้า Shop ===== */
+        // สร้าง promoMap
         const promoMap = new Map(); // productId -> [promo name]
 
         if (Array.isArray(promos)) {
@@ -337,7 +334,7 @@ export default function DetailPage() {
         const list = loadWL();
         if (!cancelled) setWish(inWL(list, normId(mapped.id)));
 
-        /* ===== RELATED ===== */
+        // RELATED
         if (!cancelled && Array.isArray(allProducts)) {
           const curId = normId(mapped.id);
           const targetCatId = normId(mapped.categoryId);
@@ -391,7 +388,7 @@ export default function DetailPage() {
               price: Number(x.price) || 0,
               cover: `${API_URL}/api/products/${encodeURIComponent(rid)}/cover`,
               promo: promoLabel,
-              // ✅ สถานะ wishlist สำหรับการ์ด RELATED
+              // สถานะ wishlist สำหรับการ์ด RELATED
               inWish: inWL(wlList, rid),
             };
           });
@@ -411,7 +408,6 @@ export default function DetailPage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const stock = Math.max(0, Number(product.stock || 0));
@@ -456,7 +452,7 @@ export default function DetailPage() {
       e.currentTarget.src = FALLBACK_IMG;
   };
 
-  /* Wishlist: sync checkbox ↔ localStorage (ตัวหลัก) */
+  // Wishlist: sync checkbox ↔ localStorage (ตัวหลัก)
   const toggleWish = (checked) => {
     setWish(checked);
     const list = loadWL();
@@ -466,7 +462,7 @@ export default function DetailPage() {
     saveWL(next);
   };
 
-  /* Cart: Add & Buy */
+  // Cart: Add & Buy 
   const buildCartItem = () => {
     const pid = cartKey(product) || "#UNKNOWN";
     return {
@@ -522,9 +518,8 @@ export default function DetailPage() {
   // ถ้าของหมด บังคับให้ช่องแสดง "0" เสมอ (กันเคส state ค้างเป็น 1)
   const displayQty = stock <= 0 ? "0" : qty;
 
-  // ✅ toggle wishlist สำหรับ RELATED
+  // toggle wishlist สำหรับ RELATED
   const toggleRelatedWish = (r, checked) => {
-    // อัปเดต state ให้ checkbox ติด/ไม่ติด
     setRelated((prev) =>
       prev.map((item) =>
         item.id === r.id ? { ...item, inWish: checked } : item
@@ -626,9 +621,8 @@ export default function DetailPage() {
                       borderRadius: "999px",
                       marginRight: 8,
                       backgroundColor: stock > 0 ? "#22c55e" : "#ef4444", // green / red
-                      boxShadow: `0 0 0 3px ${
-                        stock > 0 ? "#dcfce7" : "#fee2e2"
-                      }`, // soft ring
+                      boxShadow: `0 0 0 3px ${stock > 0 ? "#dcfce7" : "#fee2e2"
+                        }`,
                     }}
                   />
                   {stock > 0 ? (
@@ -767,7 +761,7 @@ export default function DetailPage() {
                         aria-label={r.title}
                         title={r.title}
                       >
-                        {/* ✅ badge โปรโมชั่นใน RELATED เหมือนหน้า Shop */}
+                        {/* badge โปรโมชั่นใน RELATED เหมือนหน้า Shop */}
                         {r.promo && (
                           <span className="product__promo-badge">
                             {r.promo}
@@ -788,7 +782,7 @@ export default function DetailPage() {
                         ฿ {fmtPrice(r.price)}
                       </div>
 
-                      {/* ✅ Wishlist ที่ใช้งานได้จริงสำหรับ RELATED */}
+                      {/* Wishlist ที่ใช้งานได้จริงสำหรับ RELATED */}
                       <label className="wish" style={{ marginTop: 4 }}>
                         <input
                           type="checkbox"
@@ -826,7 +820,7 @@ export default function DetailPage() {
                           else cart.push(item);
                           saveCart(cart);
 
-                          // ให้เฉพาะสินค้าที่กดอยู่เปลี่ยนเป็น ADDED ✓ ชั่วคราว
+                          // ให้เฉพาะสินค้าที่กดอยู่เปลี่ยนเป็น ADDED ชั่วคราว
                           setRelAddedId(r.id);
                           setTimeout(() => setRelAddedId(null), 800);
                         }}

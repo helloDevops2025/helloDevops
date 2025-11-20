@@ -464,11 +464,13 @@ export default function AdminDashboard() {
     return (
         <div className="admin-dashboard">
             {/* HEADER */}
-            <div className="header">
+            <div className="header no-print">
+
                 <div>
                     <h1>Weekly Stock Report</h1>
                     <p className="sub">Week: {weekLabel}</p>
                 </div>
+
 
                 <div className="header-actions">
                     {/* Mode toggle */}
@@ -502,6 +504,8 @@ export default function AdminDashboard() {
                             </span>
                         </label>
                     </div>
+
+
 
 
 
@@ -549,6 +553,12 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
+            {/* HEADER สำหรับตอน Print */}
+            <div className="print-header only-print">
+                <h1>Weekly performance</h1>
+                <p>Week: {weekLabel}</p>
+            </div>
+
             {/* KPI CARDS */}
             <section className="kpi-grid">
                 <KpiCard title="Total Products" value={loading ? "…" : metrics.totalProducts} />
@@ -581,8 +591,8 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            {/* TABLE */}
-            <section className="card table-wrap">
+            {/* TABLE สำหรับ “หน้าจอ” */}
+            <section className="card table-wrap no-print">
                 <div className="card-head">
                     <h3>Stock Details</h3>
                     <input
@@ -600,7 +610,6 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="table">
-                    {/* หัวตาราง */}
                     <div className="thead">
                         <div>Product</div>
                         <div>Product ID</div>
@@ -614,7 +623,6 @@ export default function AdminDashboard() {
                         <div style={{ textAlign: "center" }}>Actions</div>
                     </div>
 
-                    {/* แถวข้อมูล */}
                     {metrics.tableRows.map((p) => {
                         const status =
                             p.stock === 0
@@ -636,16 +644,17 @@ export default function AdminDashboard() {
                                 key={p.id + p.name}
                                 data-text={`${p.name} ${p.id} ${p.category} ${p.brand}`.toLowerCase()}
                             >
-                                {/* 1 */} <div className="cell name">{p.name}</div>
-                                {/* 2 */} <div className="cell">{p.id}</div>
-                                {/* 3 */} <div className="cell">{p.category}</div>
-                                {/* 4 */} <div className="cell">{p.brand}</div>
-                                {/* 5 */} <div className="cell num">฿{Number(p.price || 0).toFixed(2)}</div>
-                                {/* 6 */} <div className="cell num">{p.stock}</div>
-                                {/* 7 */} <div className="cell"><span className={pillClass}>{status}</span></div>
-                                {/* 8 */} <div className="cell num">{p.soldThisWeek || 0}</div>
-                                {/* 9 */} <div className="cell">{fmtDateYMD(p.lastRestocked)}</div>
-                                {/* 10: Actions */}
+                                <div className="cell name">{p.name}</div>
+                                <div className="cell">{p.id}</div>
+                                <div className="cell">{p.category}</div>
+                                <div className="cell">{p.brand}</div>
+                                <div className="cell num">฿{Number(p.price || 0).toFixed(2)}</div>
+                                <div className="cell num">{p.stock}</div>
+                                <div className="cell">
+                                    <span className={pillClass}>{status}</span>
+                                </div>
+                                <div className="cell num">{p.soldThisWeek || 0}</div>
+                                <div className="cell">{fmtDateYMD(p.lastRestocked)}</div>
                                 <div className="cell actions-cell">
                                     <button
                                         className="btn-edit-inline"
@@ -660,25 +669,52 @@ export default function AdminDashboard() {
                             </div>
                         );
                     })}
-
-                    {/* กรณีไม่มีข้อมูล */}
-                    {!loading && products.length === 0 && !error && (
-                        <div
-                            className="trow"
-                            style={{
-                                gridColumn: "1 / -1",
-                                display: "block",
-                                textAlign: "center",
-                                color: "#64748b",
-                                fontSize: "14px",
-                                padding: "24px 0",
-                            }}
-                        >
-                            No data for this range.
-                        </div>
-                    )}
                 </div>
             </section>
+
+            {/* TABLE สำหรับ “Print เท่านั้น” */}
+            <section className="card table-wrap only-print">
+                <h3>Stock Details</h3>
+                <table className="print-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Product ID</th>
+                            <th>Category</th>
+                            <th>Brand</th>
+                            <th>Price</th>
+                            <th>In Stock</th>
+                            <th>Status</th>
+                            <th>Sold (Range)</th>
+                            <th>Last Restocked</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {metrics.tableRows.map((p) => {
+                            const status =
+                                p.stock === 0
+                                    ? "Out of Stock"
+                                    : p.stock <= metrics.lowStockThreshold
+                                        ? "Low Stock"
+                                        : "In Stock";
+                            return (
+                                <tr key={`print-${p.id}-${p.name}`}>
+                                    <td>{p.name}</td>
+                                    <td>{p.id}</td>
+                                    <td>{p.category}</td>
+                                    <td>{p.brand}</td>
+                                    <td className="num">฿{Number(p.price || 0).toFixed(2)}</td>
+                                    <td className="num">{p.stock}</td>
+                                    <td>{status}</td>
+                                    <td className="num">{p.soldThisWeek || 0}</td>
+                                    <td>{fmtDateYMD(p.lastRestocked)}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </section>
+
         </div>
     );
 }
