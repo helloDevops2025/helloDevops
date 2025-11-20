@@ -4,7 +4,7 @@ import "./ShopPage.css";
 import Footer from "./../components/Footer.jsx";
 
 
-// Config & helpers
+
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 const norm = (s) => String(s ?? "").trim().toLowerCase();
 const clean = (s) => String(s ?? "").trim();
@@ -14,7 +14,7 @@ const MAX_ALLOWED = 1_000_000;
 const STEP = 0.01;
 const PAGE_SIZE = 9;
 
-// LocalStorage keys & cart helpers
+
 const LS_WISH = "pm_wishlist";
 const LS_CART = "pm_cart";
 
@@ -50,7 +50,7 @@ const addItemToCart = ({ id, name, price, qty = 1, img }) => {
   } catch {}
 };
 
-// Wishlist helpers (global, ไม่ผูกกับ card เดียว)
+
 const readWishIdsStr = () => {
   try {
     const raw = JSON.parse(localStorage.getItem(LS_WISH) || "[]");
@@ -177,25 +177,37 @@ const fuzzyMatch = (q = "", text = "") => {
 };
 
 // ขยาย query: เช่น "น้ำ" → ["น้ำ","น้ำดื่ม","water","drinking water"]
+// เพิ่มการแมประดับหมวดหมู่ เช่น 'น้ำ' → เติมคำว่า 'beverage'/'เครื่องดื่ม'
 const expandQuery = (q = "") => {
   const normQ = normalizeText(q);
   const extra = [];
 
-  if (normQ.includes("น้ำ") || normQ.includes("น้ํา")) {
+  const namNorm = normalizeText("น้ำ");
+  if (namNorm && normQ.includes(namNorm)) {
+    // product-level synonyms
     extra.push("น้ำดื่ม", "water", "drinking water");
-  }
-  if (normQ.includes("water")) {
-    extra.push("น้ำ", "น้ํา", "น้ำดื่ม", "drinking water");
+    // category-level keywords so category field can match
+    extra.push("beverage", "เครื่องดื่ม");
   }
 
-  // สามารถเพิ่ม mapping อื่น ๆ ได้ เช่น โค้ก/coke, นม/milk ฯลฯ
-  // if (normQ.includes("โค้ก")) extra.push("coke", "coca cola");
-  // if (normQ.includes("coke")) extra.push("โค้ก", "โคคาโคล่า");
+  if (normQ.includes("water")) {
+    extra.push("น้ำ", "น้ํา", "น้ำดื่ม", "drinking water");
+    extra.push("beverage", "เครื่องดื่ม");
+  }
+
+
+  const neuNorm = normalizeText("เนื้อ");
+  if (neuNorm && normQ.includes(neuNorm)) {
+    extra.push("เนื้อสัตว์", "meat", "meats", "beef", "pork", "chicken");
+    extra.push("meats", "meat-products", "เนื้อ");
+  }
+
+
 
   return [q, ...extra];
 };
 
-// เช็คว่า product ตัวหนึ่ง match กับ search query หรือไม่
+
 const matchProductWithQuery = (p, searchQ) => {
   if (!searchQ) return true;
 
@@ -261,12 +273,12 @@ export default function ShopPage() {
           for (const k of keys) if (obj && obj[k] != null) return obj[k];
         };
 
-        // ดึงโปรโมชั่น ACTIVE ทั้งหมด
+
         const promos = await safeJson(
           `${API_URL}/api/promotions?status=ACTIVE`
         );
 
-        // map: productId -> ชื่อโปรโมชั่น...
+
         const promoMap = new Map();
         const promoLabelSet = new Set();
 
@@ -398,7 +410,7 @@ export default function ShopPage() {
     return fromMaster.sort((a, b) => a.localeCompare(b));
   }, [PRODUCTS, BRANDS_MASTER]);
 
-  // อ่าน search term จาก query string เช่น /shop?search=น้ำ
+
   const searchQ = (searchParams.get("search") || "").trim();
   const hasSearch = searchQ.length > 0;
 
@@ -499,7 +511,7 @@ export default function ShopPage() {
       const pBrand = norm(p.brand);
       const pPromo = norm(p.promo);
 
-      // 🔍 ใช้ tolerant search + synonym น้ำ ↔ water
+
       if (hasSearch && !matchProductWithQuery(p, searchQ)) return false;
 
       if (catSet.size && !catSet.has(pCat)) return false;

@@ -123,12 +123,25 @@ const Header = () => {
   const expandQuery = (q = "") => {
     const normQ = normalizeText(q);
     const extra = [];
-
-    if (normQ.includes("น้ำ") || normQ.includes("น้ํา")) {
+    // compare using normalized forms so different unicode compositions
+    // like "นํ้า" (combining marks) still match correctly
+    const namNorm = normalizeText("น้ำ");
+    if (namNorm && normQ.includes(namNorm)) {
+      // product-level synonyms
       extra.push("น้ำดื่ม", "water", "drinking water");
+      // category-level keywords so any product in beverage category matches
+      extra.push("beverage", "เครื่องดื่ม", "เครื่อง ดื่ม");
     }
     if (normQ.includes("water")) {
       extra.push("น้ำ", "น้ํา", "น้ำดื่ม", "drinking water");
+      extra.push("beverage", "เครื่องดื่ม");
+    }
+    
+    // map 'เนื้อ' to meats category + related synonyms
+    const neuNorm = normalizeText("เนื้อ");
+    if (neuNorm && normQ.includes(neuNorm)) {
+      extra.push("เนื้อสัตว์", "meat", "meats", "beef", "pork", "chicken");
+      extra.push("meats", "meat-products", "เนื้อ");
     }
     return [q, ...extra];
   };
