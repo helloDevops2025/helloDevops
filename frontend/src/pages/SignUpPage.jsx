@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { useNavigate, Link } from "react-router-dom";
-import api from "../lib/api";             // ✅ ใช้ axios instance เดิม
+import api from "../lib/api";           
 import "./SignUpPage.css";
 import "./toast.css";
 
@@ -46,7 +46,7 @@ export default function SignUpPage() {
     return /^0[689]\d{8}$/.test(digits);
   }
 
-  // 🆕 จากฟลุ๊ค: ใส่คลาสลง body เฉพาะหน้านี้ เพื่อซ่อน header/topbar และตัด padding-top
+  //  จากฟลุ๊ค: ใส่คลาสลง body เฉพาะหน้านี้ เพื่อซ่อน header/topbar และตัด padding-top
   useEffect(() => {
     document.body.classList.add("signup-page");
     return () => document.body.classList.remove("signup-page");
@@ -151,7 +151,7 @@ export default function SignUpPage() {
         <div className="illustration">
           <div className="phone" aria-hidden="true">
             <div style={{ display: "grid", placeItems: "center", gap: 10 }}>
-              {/* 🆕 เติม alt เพื่อ accessibility */}
+              {/*  เติม alt เพื่อ accessibility */}
               <img src="/assets/user/useraccess.png" style={{ width: 686, height: 383 }} alt="Illustration of shopping with a smartphone" />
               <h2 style={{ color: "white", fontWeight: 600, fontSize: 24, margin: 0 }}>Pure Mart</h2>
               <p style={{ color: "white", fontSize: 14, margin: 0, textAlign: "center" }}>
@@ -166,7 +166,7 @@ export default function SignUpPage() {
       <section className="form-side_signup">
         <div className="logo_signup">
 
-          {/* 🆕 ปรับ alt ให้สื่อความ */}
+          {/*  ปรับ alt ให้สื่อความ */}
 
           <img src="/assets/logo.png" alt="Pure Mart" />
         </div>

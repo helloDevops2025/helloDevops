@@ -1,4 +1,3 @@
-// src/pages/WishListPage.jsx
 import "./WishListPage.css";
 import Header from "../components/header";
 import Footer from "./../components/Footer.jsx";
@@ -6,16 +5,16 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 const LS_KEY = "pm_wishlist";
-const LS_CART = "pm_cart"; // ✅ ใช้ key เดียวกับหน้า Detail
+const LS_CART = "pm_cart"; // ใช้ key เดียวกับหน้า Detail
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 
-/* helpers */
+// helpers
 const clean = (s) => String(s ?? "").trim();
 const isAbs = (u) => /^https?:\/\//i.test(String(u || ""));
 const join = (base, path) =>
   base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
 
-/* pick cover image URL */
+// pick cover image URL
 const resolveImageUrl = (row) => {
   const id = row.id ?? row.productId ?? row.product_id;
   let u =
@@ -24,7 +23,7 @@ const resolveImageUrl = (row) => {
     row.image_url ||
     (Array.isArray(row.images)
       ? (row.images.find((i) => i.is_cover)?.image_url ||
-          row.images[0]?.image_url)
+        row.images[0]?.image_url)
       : null);
 
   if (u) {
@@ -39,7 +38,7 @@ function formatPrice(n) {
   return `฿ ${Number(n || 0).toFixed(2)}`;
 }
 
-/* Cart helpers (ให้เหมือนหน้า Detail/Shop) */
+// Cart helpers (ให้เหมือนหน้า Detail/Shop)
 const readCart = () => {
   try {
     const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]");
@@ -54,7 +53,7 @@ const saveCart = (arr) =>
 const cartKey = (p) =>
   String(p?.id ?? p?.productId ?? p?.product_id ?? "");
 
-/* Confirm Modal – ใช้คลาส wl-modal แยกจากที่อื่นเลย */
+// Confirm Modal – ใช้คลาส wl-modal แยกจากที่อื่นเลย
 function ConfirmModal({
   open,
   onOk,
@@ -98,7 +97,7 @@ function ConfirmModal({
   );
 }
 
-/* localStorage helpers */
+// localStorage helpers
 function readWishIds() {
   try {
     const raw = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
@@ -115,7 +114,7 @@ function readWishIds() {
 function writeWishIds(ids) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify([...new Set(ids)]));
-  } catch {}
+  } catch { }
 }
 
 export default function WishListPage() {
@@ -124,7 +123,7 @@ export default function WishListPage() {
   const [sortBy, setSortBy] = useState("recent");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [addedId, setAddedId] = useState(null); // ✅ ใช้แสดง ADDED ✓ ชั่วคราว
+  const [addedId, setAddedId] = useState(null); // ใช้แสดง ADDED ชั่วคราว
 
   // Auto-sync with other tabs
   useEffect(() => {
@@ -142,7 +141,7 @@ export default function WishListPage() {
     };
   }, []);
 
-  /* โหลดสินค้าตาม wishIds */
+  // โหลดสินค้าตาม wishIds
   useEffect(() => {
     let alive = true;
 
@@ -210,7 +209,7 @@ export default function WishListPage() {
     setItems((prev) => prev.filter((x) => x.id !== id));
   };
 
-  /* ✅ ADD TO CART ให้ทำงานเหมือนหน้า Detail/RELATED */
+  //ADD TO CART ให้ทำงานเหมือนหน้า Detail/RELATED 
   const handleAddToCart = (id) => {
     const p = items.find((x) => x.id === id);
     if (!p) return;

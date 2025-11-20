@@ -4,7 +4,7 @@ import "./HistoryPage.css";
 import Footer from "./../components/Footer.jsx";
 import "./breadcrumb.css";
 
-/* ===== Config & Utils ===== */
+/*  Config & Utils  */
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 const CART_KEY = "pm_cart";
 const REORDER_KEY = "pm_reorder";
@@ -16,7 +16,6 @@ const THB = (n) =>
     maximumFractionDigits: 0,
   });
 
-// ✅ 25 Jan 2025 • 01:45 PM
 const fDateTime = (iso) => {
   if (!iso) return "–";
   try {
@@ -55,7 +54,7 @@ const FALLBACK_IMG =
     </svg>`
   );
 
-/* ===== Order Card ===== */
+// Order Card
 function StatusRight({ status }) {
   const map = {
     completed: { text: "Order Completed", cls: "ok" },
@@ -96,17 +95,17 @@ function OrderCard({ o, onAgain, onView }) {
           {thumbs.length === 0
             ? Array.from({ length: 5 }).map((_, i) => <div className="hx-thumb" key={i} />)
             : thumbs.map((it, i) => (
-                <div className="hx-thumb" key={i}>
-                  <img
-                    src={it.thumb || FALLBACK_IMG}
-                    alt={it.name || `item-${i + 1}`}
-                    onError={(e) => {
-                      if (e.currentTarget.src !== FALLBACK_IMG)
-                        e.currentTarget.src = FALLBACK_IMG;
-                    }}
-                  />
-                </div>
-              ))}
+              <div className="hx-thumb" key={i}>
+                <img
+                  src={it.thumb || FALLBACK_IMG}
+                  alt={it.name || `item-${i + 1}`}
+                  onError={(e) => {
+                    if (e.currentTarget.src !== FALLBACK_IMG)
+                      e.currentTarget.src = FALLBACK_IMG;
+                  }}
+                />
+              </div>
+            ))}
         </div>
       </div>
 
@@ -130,7 +129,7 @@ function OrderCard({ o, onAgain, onView }) {
   );
 }
 
-/* ===== Pagination ===== */
+// Pagination
 function Pager({ page, pages, onChange }) {
   if (pages <= 1) return null;
   const go = (n) => () => onChange(Math.min(Math.max(1, n), pages));
@@ -158,7 +157,7 @@ function Pager({ page, pages, onChange }) {
   );
 }
 
-/* ===== Page ===== */
+//  Page
 export default function HistoryPage() {
   const navigate = useNavigate();
 
@@ -182,19 +181,19 @@ export default function HistoryPage() {
   const mapOrderDetail = (o) => {
     const items = Array.isArray(o.orderItems)
       ? o.orderItems.map((it) => {
-          const p = it.product || {};
-          const thumb =
-            p?.id !== undefined
-              ? `${API_BASE}/api/products/${encodeURIComponent(p.id)}/cover`
-              : "";
-          return {
-            name: p.name || it.productName || "",
-            qty: Number(it.quantity || 1),
-            price: Number(p.price ?? it.priceEach ?? 0),
-            thumb,
-            productId: p.id,
-          };
-        })
+        const p = it.product || {};
+        const thumb =
+          p?.id !== undefined
+            ? `${API_BASE}/api/products/${encodeURIComponent(p.id)}/cover`
+            : "";
+        return {
+          name: p.name || it.productName || "",
+          qty: Number(it.quantity || 1),
+          price: Number(p.price ?? it.priceEach ?? 0),
+          thumb,
+          productId: p.id,
+        };
+      })
       : [];
 
     const total =
@@ -286,7 +285,7 @@ export default function HistoryPage() {
   const displayRows = filteredClient.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   useEffect(() => setPage(1), [tab, qDeb]);
 
-  /* ===== Buy again: SAVE TO pm_reorder (do not touch pm_cart) ===== */
+  // Buy again: SAVE TO pm_reorder (do not touch pm_cart)
   const handleBuyAgain = (order) => {
     const freshReorder = (order.items || []).map((it) => {
       const productId = String(it.productId ?? it.id ?? it.name);

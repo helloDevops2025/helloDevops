@@ -8,9 +8,9 @@ import Footer from "./../components/Footer.jsx";
 const LS_CART = "pm_cart";
 const LS_REORDER = "pm_reorder";
 
-/* ใหม่: เก็บรายการที่ผู้ใช้เลือกไว้ */
+// เก็บรายการที่ผู้ใช้เลือกไว้
 const LS_PICK = "pm_cart_pick";
-/* ใหม่: เก็บ snapshot สินค้าที่เลือกไว้เวลาจะไป checkout */
+// เก็บ snapshot สินค้าที่เลือกไว้เวลาจะไป checkout
 const LS_CHECKOUT = "pm_checkout_selection";
 
 const norm = (v) => String(v ?? "").trim();
@@ -32,7 +32,7 @@ function saveJSON(key, val) {
   localStorage.setItem(key, JSON.stringify(val));
 }
 
-/* Hook: main cart */
+// Hook: main cart
 function useCart() {
   const [items, setItems] = useState(() => loadJSON(LS_CART, []));
 
@@ -70,13 +70,13 @@ function useCart() {
   const clear = useCallback(() => {
     saveJSON(LS_CART, []);
     setItems([]);
-    saveJSON(LS_PICK, []); 
+    saveJSON(LS_PICK, []);
   }, []);
 
   return { items, setQty, removeItem, clear, setItems };
 }
 
-/* Hook: reorder tray */
+// Hook: reorder tray
 function useReorder() {
   const [reorder, setReorder] = useState(() => loadJSON(LS_REORDER, []));
   useEffect(() => {
@@ -93,7 +93,7 @@ function useReorder() {
   return { reorder, setReorder, clearReorder };
 }
 
-/* Hook: pick/selection สำหรับเลือกจ่าย */
+// Hook: pick/selection สำหรับเลือกจ่าย
 function usePick(keys) {
   const [pick, setPick] = useState(() => new Set(loadJSON(LS_PICK, [])));
 
@@ -107,7 +107,7 @@ function usePick(keys) {
     for (const k of base) if (kset.has(k)) next.add(k);
     setPick(next);
     saveJSON(LS_PICK, Array.from(next));
-  }, [keys.join("|")]); 
+  }, [keys.join("|")]);
 
   const toggle = useCallback((key) => {
     setPick((prev) => {
@@ -131,14 +131,14 @@ function usePick(keys) {
   return { pick, toggle, setAll, isAll, isNone };
 }
 
-/*  Formatter  */
+//  Formatter
 const THB = (n) =>
   (Number(n) || 0).toLocaleString("th-TH", {
     style: "currency",
     currency: "THB",
   });
 
-/*  Breadcrumb  */
+// Breadcrumb
 function Breadcrumb({ items = [] }) {
   if (!items.length) return null;
   return (
@@ -194,7 +194,7 @@ export default function CartPage() {
     [items]
   );
 
-  // ===== Pick/Selection
+  //  Pick/Selection
   const allKeys = useMemo(() => rows.map((r) => r.key), [rows]);
   const { pick, toggle, setAll, isAll, isNone } = usePick(allKeys);
 
@@ -277,7 +277,7 @@ export default function CartPage() {
 
     // เมื่อมีของใหม่ เข้าตะกร้า -> เลือกเพิ่มอัตโนมัติ
     const newKeys = next.map((x) => makeKey(x));
-    saveJSON(LS_PICK, newKeys); 
+    saveJSON(LS_PICK, newKeys);
   }, [reorderRows, setItems, clearReorder]);
 
   // ปรับจำนวนในถาดชั่วคราว
@@ -332,7 +332,7 @@ export default function CartPage() {
           </a>
         </div>
 
-        {/* ===== Reorder Panel (separate list) ===== */}
+        {/*  Reorder Panel (separate list)  */}
         {reorderRows.length > 0 && (
           <section className="card summary-card" style={{ marginBottom: 24 }}>
             <h2 className="section-title">Buy Again</h2>
@@ -421,7 +421,7 @@ export default function CartPage() {
           </section>
         )}
 
-        {/* ===== Main Cart ===== */}
+        {/*  Main Cart  */}
         {rows.length === 0 ? (
           <div id="emptyState" className="empty">
             <p>Your cart is empty.</p>

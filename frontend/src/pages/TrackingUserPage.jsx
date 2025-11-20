@@ -141,21 +141,15 @@ function normalizeStatus(s) {
   return String(s || "").trim().toUpperCase();
 }
 
-/**
- * แปลงสถานะจากฐานข้อมูลให้เป็น steps ที่หน้า User ใช้
- * นโยบายเหมือน Admin:
- * - ถ้า CANCELLED → ไม่ติ๊กขั้นใด ๆ และติดป้าย "Cancelled" ทุกขั้น
- * - คำนิยามขั้น: PREPARING → READY_TO_SHIP → SHIPPING → DELIVERED
- */
 function buildStepsFromStatus(rawStatus) {
   const st = normalizeStatus(rawStatus);
 
   // โครงตามลำดับเดียวกับ Admin
   const base = [
-    { label: "Preparing",     sub: "",           done: false },
-    { label: "Ready to Ship", sub: "",           done: false },
-    { label: "Shipping",      sub: "Processing", done: false },
-    { label: "Delivered",     sub: "Pending",    done: false },
+    { label: "Preparing", sub: "", done: false },
+    { label: "Ready to Ship", sub: "", done: false },
+    { label: "Shipping", sub: "Processing", done: false },
+    { label: "Delivered", sub: "Pending", done: false },
   ];
 
   // ยกเลิก = ไม่ติ๊ก และปัก "Cancelled" ทุกขั้น
@@ -241,20 +235,20 @@ export default function TrackingUserPage() {
         const addrText = data.shippingAddress || "-";
         const mappedItems = Array.isArray(data.orderItems)
           ? data.orderItems.map((it) => {
-              const p = it.product || {};
-              const pid = p.id ?? it.productIdFk ?? it.productId;
-              return {
-                id: String(pid ?? Math.random()),
-                name: p.name || it.productName || "-",
-                desc: p.description || "",
-                price: Number(p.price ?? it.priceEach ?? 0),
-                qty: Number(it.quantity || 1),
-                img:
-                  pid !== undefined
-                    ? `${API_BASE}/api/products/${encodeURIComponent(pid)}/cover`
-                    : "/assets/products/placeholder.jpg",
-              };
-            })
+            const p = it.product || {};
+            const pid = p.id ?? it.productIdFk ?? it.productId;
+            return {
+              id: String(pid ?? Math.random()),
+              name: p.name || it.productName || "-",
+              desc: p.description || "",
+              price: Number(p.price ?? it.priceEach ?? 0),
+              qty: Number(it.quantity || 1),
+              img:
+                pid !== undefined
+                  ? `${API_BASE}/api/products/${encodeURIComponent(pid)}/cover`
+                  : "/assets/products/placeholder.jpg",
+            };
+          })
           : [];
 
         const mapped = {
@@ -451,7 +445,7 @@ export default function TrackingUserPage() {
     );
   }
 
-  // ✅ แปลงสถานะจริงจาก Admin เพื่อสร้างขั้นตอน + ธงยกเลิก
+  // แปลงสถานะจริงจาก Admin เพื่อสร้างขั้นตอน + ธงยกเลิก
   const { steps, cancelled } = buildStepsFromStatus(order.status);
 
   return (

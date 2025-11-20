@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import "./ShopPage.css";
 import Footer from "./../components/Footer.jsx";
 
-/* ===== Config & helpers ===== */
+// Config & helpers
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
 const norm = (s) => String(s ?? "").trim().toLowerCase();
 const clean = (s) => String(s ?? "").trim();
@@ -13,7 +13,7 @@ const MAX_ALLOWED = 1_000_000;
 const STEP = 0.01;
 const PAGE_SIZE = 9;
 
-/* ===== LocalStorage keys & cart helpers ===== */
+// LocalStorage keys & cart helpers
 const LS_WISH = "pm_wishlist";
 const LS_CART = "pm_cart";
 
@@ -46,10 +46,10 @@ const addItemToCart = ({ id, name, price, qty = 1, img }) => {
     window.dispatchEvent(
       new CustomEvent("pm_cart_updated", { detail: { count } })
     );
-  } catch {}
+  } catch { }
 };
 
-/* ===== Wishlist helpers (global, ไม่ผูกกับ card เดียว) ===== */
+// Wishlist helpers (global, ไม่ผูกกับ card เดียว)
 const readWishIdsStr = () => {
   try {
     const raw = JSON.parse(localStorage.getItem(LS_WISH) || "[]");
@@ -71,7 +71,7 @@ const writeWishIdsStr = (ids) => {
   localStorage.setItem(LS_WISH, JSON.stringify(uniq));
 };
 
-/* ===== Placeholder image ===== */
+// Placeholder image
 const PLACEHOLDER_DATA =
   "data:image/svg+xml;utf8," +
   encodeURIComponent(`
@@ -82,7 +82,7 @@ const PLACEHOLDER_DATA =
       </g>
     </svg>`);
 
-/* ===== Price helpers ===== */
+// Price helpers
 const toCents = (val) => {
   if (val === "" || val === null || val === undefined) return null;
   const num = Number(val);
@@ -94,7 +94,7 @@ const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 const priceToCents = (priceBaht) =>
   Math.round((Number(priceBaht) + Number.EPSILON) * 100);
 
-/* ===== Image resolve ===== */
+// Image resolve
 const resolveImageUrl = (row) => {
   const id = row.id ?? row.productId ?? row.product_id;
   let u =
@@ -103,7 +103,7 @@ const resolveImageUrl = (row) => {
     row.image_url ||
     (Array.isArray(row.images)
       ? (row.images.find((i) => i.is_cover || i.isCover)?.image_url ||
-          row.images[0]?.image_url)
+        row.images[0]?.image_url)
       : null);
 
   if (u) {
@@ -114,7 +114,7 @@ const resolveImageUrl = (row) => {
   return `${API_URL}/api/products/${encodeURIComponent(id)}/cover`;
 };
 
-/* ===== Stock helper (เหมือนหน้า Home) ===== */
+// Stock helper (เหมือนหน้า Home)
 const isOutOfStock = (p) => {
   if (!p) return false;
   const flag = p.inStock ?? p.in_stock;
@@ -131,7 +131,7 @@ export default function ShopPage() {
   const [PRODUCTS, setPRODUCTS] = useState([]);
   const [CATEGORIES, setCATEGORIES] = useState([]);
   const [BRANDS_MASTER, setBRANDS_MASTER] = useState([]);
-  const [PROMO_LIST, setPROMO_LIST] = useState([]); // รายชื่อโปรสำหรับ filter
+  const [PROMO_LIST, setPROMO_LIST] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState("");
 
@@ -169,12 +169,12 @@ export default function ShopPage() {
           for (const k of keys) if (obj && obj[k] != null) return obj[k];
         };
 
-        // 🔹 ดึงโปรโมชั่น ACTIVE ทั้งหมด
+        // ดึงโปรโมชั่น ACTIVE ทั้งหมด
         const promos = await safeJson(
           `${API_URL}/api/promotions?status=ACTIVE`
         );
 
-        // map: productId -> [ชื่อโปรโมชั่น...]
+        // map: productId -> ชื่อโปรโมชั่น...
         const promoMap = new Map();
         const promoLabelSet = new Set();
 
@@ -332,7 +332,7 @@ export default function ShopPage() {
     setPage(1);
   };
 
-  /* ===== Price input state ===== */
+  // Price input state
   const [minValStr, setMinValStr] = useState("");
   const [maxValStr, setMaxValStr] = useState("");
   const [priceErr, setPriceErr] = useState("");
@@ -393,7 +393,7 @@ export default function ShopPage() {
     setPage(1);
   };
 
-  /* ===== Searching placeholders (not used now) ===== */
+  // Searching placeholders (not used now)
   const hasSearch = false;
   const searchQ = "";
   const searchScope = "all";
@@ -407,7 +407,7 @@ export default function ShopPage() {
       .trim();
   const fuzzyMatch = () => false;
 
-  /* ===== Filter, sort, paginate ===== */
+  // Filter, sort, paginate
   const filtered = useMemo(() => {
     const f = filters;
     const catSet = new Set([...f.cat].map(norm));
@@ -503,11 +503,9 @@ export default function ShopPage() {
     if (filters.priceMinC != null || filters.priceMaxC != null)
       out.push({
         key: "price",
-        label: `฿${
-          filters.priceMinC != null ? fromCents(filters.priceMinC) : "0.00"
-        }–${
-          filters.priceMaxC != null ? fromCents(filters.priceMaxC) : "∞"
-        }`,
+        label: `฿${filters.priceMinC != null ? fromCents(filters.priceMinC) : "0.00"
+          }–${filters.priceMaxC != null ? fromCents(filters.priceMaxC) : "∞"
+          }`,
       });
     return out;
   }, [filters]);
@@ -533,14 +531,14 @@ export default function ShopPage() {
   const noProductsDueToPrice =
     !loading && !loadErr && sorted.length === 0 && hasPriceFilter;
 
-  /* ===== Product card ===== */
+  // Product card
   const ProductCard = ({ p }) => {
     const nav = useNavigate();
     const [src, setSrc] = useState(p.img);
     const [loaded, setLoaded] = useState(false);
     const [added, setAdded] = useState(false);
 
-    // ⭐ ใช้ boolean liked + sync กับ localStorage แบบ global
+    // ใช้ boolean liked + sync กับ localStorage แบบ global
     const [liked, setLiked] = useState(false);
 
     // init: อ่านว่าตัวนี้อยู่ใน wishlist ไหม
@@ -556,8 +554,8 @@ export default function ShopPage() {
     const btnLabel = out
       ? "OUT OF STOCK"
       : added
-      ? "ADDED ✓"
-      : "ADD TO CART";
+        ? "ADDED ✓"
+        : "ADD TO CART";
 
     const onAdd = () => {
       if (out) return;
@@ -665,7 +663,7 @@ export default function ShopPage() {
     );
   };
 
-  /* ===== Checklist ===== */
+  // Checklist
   const CheckList = ({ list, setKey, selected }) => (
     <div className={`checklist ${setKey === "brand" ? "scroll" : ""}`}>
       {list.map((val, idx) => {
