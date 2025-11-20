@@ -329,7 +329,6 @@ export default function TrackingUserPage() {
     const paymentMethod = order.paymentMethod || "-";
 
     const shippingFee = order.shippingFee || 0;
-    the
     const tax = order.tax || 0;
     const grandTotal = totals.total;
 

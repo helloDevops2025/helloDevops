@@ -76,7 +76,7 @@ export default function LoginPage() {
       // log ช่วยไล่ปัญหา (ดูใน Console)
       console.error("LOGIN ERROR:", err?.response?.status, err?.response?.data, err);
       const msg = err?.response?.status === 401
-        ? "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
+        ? "Incorrect username or password"
         : (typeof err?.response?.data === "string"
             ? err.response.data
             : "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
