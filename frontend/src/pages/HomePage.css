@@ -271,6 +271,10 @@
   text-decoration: none;
   font-weight: 600;
   box-shadow: 0 8px 26px rgba(0, 0, 0, 0.18);
+  transition: transform 180ms cubic-bezier(.2,.9,.3,1),
+              box-shadow 220ms cubic-bezier(.2,.9,.3,1),
+              background-color 180ms ease, filter 180ms ease, color 180ms ease;
+  transform-origin: center;
 }
 
 /* ghost button should be light on top of dark overlay */
@@ -278,6 +282,33 @@
   background: transparent;
   color: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Hover / focus / active for hero buttons */
+.hero-btn:hover,
+.hero-btn:focus {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 18px 36px rgba(8, 18, 60, 0.18);
+  filter: brightness(1.02);
+  text-decoration: none;
+}
+
+.hero-btn:active {
+  transform: translateY(-2px) scale(0.995);
+}
+
+.hero-btn:focus {
+  outline: none;
+  box-shadow: 0 18px 36px rgba(8, 18, 60, 0.18), 0 0 0 4px rgba(62, 64, 174, 0.08);
+}
+
+/* Ghost variant should invert slightly on hover to remain legible on dark overlays */
+.hero-btn--ghost:hover,
+.hero-btn--ghost:focus {
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.14);
 }
 
 /* Headline: white, bold, with shadow & slight stroke for max legibility */
@@ -342,6 +373,22 @@
   background-color: #4269E2;
   color: #ffffff;
 
+}
+
+/* Stronger hover feedback for promo button */
+.hero-banner--promo .hero-content .hero-ctas .hero-btn {
+  transition: transform 200ms cubic-bezier(.2,.9,.3,1), box-shadow 200ms ease, background-color 180ms ease;
+}
+
+.hero-banner--promo .hero-content .hero-ctas .hero-btn:hover,
+.hero-banner--promo .hero-content .hero-ctas .hero-btn:focus {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 22px 46px rgba(34, 76, 170, 0.18);
+  background-color: #365bd6; /* slightly darker */
+}
+
+.hero-banner--promo .hero-content .hero-ctas .hero-btn:active {
+  transform: translateY(-3px) scale(0.995);
 }
 
 @media (max-width: 900px) {
@@ -504,10 +551,11 @@
 .category__grid {
   margin-top: 22px;
   display: grid;
+  /* keep 5 columns on large screens but tighten spacing so they fit */
   grid-template-columns: repeat(5, 1fr);
-  gap: 28px;
-  margin-left: 40px;
-  margin-right: 40px;
+  gap: 18px;
+  margin-left: 24px;
+  margin-right: 24px;
 }
 
 @media (max-width: 1024px) {
@@ -541,8 +589,9 @@
   border: 2px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  padding: 28px;
-  height: 300px;
+  /* smaller padding and height so 5 cards fit comfortably on wide layouts */
+  padding: 16px;
+  height: 220px;
   transition: transform .2s, box-shadow .2s;
   justify-content: center;
   align-items: center;
@@ -1350,8 +1399,10 @@ html {
 
 .category__grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
-  gap: clamp(12px, 2vw, 24px) !important;
+  /* reduce the min width so more items can fit across (allows 5 columns on wide screens)
+     while remaining responsive */
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  gap: clamp(10px, 1.6vw, 18px) !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
   align-items: stretch;
@@ -1361,8 +1412,8 @@ html {
 
 @media (max-width: 480px) {
   .category__grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
-    gap: 12px !important;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+    gap: 10px !important;
   }
 }
 
@@ -1373,7 +1424,8 @@ html {
   align-items: center;
   justify-content: space-between;
   height: auto !important;
-  padding: 20px !important;
+  /* match the reduced padding used above for the initial block */
+  padding: 12px !important;
 }
 
 .category-card img {
@@ -1514,11 +1566,26 @@ html {
 /* ===== Animation: section เด้งเบา ๆ ตอนเลื่อนมาถึง ===== */
 .section-fade-in {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity .55s ease, transform .55s ease;
+  transform: translate3d(0,24px,0);
+  transition: opacity .56s cubic-bezier(.2,.8,.2,1), transform .56s cubic-bezier(.2,.8,.2,1);
+  will-change: transform, opacity;
 }
 
 .section-fade-in.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+
+/* ซ่อนแบนเนอร์ตอนแรก */
+.promo-banner {
+  opacity: 0;
+  transform: translateY(50px);  /* แบนเนอร์จะเริ่มจากข้างล่าง */
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* เมื่อแบนเนอร์เลื่อนมาถึงแล้วเด้ง */
+.promo-banner.is-visible {
+  opacity: 1;
+  transform: translateY(0);  /* ให้กลับมาที่ตำแหน่งปกติ */
 }
