@@ -329,34 +329,35 @@ export default function AdminOrderListPage() {
       </main>
 
       {/* ✅ Popup ยืนยันการลบ */}
-      {confirmOrder && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>ยืนยันการลบรายการสั่งซื้อนี้หรือไม่?</h3>
-            <p>Order: {showOrderCode(confirmOrder.orderCode)}</p>
-            <div className="modal-buttons">
-              <button className="btn-cancel" onClick={() => setConfirmOrder(null)}>
-                ยกเลิก
-              </button>
-              <button className="btn-confirm" onClick={handleConfirmDelete}>
-                ยืนยัน
-              </button>
+        {confirmOrder && (
+            <div className="modal-overlay">
+                <div className="modal">
+                    <h3>Are you sure you want to delete this order?</h3>
+                    <p>Order: {showOrderCode(confirmOrder.orderCode)}</p>
+                    <div className="modal-buttons">
+                        <button className="btn-cancel" onClick={() => setConfirmOrder(null)}>
+                            Cancel
+                        </button>
+                        <button className="btn-confirm" onClick={handleConfirmDelete}>
+                            Confirm
+                        </button>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* ✅ Popup ลบสำเร็จ */}
-      {showSuccess && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>✅ ลบรายการสั่งซื้อนี้แล้ว</h3>
-            <button className="btn-ok" onClick={() => setShowSuccess(false)}>
-              OK
-            </button>
-          </div>
-        </div>
-      )}
+
+        {/* ✅ Popup ลบสำเร็จ */}
+        {showSuccess && (
+            <div className="modal-overlay">
+                <div className="modal">
+                    <h3>Order has been successfully deleted.</h3>
+                    <button className="btn-ok" onClick={() => setShowSuccess(false)}>
+                        OK
+                    </button>
+                </div>
+            </div>
+        )}
     </div>
   );
 }
