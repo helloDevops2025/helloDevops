@@ -53,7 +53,7 @@ const Breadcrumb = ({ items = [] }) => {
 /* ===== Progress Card ===== */
 const ProgressCard = ({ steps, cancelled }) => {
   const { percent } = useMemo(() => {
-    // ถ้ายกเลิก → ให้ 0%
+    // if cancelled -> show 0%
     if (cancelled) return { percent: 0 };
     const total = steps.length || 1;
     const done = steps.filter((s) => s.done).length;
@@ -98,7 +98,7 @@ const OrderBox = ({ items }) => {
           <div>Qty</div>
           <div>Total</div>
         </div>
-        <div style={{ padding: 16, color: "#777" }}>ไม่มีรายการสินค้า</div>
+        <div style={{ padding: 16, color: "#777" }}>No items</div>
       </section>
     );
   }
@@ -213,6 +213,7 @@ export default function TrackingUserPage() {
     cart: [],
     shippingFee: 0,
     tax: 0,
+    discount: 0,
     status: "PENDING",
   });
 
@@ -258,6 +259,10 @@ export default function TrackingUserPage() {
           cart: mappedItems,
           shippingFee: Number(data.shippingFee ?? data.shipping_fee ?? 0),
           tax: Number(data.taxTotal ?? data.tax_total ?? 0),
+          // support multiple possible discount field names from backend
+          discount: Number(
+            data.discountAmount ?? data.discount ?? data.promoDiscount ?? data.promo_amount ?? 0
+          ),
           status: normalizeStatus(data.orderStatus ?? data.status ?? "PENDING"),
         };
 
@@ -282,8 +287,9 @@ export default function TrackingUserPage() {
       subtotal += (it.price || 0) * (it.qty || 0);
       items += it.qty || 0;
     }
-    const total = subtotal + (order.shippingFee || 0) + (order.tax || 0);
-    return { subtotal, items, total };
+    const discount = Number(order.discount || 0);
+    const total = subtotal + (order.shippingFee || 0) + (order.tax || 0) - discount;
+    return { subtotal, items, discount, total };
   }, [order]);
 
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -330,6 +336,7 @@ export default function TrackingUserPage() {
 
     const shippingFee = order.shippingFee || 0;
     const tax = order.tax || 0;
+    const discount = totals.discount || 0;
     const grandTotal = totals.total;
 
     const html = `
@@ -380,7 +387,7 @@ export default function TrackingUserPage() {
               </thead>
               <tbody>
                 ${rows}
-              </tbody>
+                </tbody>
             </table>
 
             <div class="totals-wrap">
@@ -388,6 +395,7 @@ export default function TrackingUserPage() {
                 <div class="row"><div class="muted">Subtotal</div><div>${THB(totals.subtotal)}</div></div>
                 <div class="row"><div class="muted">Shipping Fee</div><div>${THB(shippingFee)}</div></div>
                 <div class="row"><div class="muted">Tax / VAT</div><div>${THB(tax)}</div></div>
+                <div class="row"><div class="muted">Discount</div><div style="color:#0b2545">-${THB(discount)}</div></div>
                 <div class="grand">Grand Total&nbsp;&nbsp;${THB(grandTotal)}</div>
               </div>
             </div>
@@ -411,7 +419,7 @@ export default function TrackingUserPage() {
       iframe.contentWindow.print();
     } catch (e) {
       console.error(e);
-      alert("ไม่สามารถเปิดหน้าพรีวิวการพิมพ์ได้ — กรุณาอนุญาตป๊อปอัพหรือลองอีกครั้ง");
+      alert("Cannot open print preview — please allow popups or try again");
     }
   };
 
@@ -516,16 +524,26 @@ export default function TrackingUserPage() {
         <OrderBox items={order.cart} />
 
         <section className="card" style={{ padding: 16, marginTop: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div>Grand Total ({totals.items} items)</div>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>
-              {THB(totals.total)}
+          <div style={{ maxWidth: 420, marginLeft: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <div className="muted">Subtotal</div>
+              <div>{THB(totals.subtotal)}</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <div className="muted">Shipping Fee</div>
+              <div>{THB(order.shippingFee || 0)}</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <div className="muted">Tax / VAT</div>
+              <div>{THB(order.tax || 0)}</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+              <div className="muted">Discount</div>
+              <div style={{ color: "#0b2545" }}>-{THB(totals.discount || 0)}</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>Grand Total ({totals.items} items)</div>
+              <div style={{ fontSize: 18, fontWeight: 900 }}>{THB(totals.total)}</div>
             </div>
           </div>
         </section>

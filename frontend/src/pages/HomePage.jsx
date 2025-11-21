@@ -330,7 +330,7 @@ function BestSellersSection() {
       )}
 
       {!loading && err && (
-        <div className="error">Therefore, the goods can be loaded: {err}</div>
+        <div className="error">Failed to load best sellers: {err}</div>
       )}
 
       {!loading && !err && (
@@ -437,7 +437,7 @@ function CategoriesSection() {
         )}
 
         {!loading && err && (
-          <div className="error">โหลดหมวดหมู่ไม่สำเร็จ: {err}</div>
+          <div className="error">Failed to load categories: {err}</div>
         )}
 
         {!loading && !err && (
@@ -564,7 +564,7 @@ function AllProductsSection({ listRef }) {
       )}
 
       {!loading && err && (
-        <div className="error">โหลด All Products ไม่สำเร็จ: {err}</div>
+        <div className="error">Failed to load products: {err}</div>
       )}
 
       {!loading && !err && (
@@ -585,7 +585,7 @@ function AllProductsSection({ listRef }) {
                 aria-label={name}
               >
                 <div className="product__thumb">
-                  {/* badge โปรแกรมที่นี่ด้วย */}
+                  {/*  */}
                   {promoLabel && (
                     <span className="product__promo-badge">{promoLabel}</span>
                   )}

@@ -42,14 +42,14 @@ export default function LoginPage() {
       //  ตรวจอินพุตให้ชัด
       const emailInput = username.trim();
       if (!emailInput) {
-        setErr("กรุณากรอกอีเมล");
+        setErr("Please enter your email");
         return;
       }
       // อนุญาตให้พิมพ์แค่ชื่อได้ เช่น 'admin' จะเติม @gmail.com ให้
       const email = emailInput.includes("@") ? emailInput : `${emailInput}@gmail.com`;
 
       if (!password) {
-        setErr("กรุณากรอกรหัสผ่าน");
+        setErr("Please enter your password");
         return;
       }
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
         ? "Incorrect username or password"
         : (typeof err?.response?.data === "string"
             ? err.response.data
-            : "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
+            : "Cannot connect to server");
       setErr(msg);
     } finally {
       setSubmitting(false);
@@ -126,16 +126,14 @@ export default function LoginPage() {
             <button
               className="toggle-eye"
               type="button"
-              aria-label="แสดง/ซ่อนรหัสผ่าน"
+              aria-label="Show/Hide password"
               onClick={() => setPwdVisible((v) => !v)}
             >
               {pwdVisible ? <EyeOpen /> : <EyeClosed />}
             </button>
           </div>
 
-          <div className="row-end">
-            <a href="#" className="link">Forgot Password?</a>
-          </div>
+        
 
           {err && (
             <p style={{ color: "crimson", fontSize: 14, marginTop: 8 }}>
