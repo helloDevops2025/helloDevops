@@ -95,6 +95,7 @@ const OrderBox = ({ items }) => {
         <div className="order-head">
           <div>Item</div>
           <div>Unit Price</div>
+          <div>Discount</div>
           <div>Qty</div>
           <div>Total</div>
         </div>
@@ -108,12 +109,16 @@ const OrderBox = ({ items }) => {
       <div className="order-head">
         <div>Item</div>
         <div>Unit Price</div>
+        <div>Discount</div>
         <div>Qty</div>
         <div>Total</div>
       </div>
       <div id="orderBody">
         {items.map((it) => {
-          const subtotal = (it.price || 0) * (it.qty || 0);
+          const price = Number(it.price || 0);
+          const qty = Number(it.qty || 0);
+          const disc = Number(it.discountPerUnit || 0) || 0;
+          const lineTotal = Math.max(0, (price - disc) * (qty || 0));
           return (
             <div key={it.id} className="order-row">
               <div className="product">
@@ -123,11 +128,12 @@ const OrderBox = ({ items }) => {
                   {it.desc && <p className="desc">{it.desc}</p>}
                 </div>
               </div>
-              <div className="price">{THB(it.price)}</div>
+              <div className="price">{THB(price)}</div>
+              <div className="discount">{Number(disc || 0) === 0 ? "0" : THB(disc)}</div>
               <div className="qty">
-                <span className="pill">{it.qty}</span>
+                <span className="pill">{qty}</span>
               </div>
-              <div className="subtotal">{THB(subtotal)}</div>
+              <div className="subtotal">{THB(lineTotal)}</div>
             </div>
           );
         })}
@@ -236,20 +242,25 @@ export default function TrackingUserPage() {
         const addrText = data.shippingAddress || "-";
         const mappedItems = Array.isArray(data.orderItems)
           ? data.orderItems.map((it) => {
-            const p = it.product || {};
-            const pid = p.id ?? it.productIdFk ?? it.productId;
-            return {
-              id: String(pid ?? Math.random()),
-              name: p.name || it.productName || "-",
-              desc: p.description || "",
-              price: Number(p.price ?? it.priceEach ?? 0),
-              qty: Number(it.quantity || 1),
-              img:
-                pid !== undefined
-                  ? `${API_BASE}/api/products/${encodeURIComponent(pid)}/cover`
-                  : "/assets/products/placeholder.jpg",
-            };
-          })
+              const p = it.product || {};
+              const pid = p.id ?? it.productIdFk ?? it.productId;
+              // try multiple possible discount field names on the order item
+              const discountPerUnit = Number(
+                it.discountPerUnit ?? it.discount_per_unit ?? it.discount_each ?? it.discountEach ?? it.discountAmount ?? it.discount ?? 0
+              );
+              return {
+                id: String(pid ?? Math.random()),
+                name: p.name || it.productName || "-",
+                desc: p.description || "",
+                price: Number(p.price ?? it.priceEach ?? it.price ?? 0),
+                qty: Number(it.quantity || it.qty || 1),
+                discountPerUnit: isNaN(discountPerUnit) ? 0 : discountPerUnit,
+                img:
+                  pid !== undefined
+                    ? `${API_BASE}/api/products/${encodeURIComponent(pid)}/cover`
+                    : "/assets/products/placeholder.jpg",
+              };
+            })
           : [];
 
         const mapped = {
@@ -284,8 +295,12 @@ export default function TrackingUserPage() {
     let subtotal = 0,
       items = 0;
     for (const it of order.cart || []) {
-      subtotal += (it.price || 0) * (it.qty || 0);
-      items += it.qty || 0;
+      const price = Number(it.price || 0);
+      const qty = Number(it.qty || it.qty || 0);
+      const disc = Number(it.discountPerUnit || 0);
+      const line = Math.max(0, (price - disc) * (qty || 0));
+      subtotal += line;
+      items += qty || 0;
     }
     const discount = Number(order.discount || 0);
     const total = subtotal + (order.shippingFee || 0) + (order.tax || 0) - discount;
@@ -314,7 +329,11 @@ export default function TrackingUserPage() {
 
     const rows = items
       .map((it, idx) => {
-        const subtotal = (it.price || 0) * (it.qty || 0);
+        const price = Number(it.price || 0);
+        const qty = Number(it.qty || 0);
+        const disc = Number(it.discountPerUnit || 0) || 0;
+        const lineTotal = Math.max(0, (price - disc) * (qty || 0));
+        const discDisplay = Number(disc || 0) === 0 ? "0" : THB(disc);
         return `
           <tr>
             <td class="idx" style="width:40px">${idx + 1}</td>
@@ -322,9 +341,10 @@ export default function TrackingUserPage() {
               <div style="font-weight:700;color:#0b2545">${it.name}</div>
               ${it.desc ? `<div class="item-desc">${it.desc}</div>` : ""}
             </td>
-            <td class="price" style="width:120px">${THB(it.price)}</td>
-            <td class="qty" style="width:80px;text-align:center">${it.qty}</td>
-            <td class="total" style="width:140px">${THB(subtotal)}</td>
+            <td class="price" style="width:120px">${THB(price)}</td>
+            <td class="discount" style="width:120px;text-align:right">${discDisplay}</td>
+            <td class="qty" style="width:80px;text-align:center">${qty}</td>
+            <td class="total" style="width:140px;text-align:right">${THB(lineTotal)}</td>
           </tr>
         `;
       })
@@ -338,6 +358,7 @@ export default function TrackingUserPage() {
     const tax = order.tax || 0;
     const discount = totals.discount || 0;
     const grandTotal = totals.total;
+    const discountDisplay = Number(discount || 0) === 0 ? "0" : `-${THB(discount)}`;
 
     const html = `
       <html>
@@ -381,6 +402,7 @@ export default function TrackingUserPage() {
                   <th style="width:40px">#</th>
                   <th>Item</th>
                   <th style="width:120px;text-align:right">Unit Price</th>
+                  <th style="width:120px;text-align:right">Discount</th>
                   <th style="width:80px;text-align:center">Qty</th>
                   <th style="width:140px;text-align:right">Total</th>
                 </tr>
@@ -395,7 +417,7 @@ export default function TrackingUserPage() {
                 <div class="row"><div class="muted">Subtotal</div><div>${THB(totals.subtotal)}</div></div>
                 <div class="row"><div class="muted">Shipping Fee</div><div>${THB(shippingFee)}</div></div>
                 <div class="row"><div class="muted">Tax / VAT</div><div>${THB(tax)}</div></div>
-                <div class="row"><div class="muted">Discount</div><div style="color:#0b2545">-${THB(discount)}</div></div>
+                <div class="row"><div class="muted">Discount</div><div style="color:#0b2545">${discountDisplay}</div></div>
                 <div class="grand">Grand Total&nbsp;&nbsp;${THB(grandTotal)}</div>
               </div>
             </div>
@@ -539,7 +561,7 @@ export default function TrackingUserPage() {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
               <div className="muted">Discount</div>
-              <div style={{ color: "#0b2545" }}>-{THB(totals.discount || 0)}</div>
+              <div style={{ color: "#0b2545" }}>{Number(totals.discount || 0) === 0 ? "0" : `-${THB(totals.discount)}`}</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
               <div style={{ fontSize: 16, fontWeight: 700 }}>Grand Total ({totals.items} items)</div>
