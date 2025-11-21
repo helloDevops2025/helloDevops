@@ -113,7 +113,8 @@ async function updateOrderStatusFlexible(orderId, code) {
 
 export default function AdminOrderDetailPage() {
   const navigate = useNavigate();
-  const { id } = useParams(); 
+
+  const { id } = useParams(); // /admin/orders/:id
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -134,7 +135,6 @@ export default function AdminOrderDetailPage() {
   // ===== Load one order =====
   useEffect(() => {
     let abort = false;
-
     async function load() {
       setLoading(true);
       setError("");
@@ -228,34 +228,40 @@ export default function AdminOrderDetailPage() {
       : subtotal - discountTotal + shippingCost);
 
   // ===== Change status =====
-  async function handleChangeStatus() {
-    if (!order) return;
-    const code = String(statusDraft || "").toUpperCase();
-    if (!code) {
-      alert("please select status");
-      return;
-    }
-    if (!ALL_STATUS_CODES.includes(code)) {
-      alert("incorrect format");
-      return;
+
+    async function handleChangeStatus() {
+        if (!order) return;
+
+        const code = String(statusDraft || "").toUpperCase();
+
+        if (!code) {
+            alert("Please select a status first.");
+            return;
+        }
+
+        if (!ALL_STATUS_CODES.includes(code)) {
+            alert("Invalid status selected.");
+            return;
+        }
+
+        try {
+            setSaving(true);
+            await updateOrderStatusFlexible(order.id ?? id, code);
+
+            setOrder((prev) => (prev ? { ...prev, orderStatus: code } : prev));
+
+            alert("Status updated successfully.");
+        } catch (e) {
+            console.error(e);
+            alert("❌ Failed to update status — please check the console or network log.");
+        } finally {
+            setSaving(false);
+        }
+
     }
 
-    try {
-      setSaving(true);
-      await updateOrderStatusFlexible(order.id ?? id, code);
-      setOrder((prev) => (prev ? { ...prev, orderStatus: code } : prev));
-      showAlert("Status Complaete");
-    } catch (e) {
-      console.error(e);
-      showAlert(
-        "อัปเดตสถานะไม่สำเร็จ — กรุณาตรวจสอบ log ใน Console/Network"
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
 
-  // ===== Sidebar collapsing (เดิม) =====
+    // ===== Sidebar collapsing (เดิม) =====
   useEffect(() => {
     const sidebar = document.querySelector(".sidebar");
     const menuBtn = document.querySelector(".menu-btn");
@@ -543,3 +549,4 @@ export default function AdminOrderDetailPage() {
     </div>
   );
 }
+

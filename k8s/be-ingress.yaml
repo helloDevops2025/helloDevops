@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: be-ingress
+  namespace: hellodevopss-app
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - hellodevops.muict.app
+      secretName: hellodevops-tls
+  rules:
+    - host: hellodevops.muict.app
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: hellodevops-backend-service
+                port:
+                  number: 8080
+#  rules:
+#    - host: hellodevops.muict.app
+#      http:
+#        paths:
+#          - path: /hellodevops-backend(/|$)(.*)
+#            pathType: ImplementationSpecific
+#            backend:
+#              service:
+#                name: hellodevops-backend-service
+#                port:
+#                  number: 8080

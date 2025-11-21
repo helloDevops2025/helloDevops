@@ -3,9 +3,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import "./ShopPage.css";
 import Footer from "./../components/Footer.jsx";
 
-
-
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+/* ===== Config & helpers ===== */
+const API_URL = import.meta.env.VITE_API_URL ;
 const norm = (s) => String(s ?? "").trim().toLowerCase();
 const clean = (s) => String(s ?? "").trim();
 

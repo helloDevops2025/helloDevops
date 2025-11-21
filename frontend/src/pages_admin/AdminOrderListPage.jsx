@@ -86,6 +86,7 @@ export default function AdminOrderListPage() {
       );
       if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
 
+
       const raw = await res.json();
       const list = extractList(raw);
 
@@ -190,22 +191,22 @@ export default function AdminOrderListPage() {
   const getEditPath = (p) => `/admin/orders/${encodeURIComponent(p.id)}`;
 
   // ---------- DELETE ----------
-  async function handleConfirmDelete() {
-    if (!confirmOrder) return;
-    try {
-      const res = await fetch(`${API_URL}/api/orders/${confirmOrder.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("ลบคำสั่งซื้อไม่สำเร็จ");
+    async function handleConfirmDelete() {
+        if (!confirmOrder) return;
+        try {
+            const res = await fetch(`${API_URL}/api/orders/${confirmOrder.id}`, {
+                method: "DELETE",
+            });
+            if (!res.ok) throw new Error("Failed to delete the order.");
 
-      setConfirmOrder(null);
-      setShowSuccess(true); 
-    
-      await fetchOrders();
-    } catch (error) {
-      alert("" + error.message);
+            setConfirmOrder(null);
+            setShowSuccess(true);
+            await fetchOrders();
+        } catch (error) {
+            alert("❌ " + (error.message || "Failed to delete the order."));
+        }
     }
-  }
+
 
   return (
     <div className="app" data-page="AdminProductListPage">
@@ -326,35 +327,35 @@ export default function AdminOrderListPage() {
         </div>
       </main>
 
-      {/*  Popup ยืนยันการลบ */}
-      {confirmOrder && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Are you sure you want to delete this order?</h3>
-            <p>Order: {showOrderCode(confirmOrder.orderCode)}</p>
-            <div className="modal-buttons">
-              <button className="btn-cancel" onClick={() => setConfirmOrder(null)}>
-                Cancel
-              </button>
-              <button className="btn-confirm" onClick={handleConfirmDelete}>
-                Delete
-              </button>
+      {/* ✅ Popup ยืนยันการลบ */}
+        {confirmOrder && (
+            <div className="modal-overlay">
+                <div className="modal">
+                    <h3>Are you sure you want to delete this order?</h3>
+                    <p>Order: {showOrderCode(confirmOrder.orderCode)}</p>
+                    <div className="modal-buttons">
+                        <button className="btn-cancel" onClick={() => setConfirmOrder(null)}>
+                            Cancel
+                        </button>
+                        <button className="btn-confirm" onClick={handleConfirmDelete}>
+                            Confirm
+                        </button>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Popup ลบสำเร็จ */}
-      {showSuccess && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>ลบรายการสั่งซื้อนี้แล้ว</h3>
-            <button className="btn-ok" onClick={() => setShowSuccess(false)}>
-              OK
-            </button>
-          </div>
-        </div>
-      )}
+        {/* ✅ Popup ลบสำเร็จ */}
+        {showSuccess && (
+            <div className="modal-overlay">
+                <div className="modal">
+                    <h3>Order has been successfully deleted.</h3>
+                    <button className="btn-ok" onClick={() => setShowSuccess(false)}>
+                        OK
+                    </button>
+                </div>
+            </div>
+        )}
     </div>
   );
 }

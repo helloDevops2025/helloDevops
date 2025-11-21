@@ -157,3 +157,12 @@ h1 {
   justify-content: center;
   box-sizing: border-box;
 }
+/* Color for edit icon */
+.table-row .act i.fa-pen {
+    color: #007bff !important;     /* ฟ้า */
+    transition: 0.2s ease;
+}
+
+.table-row .act i.fa-pen:hover {
+    color: #0056b3 !important;     /* ฟ้าเข้มตอน hover */
+}
