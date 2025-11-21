@@ -258,16 +258,24 @@ export default function DetailPage() {
           ? brands.find((b) => b.id === p.brandId)?.name || ""
           : "";
 
-          let imgUrl = `${API_URL}/api/products/${encodeURIComponent(
-              p.id ?? id
-          )}/cover`;
+          // let imgUrl = `${API_URL}/api/products/${encodeURIComponent(
+          //     p.id ?? id
+          // )}/cover`;
+          //
+          // if (Array.isArray(imgs) && imgs.length) {
+          //     const cover = imgs.find((x) => x.isCover) || imgs[0];
+          //
+          //     // ❗อย่าใช้ cover.imageUrl เพราะ backend ส่ง path ผิด
+          //     // imgUrl = cover.imageUrl;   <-- ลบ/คอมเมนต์ทิ้ง
+          // }
 
-          if (Array.isArray(imgs) && imgs.length) {
-              const cover = imgs.find((x) => x.isCover) || imgs[0];
+          // --- FIX: ใช้รูปจริงตามไฟล์ใน server ---
+          // ตัวอย่าง productId: "#0003" → "0003.jpg"
+          const fileName = (p.productId || "").replace("#", "") + ".jpg";
+          let imgUrl = `${API_URL}/api/products/${fileName}`;
 
-              // ❗อย่าใช้ cover.imageUrl เพราะ backend ส่ง path ผิด
-              // imgUrl = cover.imageUrl;   <-- ลบ/คอมเมนต์ทิ้ง
-          }
+          // ไม่ต้องใช้ cover.imageUrl เพราะ backend ไม่ส่ง path ถูกต้อง
+
 
           const mapped = {
           id: p.id ?? id,
