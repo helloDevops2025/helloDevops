@@ -258,15 +258,18 @@ export default function DetailPage() {
           ? brands.find((b) => b.id === p.brandId)?.name || ""
           : "";
 
-        let imgUrl = `${API_URL}/api/products/${encodeURIComponent(
-          p.id ?? id
-        )}/cover`;
-        if (Array.isArray(imgs) && imgs.length) {
-          const cover = imgs.find((x) => x.isCover) || imgs[0];
-          if (cover?.imageUrl) imgUrl = cover.imageUrl;
-        }
+          let imgUrl = `${API_URL}/api/products/${encodeURIComponent(
+              p.id ?? id
+          )}/cover`;
 
-        const mapped = {
+          if (Array.isArray(imgs) && imgs.length) {
+              const cover = imgs.find((x) => x.isCover) || imgs[0];
+
+              // ❗อย่าใช้ cover.imageUrl เพราะ backend ส่ง path ผิด
+              // imgUrl = cover.imageUrl;   <-- ลบ/คอมเมนต์ทิ้ง
+          }
+
+          const mapped = {
           id: p.id ?? id,
           title: p.name || "",
           brand: brandName || "",
