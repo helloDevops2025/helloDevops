@@ -197,6 +197,7 @@ function normalizePromotion(p) {
   if (!p) return null;
   return {
     id: p.id ?? null,
+    code: p.code ?? p.promoCode ?? p.promotionCode ?? "",
     promoType: p.promo_type ?? p.promoType ?? "PERCENT_OFF",
     scope: p.scope ?? "ORDER",
     percentOff: Number(p.percent_off ?? p.percentOff ?? 0) || 0,
@@ -625,8 +626,17 @@ function ConfirmDialog({
   );
 }
 
-// Order Summary
-function OrderSummary({ cart, canConfirm, onConfirm, productPromos, orderPromos }) {
+// Order Summary + Coupon
+function OrderSummary({
+  cart,
+  canConfirm,
+  onConfirm,
+  productPromos,
+  orderPromos,
+  couponCode,
+  couponError,
+  onApplyCoupon,
+}) {
   const { subtotal, itemsCount, discount } = useMemo(
     () => computeCartTotals(cart, productPromos, orderPromos),
     [cart, productPromos, orderPromos]
@@ -634,6 +644,12 @@ function OrderSummary({ cart, canConfirm, onConfirm, productPromos, orderPromos 
 
   const shipping = 0;
   const total = subtotal - discount + shipping;
+
+  const [inputCode, setInputCode] = useState("");
+
+  const apply = () => {
+    onApplyCoupon(inputCode);
+  };
 
   return (
     <aside className="card summary-card">
@@ -662,6 +678,38 @@ function OrderSummary({ cart, canConfirm, onConfirm, productPromos, orderPromos 
             </div>
           );
         })}
+      </div>
+
+      {/* Discount code section */}
+      <div className="coupon-section">
+        <label className="coupon-label">
+          Discount code
+          <div className="coupon-input-row">
+            <input
+              type="text"
+              placeholder="Enter discount code"
+              value={inputCode}
+              onChange={(e) => setInputCode(e.target.value)}
+            />
+            <button
+              type="button"
+              className="btn-apply-coupon"
+              onClick={apply}
+            >
+              Apply
+            </button>
+          </div>
+        </label>
+        {couponCode && !couponError && (
+          <p className="coupon-success">
+            Applied code: <strong>{couponCode}</strong>
+          </p>
+        )}
+        {couponError && (
+          <p className="coupon-error">
+            {couponError}
+          </p>
+        )}
       </div>
 
       <div className="totals">
@@ -777,6 +825,11 @@ export default function PlaceOrderPage() {
   // promotion state
   const [productPromosByProductId, setProductPromosByProductId] = useState({});
   const [orderLevelPromos, setOrderLevelPromos] = useState([]);
+  const [allOrderPromos, setAllOrderPromos] = useState([]);
+
+  // coupon state
+  const [appliedCoupon, setAppliedCoupon] = useState("");
+  const [couponError, setCouponError] = useState("");
 
   // state สำหรับ popup ลบ
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -840,6 +893,9 @@ export default function PlaceOrderPage() {
     if (!cart || cart.length === 0) {
       setProductPromosByProductId({});
       setOrderLevelPromos([]);
+      setAllOrderPromos([]);
+      setAppliedCoupon("");
+      setCouponError("");
       return;
     }
 
@@ -871,12 +927,45 @@ export default function PlaceOrderPage() {
         }
 
         setProductPromosByProductId(map);
-        setOrderLevelPromos(orderPromos);
+
+        // เก็บ order-level promotions ทั้งหมดไว้สำหรับค้นจากโค้ด
+        setAllOrderPromos(orderPromos);
+        // เริ่มต้น: ยังไม่ใช้โค้ดส่วนลด → ไม่ใช้ order-level promo
+        setOrderLevelPromos([]);
+        setAppliedCoupon("");
+        setCouponError("");
       } catch (e) {
         console.warn("load promotions failed", e);
       }
     })();
   }, [cart]);
+
+  // ใช้โค้ดส่วนลด (front-end validate จากรายการ orderPromos ที่โหลดมา)
+  const handleApplyCoupon = (rawCode) => {
+    const code = String(rawCode || "").trim().toUpperCase();
+    if (!code) {
+      setCouponError("Please enter coupon code");
+      setAppliedCoupon("");
+      setOrderLevelPromos([]);
+      return;
+    }
+
+    const promo = allOrderPromos.find(
+      (p) => (p.code || "").toUpperCase() === code
+    );
+
+    if (!promo) {
+      setCouponError("Coupon code not valid or inactive");
+      setAppliedCoupon("");
+      setOrderLevelPromos([]);
+      return;
+    }
+
+    // ผ่าน → ใช้เฉพาะโปรนี้เป็น order-level promotion
+    setCouponError("");
+    setAppliedCoupon(code);
+    setOrderLevelPromos([promo]);
+  };
 
   // โหลด Address จาก DB
   const refreshAddresses = async () => {
@@ -1107,6 +1196,9 @@ export default function PlaceOrderPage() {
             onConfirm={handleConfirm}
             productPromos={productPromosByProductId}
             orderPromos={orderLevelPromos}
+            couponCode={appliedCoupon}
+            couponError={couponError}
+            onApplyCoupon={handleApplyCoupon}
           />
         </div>
       </main>
