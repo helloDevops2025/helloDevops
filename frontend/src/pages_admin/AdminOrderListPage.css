@@ -89,3 +89,12 @@ h1 { margin: 24px; text-align: center; font-size: 28px; }
 .btn-ok:hover {
     background: #0069d9;
 }
+/* Color for edit icon */
+.table-row .act i.fa-pen {
+    color: #007bff !important;     /* ฟ้า */
+    transition: 0.2s ease;
+}
+
+.table-row .act i.fa-pen:hover {
+    color: #0056b3 !important;     /* ฟ้าเข้มตอน hover */
+}
