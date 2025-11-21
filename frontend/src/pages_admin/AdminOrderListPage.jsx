@@ -192,22 +192,22 @@ export default function AdminOrderListPage() {
   const getEditPath = (p) => `/admin/orders/${encodeURIComponent(p.id)}`;
 
   // ---------- DELETE ----------
-  async function handleConfirmDelete() {
-    if (!confirmOrder) return;
-    try {
-      const res = await fetch(`${API_URL}/api/orders/${confirmOrder.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("ลบคำสั่งซื้อไม่สำเร็จ");
+    async function handleConfirmDelete() {
+        if (!confirmOrder) return;
+        try {
+            const res = await fetch(`${API_URL}/api/orders/${confirmOrder.id}`, {
+                method: "DELETE",
+            });
+            if (!res.ok) throw new Error("Failed to delete the order.");
 
-      setConfirmOrder(null);
-      setShowSuccess(true); // ✅ แสดง popup สำเร็จ
-      // โหลดใหม่จากเซิร์ฟเวอร์ เพื่อให้ state ตรงกับฐานข้อมูลเสมอ
-      await fetchOrders();
-    } catch (error) {
-      alert("❌ " + error.message);
+            setConfirmOrder(null);
+            setShowSuccess(true);
+            await fetchOrders();
+        } catch (error) {
+            alert("❌ " + (error.message || "Failed to delete the order."));
+        }
     }
-  }
+
 
   return (
     <div className="app" data-page="AdminProductListPage">
