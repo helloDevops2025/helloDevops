@@ -154,14 +154,14 @@
 
 /* Qty */
 .order-head>div:nth-child(4) {
-  text-align: left;
-  padding-left: 12px;
+  text-align: center;
+  padding-left: 0;
 }
 
 /* Total */
 .order-head>div:nth-child(5) {
-  text-align: left;
-  padding-left: 18px;
+  text-align: right;
+  padding-left: 0;
 }
 
 .order-row {
@@ -206,9 +206,13 @@
 }
 
 .price,
-.qty,
-.subtotal {
+.qty {
   text-align: center;
+}
+
+/* right-align the line total so it lines up under the Total header */
+.order-row .subtotal {
+  text-align: right;
 }
 
 /* center discount cells in rows */
