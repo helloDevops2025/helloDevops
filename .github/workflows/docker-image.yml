@@ -22,7 +22,6 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,7 +39,7 @@ jobs:
             sleep 5
           done
           exit 1
-          
+
       - name: Login to Docker Hub
         run: echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
@@ -57,7 +56,6 @@ jobs:
             -e SPRING_DATASOURCE_USERNAME=root \
             -e SPRING_DATASOURCE_PASSWORD=root \
             u6687032/hello-devops-backend:latest
-
       # ✅ Install Node.js + dependencies
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -70,33 +68,32 @@ jobs:
           ls
           pwd
           npm install
+        # # ✅ Run Cypress tests (frontend + backend พร้อม)
+        # - name: Run Cypress E2E tests
+        #   uses: cypress-io/github-action@v6
+        #   with:
+        #     working-directory: ./frontend
+        #     start: npm run dev
+        #     wait-on: 'http://localhost:5173'
+        #     browser: chrome
+        #     headless: true
 
-      # # ✅ Run Cypress tests (frontend + backend พร้อม)
-      # - name: Run Cypress E2E tests
-      #   uses: cypress-io/github-action@v6
-      #   with:
-      #     working-directory: ./frontend
-      #     start: npm run dev
-      #     wait-on: 'http://localhost:5173'
-      #     browser: chrome
-      #     headless: true
+        # build:
+        #  runs-on: ubuntu-latest
+        #  needs: e2e-test
+        #  steps:
+        #     # ✅ Build frontend for deploy
+        #     - name: Build frontend
+        #       working-directory: ./frontend
+        #       run: npm run build
 
-  # build:
-  #  runs-on: ubuntu-latest
-  #  needs: e2e-test
-  #  steps:
-  #     # ✅ Build frontend for deploy
-  #     - name: Build frontend
-  #       working-directory: ./frontend
-  #       run: npm run build
-        
   Docker:
-   runs-on: ubuntu-latest
-   needs: e2e-test
-   outputs:
+    runs-on: ubuntu-latest
+    needs: e2e-test
+    outputs:
       TAG: ${{ steps.set_tag.outputs.TAG }}   # ✅ ส่งค่าออกไปให้ job ต่อไปใช้ได้
-      
-   steps:
+
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -106,7 +103,7 @@ jobs:
           if [ ! -f package-lock.json ]; then
             npm install
           fi
-      
+
       # ตั้ง tag จาก commit SHA
       - name: Set build tag
         id: set_tag
@@ -114,11 +111,10 @@ jobs:
           TAG=${GITHUB_SHA::7}
           echo "TAG=$TAG" >> $GITHUB_ENV
           echo "TAG=$TAG" >> $GITHUB_OUTPUT
-
       - name: Debug TAG before build
         run: echo "TAG value is ${{ env.TAG }}"
 
-     # Build Docker image
+      # Build Docker image
       - name: Build Docker image
         run: |
           cd frontend
@@ -126,7 +122,6 @@ jobs:
             --build-arg MODE=production \
             --build-arg VITE_API_URL=https://hellodevops.muict.app/api \
             .
-
       # 🔐 Login Docker Hub
       - name: Login to Docker Hub
         run: echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
@@ -140,26 +135,26 @@ jobs:
           docker tag u6687032/hello-devops-frontend:${{ env.TAG }} u6687032/hello-devops-frontend:latest
           docker push u6687032/hello-devops-frontend:latest
   Deploy:
-   runs-on: ubuntu-latest
-   needs: Docker
-   env:
+    runs-on: ubuntu-latest
+    needs: Docker
+    env:
       TAG: ${{ needs.Docker.outputs.TAG }}   # ✅ ดึงค่าจาก job build
       PROJECT_ID: hellodevops-476816
-      CLUSTER_NAME: hello-devops-cluster
-      REGION: asia-northeast1
-      DEPLOYMENT_NAME: backend
-      
-   steps:
+      CLUSTER_NAME: muict-hellodevops-cluster
+      REGION: asia-southeast1-b
+      DEPLOYMENT_NAME: hellodevops-fe-deployment
+
+    steps:
 
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       # 1️⃣ Authenticate to Google Cloud
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-  
+
       # 2️⃣ Get GKE credentials (เชื่อมต่อกับ cluster)
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v2
@@ -167,23 +162,22 @@ jobs:
           cluster_name: ${{ env.CLUSTER_NAME }}
           location: ${{ env.REGION }}
           project_id: ${{ env.PROJECT_ID }}
-          
+
       # ✅ 3. สร้าง/อัปเดต ConfigMap จาก init.sql (ฐานข้อมูล)
       - name: Update MySQL init ConfigMap
         run: |
           kubectl delete configmap mysql-initdb --ignore-not-found
           kubectl create configmap mysql-initdb --from-file=init.sql=./init.sql
           kubectl get configmap mysql-initdb
-
       - name: Debug TAG value
         run: 'echo "🔎 Current TAG value: ${{ env.TAG }}"'
-        
+
       # Update image to specific version (ถ้ามี tag เฉพาะ)
       - name: Update Deployment frontend images
         if: env.TAG != ''
         run: |
           echo "🔄 Updating deployments to tag: ${{ env.TAG }}"
-          kubectl set image deployment/frontend frontend=u6687032/hello-devops-frontend:${{ env.TAG }}
-          kubectl rollout status deployment/frontend
-
-  
+          kubectl set image deployment/hellodevops-fe-deployment \
+          hellodevops-fe=u6687032/hello-devops-frontend:${TAG} \
+          -n hellodevopss-app
+          kubectl rollout status deployment/hellodevops-fe-deployment -n hellodevopss-app

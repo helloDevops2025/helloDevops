@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+const API_URL = import.meta.env.VITE_API_URL;
 import { Link, useNavigate } from "react-router-dom";
 import { getEmail, isAuthed, logout } from "../auth"; // ✅ ใช้ helper เดียวกับฝั่งแอดมิน
 import "./header.css";

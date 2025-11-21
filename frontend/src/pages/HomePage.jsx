@@ -4,7 +4,7 @@ import "./HomePage.css";
 import Footer from "./../components/Footer.jsx";
 
 /* ===== Config & helpers ===== */
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+const API_URL = import.meta.env.VITE_API_URL ;
 const isAbs = (u) => /^https?:\/\//i.test(String(u || ""));
 const join = (base, path) =>
   base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");

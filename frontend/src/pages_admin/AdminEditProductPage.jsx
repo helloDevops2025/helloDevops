@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import "./AdminEditProductPage.css";
 
 export default function AdminEditProductPage() {
-  const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+  const API_URL = import.meta.env.VITE_API_URL ;
   const { id } = useParams();
   const navigate = useNavigate();
 

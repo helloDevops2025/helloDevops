@@ -5,7 +5,7 @@ import Footer from "./../components/Footer.jsx";
 import "./breadcrumb.css";
 
 /* ===== Config & Utils ===== */
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+const API_BASE = import.meta.env.VITE_API_URL ;
 const CART_KEY = "pm_cart";
 const REORDER_KEY = "pm_reorder";
 
