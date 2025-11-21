@@ -249,10 +249,13 @@ export default function TrackingUserPage() {
                 desc: p.description || "",
                 price: Number(p.price ?? it.priceEach ?? 0),
                 qty: Number(it.quantity || 1),
-                img:
-                  pid !== undefined
-                    ? `${API_BASE}/api/products/${encodeURIComponent(pid)}/cover`
-                    : "/assets/products/placeholder.jpg",
+                  img: (() => {
+                      // productId จริง เช่น "#00003" → "003"
+                      const raw = p.productId || p.id || "";
+                      const digitsOnly = String(raw).replace("#", "").replace(/^0+/, "");  // ตัด # และ 0 หน้า
+                      const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";   // → 003.jpg
+                      return `${API_BASE}/products/${fileName}`;
+                  })(),
               };
             })
           : [];
