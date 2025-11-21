@@ -350,16 +350,21 @@ export default function DetailPage() {
             if (pick.length >= 4) break;
           }
 
-          const rel = pick.map((x) => ({
-            id: x.id,
-            title: x.name,
-            price: Number(x.price) || 0,
-            cover: `${API_URL}/api/products/${encodeURIComponent(
-              x.id
-            )}/cover`,
-          }));
+        const rel = pick.map((x) => {
+            const raw = x.productId || "";
+            const digitsOnly = raw.replace("#", "").replace(/^0+/, ""); // "3"
+            const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";
 
-          setRelated(rel);
+            return {
+                id: x.id,
+                title: x.name,
+                price: Number(x.price) || 0,
+                cover: `${API_URL}/products/${fileName}`,
+            };
+        });
+
+
+            setRelated(rel);
         }
       } catch (e) {
         setErr(e.message || "โหลดข้อมูลไม่สำเร็จ");
