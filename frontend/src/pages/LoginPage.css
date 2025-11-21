@@ -17,7 +17,7 @@ body {
 
 body {
   font-family: "Poppins", system-ui, sans-serif;
-  overflow: hidden;
+  overflow: auto;
 }
 
 h1 {
@@ -40,9 +40,81 @@ h1 {
 .shell {
   display: grid;
   grid-template-columns: 50vw 50vw;
-  grid-template-rows: 100vh;
+  grid-auto-rows: auto;
   width: 100vw;
+  min-height: 60vh;
+}
+
+/* Welcome splash (full-viewport hero shown before the login form) */
+.welcome-splash {
   height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #f7f9ff 0%, #eef6ff 60%);
+  text-align: center;
+  padding: 40px;
+}
+
+.welcome-splash .welcome-inner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.splash-logo {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  margin-bottom: 20px;
+}
+
+.welcome-splash h1 {
+  font-size: 36px;
+  color: #0b2545;
+  margin-bottom: 8px;
+}
+
+.splash-lead {
+  color: #475569;
+  margin-bottom: 22px;
+  font-size: 16px;
+}
+
+.enter-btn {
+  background: #3E40AE;
+  color: #fff;
+  padding: 12px 26px;
+  border-radius: 999px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(62,64,174,0.18);
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+  animation: enter-btn-float 3.6s ease-in-out 120ms infinite both;
+}
+
+.enter-btn:hover,
+.enter-btn:focus {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 18px 36px rgba(62,64,174,0.22);
+  outline: none;
+}
+
+.enter-btn:active {
+  transform: translateY(-2px) scale(0.995);
+}
+
+@keyframes enter-btn-float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter-btn {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* ซ้าย: ขาวเต็มครึ่ง */
@@ -65,6 +137,24 @@ h1 {
   justify-content: center;
   color: #fff;
   padding: 40px;
+}
+
+/* Slightly raise the phone illustration so it visually aligns with the form */
+.art-side .illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.art-side .phone img {
+  /* stronger transform + short slide animation for visible movement */
+  display: block;
+  margin: 0 auto;
+  max-width: 92%;
+  transform: translateY(-80px) translateX(-30px) scale(1);
+  transition: transform 260ms cubic-bezier(.2,.8,.2,1);
+  /* animate on initial render so user notices the shift, then float */
+  animation: login-art-slide 420ms ease both, art-float 4s ease-in-out 420ms infinite both;
 }
 
 .logo,
@@ -198,6 +288,35 @@ label {
   .art-side {
     order: -1;
     min-height: 220px
+  }
+
+  /* reset any upward nudge on small screens */
+  .art-side .phone img {
+    transform: none;
+    max-width: 100%;
+  }
+}
+
+@keyframes login-art-slide {
+  from {
+    transform: translateY(24px) translateX(0) scale(.99);
+    opacity: 0.0;
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-80px) translateX(-30px) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .art-side .phone img {
+    animation: none !important;
+    transition: none !important;
+    transform: translateY(-40px) translateX(-8px);
   }
 }
 
@@ -346,4 +465,10 @@ label {
 /* ป้องกันไม่ให้ SVG หลุดกรอบเวลา zoom ออก */
 .toggle-eye {
   overflow: hidden;
+}
+
+@keyframes art-float {
+  0% { transform: translateY(-84px) translateX(-30px) translateZ(0); }
+  50% { transform: translateY(-70px) translateX(-30px) translateZ(0); }
+  100% { transform: translateY(-84px) translateX(-30px) translateZ(0); }
 }
