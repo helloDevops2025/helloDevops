@@ -119,7 +119,7 @@ export default function AdminProductListPage() {
       document.querySelector(".pager .pill.active") ||
       document.querySelector(".pager .pill");
 
-    // Thai-friendly normalization: lower, trim, collapse spaces, strip accents (latin) + thai diacritics
+   
     const stripThaiDiacritics = (s) =>
       (s || "").replace(/[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/g, "");
     const norm = (s) =>
@@ -128,14 +128,13 @@ export default function AdminProductListPage() {
           .toString()
           .toLowerCase()
           .normalize("NFKD")
-          .replace(/[\u0300-\u036f]/g, "") // latin accents
+          .replace(/[\u0300-\u036f]/g, "")
       )
         .trim()
         .replace(/\s+/g, " ");
 
     const getCell = (row, idx) => (row?.children?.[idx]?.textContent ?? "").trim();
 
-    // ดึงค่าจาก data-* ถ้ามี; fallback index: 1=ProductID, 2=Name, 3=Category, 4=Brand, 5=Qty
     const extractFields = (row) => {
       const productId = row.dataset.productId ?? row.dataset.productid ?? getCell(row, 1);
       const name = row.dataset.name ?? getCell(row, 2);
@@ -165,8 +164,8 @@ export default function AdminProductListPage() {
 
     // 
     // Pre-index
-    const record = new WeakMap();     // เก็บ fields แบบแยก
-    const hayAll = new WeakMap();     // สำหรับโหมด "ค้นหาทุกฟิลด์" ถ้าจะใช้ภายหลัง
+    const record = new WeakMap();   
+    const hayAll = new WeakMap();    
     rows.forEach((row) => {
       const f = extractFields(row);
       record.set(row, f);
@@ -184,7 +183,7 @@ export default function AdminProductListPage() {
       const outWords = ["out", "out of stock", "outofstock", "หมด", "หมดสต็อก", "ไม่มี", "ไม่มีของ", "ไม่มีสินค้า"];
       if (inWords.some((w) => t.includes(norm(w)))) return "in";
       if (outWords.some((w) => t.includes(norm(w)))) return "out";
-      return t; // ถ้าไม่เข้า keyword ก็ใช้ match ปกติ
+      return t; 
     };
 
     const setPlaceholder = () => {
@@ -229,16 +228,16 @@ export default function AdminProductListPage() {
         if (mode === "name") {
           ok = terms.every((t) => f.name.includes(t));
         } else if (mode === "productId") {
-          // รองรับแบบมี/ไม่มี # ด้วยการ normalize
+         
           ok = terms.every((t) => f.productId.replace(/^#/, "").includes(t.replace(/^#/, "")));
         } else if (mode === "category") {
           ok = terms.every((t) => f.category.includes(t));
         } else if (mode === "stock") {
-          // ถ้าเป็นคีย์เวิร์ด in/out ให้ match แบบตรง
+          
           if (terms[0] === "in") ok = f.qty >= 1;
           else if (terms[0] === "out") ok = f.qty <= 0;
           else {
-            // ไม่ใช่ keyword → ให้หาในคำอธิบาย stockText
+           
             ok = terms.every((t) => f.stock.includes(t));
           }
         } else {
@@ -302,7 +301,7 @@ export default function AdminProductListPage() {
     const n = parseInt(String(v ?? "").replace(/[^\d-]/g, ""), 10);
     return Number.isFinite(n) ? n : 0;
   };
-  // ใช้ threshold สำหรับ "Low Stock"
+ 
   const LOW_STOCK_THRESHOLD = 10;
 
   const qtyOf = (p) => {
@@ -310,7 +309,7 @@ export default function AdminProductListPage() {
     return Number.isFinite(n) ? n : 0;
   };
 
-  // ฟังก์ชันกำหนด label
+
   const stockLabelOf = (p) => {
     const qty = qtyOf(p);
     if (qty === 0) return "Out of Stock";
@@ -318,7 +317,6 @@ export default function AdminProductListPage() {
     return "In Stock";
   };
 
-  // ฟังก์ชันกำหนดสีป้าย
   const stockStyleOf = (p) => {
     const qty = qtyOf(p);
     if (qty === 0)
@@ -356,11 +354,11 @@ export default function AdminProductListPage() {
   };
 
   // ---------- DELETE ----------
-  // ช่วยฟอร์แมตรหัสสินค้าให้เป็น #00001
+
   const fmtCode = (v) =>
     "#" + String(v ?? "").replace(/\D/g, "").padStart(5, "0");
 
-  // 👉 1) เปิดกล่องยืนยัน
+
   function openConfirmDelete(p) {
     if (!p) return;
     const code = p.productId ?? p.id;
@@ -371,7 +369,7 @@ export default function AdminProductListPage() {
     setConfirmOpen(true);
   }
 
-  // 👉 2) ยืนยันลบ
+ 
   async function handleConfirmDelete() {
     if (!pendingProduct) {
       setConfirmOpen(false);
@@ -386,7 +384,7 @@ export default function AdminProductListPage() {
     try {
       let done = false;
 
-      // ลบด้วย id ก่อน
+
       if (dbId != null) {
         const r = await fetch(
           `${API_URL}/api/products/${encodeURIComponent(dbId)}`,
@@ -397,7 +395,7 @@ export default function AdminProductListPage() {
           throw new Error(`DELETE by id failed: HTTP ${r.status}`);
       }
 
-      // ถ้าไม่สำเร็จลองลบด้วย productId
+  
       if (!done && codeClean) {
         const candidates = [
           `${API_URL}/api/products/byProductId/${encodeURIComponent(codeClean)}`,
@@ -417,7 +415,6 @@ export default function AdminProductListPage() {
 
       if (!done) throw new Error("ไม่พบ endpoint สำหรับลบรายการนี้");
 
-      // ลบออกจาก state
       setItems((prev) =>
         prev.filter(
           (x) =>
@@ -434,7 +431,6 @@ export default function AdminProductListPage() {
     }
   }
 
-  // 👉 3) ยกเลิก
   function handleCancelDelete() {
     setConfirmOpen(false);
     setPendingProduct(null);
@@ -452,7 +448,7 @@ export default function AdminProductListPage() {
             <div className="action-bar">
               <div className="search">
                 <i className="fa-solid fa-magnifying-glass" />
-                {/* ⬇️ dropdown เลือกประเภทการค้นหา */}
+                {/* dropdown เลือกประเภทการค้นหา */}
                 <select defaultValue="name" aria-label="Search by">
                   <option value="name">Product</option>
                   <option value="productId">Product ID</option>

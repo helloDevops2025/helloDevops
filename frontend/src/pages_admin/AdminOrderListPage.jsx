@@ -5,7 +5,7 @@ import "./AdminOrderListPage.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-// ช่วยคำนวณ total จากคีย์ที่อาจต่างกัน
+
 function computeTotal(x = {}) {
   const subtotal = Number(x.subtotal ?? x.subTotal ?? 0);
   const ship = Number(x.shipping_fee ?? x.shippingFee ?? x.shippingCost ?? 0);
@@ -17,7 +17,7 @@ function computeTotal(x = {}) {
   return subtotal + ship + tax - disc;
 }
 
-// ✅ ฟอร์แมตวันที่/เวลาเป็น ค.ศ. + AM/PM  เช่น 25 Jan 2025 • 01:45 PM
+
 function fmtDateTime(isoLike) {
   if (!isoLike) return "–";
   try {
@@ -39,7 +39,6 @@ function fmtDateTime(isoLike) {
   }
 }
 
-// แปลงรูปแบบออเดอร์ให้มีคีย์ที่หน้า UI ใช้ได้เสมอ (เพิ่ม orderedAt)
 function normalizeOrder(o) {
   const orderedAt =
     o.orderedAt ??
@@ -58,11 +57,11 @@ function normalizeOrder(o) {
     shippingAddress: o.shippingAddress ?? o.shipping_address ?? "-",
     orderStatus: o.orderStatus ?? o.order_status ?? "PENDING",
     totalAmount: computeTotal(o),
-    orderedAt, // ✅ ใช้แสดงคอลัมน์ใหม่
+    orderedAt, 
   };
 }
 
-// ดึง list จากผลลัพธ์ที่อาจถูกห่อ (items/data/content/results)
+
 function extractList(raw) {
   if (Array.isArray(raw)) return raw;
   if (!raw || typeof raw !== "object") return [];
@@ -73,8 +72,8 @@ export default function AdminOrderListPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [confirmOrder, setConfirmOrder] = useState(null); // ✅ popup ยืนยัน
-  const [showSuccess, setShowSuccess] = useState(false);  // ✅ popup สำเร็จ
+  const [confirmOrder, setConfirmOrder] = useState(null); 
+  const [showSuccess, setShowSuccess] = useState(false);  
 
   // ------- โหลดออเดอร์ทั้งหมด (กัน cache + รองรับหลาย payload) -------
   async function fetchOrders() {
@@ -82,7 +81,7 @@ export default function AdminOrderListPage() {
     setErr("");
     try {
       const res = await fetch(
-        `${API_URL}/api/orders?ts=${Date.now()}`, // กัน cache
+        `${API_URL}/api/orders?ts=${Date.now()}`, 
         { headers: { Accept: "application/json" }, cache: "no-store" }
       );
       if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
@@ -90,7 +89,7 @@ export default function AdminOrderListPage() {
       const raw = await res.json();
       const list = extractList(raw);
 
-      // แปลงทุกรายการให้ฟิลด์สม่ำเสมอ
+   
       const normalized = list.map(normalizeOrder);
 
       setItems(Array.isArray(normalized) ? normalized : []);
@@ -200,11 +199,11 @@ export default function AdminOrderListPage() {
       if (!res.ok) throw new Error("ลบคำสั่งซื้อไม่สำเร็จ");
 
       setConfirmOrder(null);
-      setShowSuccess(true); // ✅ แสดง popup สำเร็จ
-      // โหลดใหม่จากเซิร์ฟเวอร์ เพื่อให้ state ตรงกับฐานข้อมูลเสมอ
+      setShowSuccess(true); 
+    
       await fetchOrders();
     } catch (error) {
-      alert("❌ " + error.message);
+      alert("" + error.message);
     }
   }
 
@@ -236,7 +235,7 @@ export default function AdminOrderListPage() {
           <div className="table-card">
             <div className="table-header">
               <div>Order Code</div>
-              {/* ✅ เพิ่มคอลัมน์ Ordered At ระหว่าง Order Code และ Customer Name */}
+              {/*  เพิ่มคอลัมน์ Ordered At ระหว่าง Order Code และ Customer Name */}
               <div>Ordered At</div>
               <div>Customer Name</div>
               <div>Phone</div>
@@ -276,7 +275,7 @@ export default function AdminOrderListPage() {
                   data-status={p.orderStatus}
                 >
                   <div>{showOrderCode(p.orderCode)}</div>
-                  {/* ✅ คอลัมน์ใหม่: แสดงวัน-เวลาแบบ ค.ศ. + AM/PM */}
+                  {/* คอลัมน์ใหม่: แสดงวัน-เวลาแบบ ค.ศ. + AM/PM */}
                   <div title={p.orderedAt || ""}>{fmtDateTime(p.orderedAt)}</div>
                   <div>{p.customerName ?? "-"}</div>
                   <div>{p.customerPhone ?? "-"}</div>
@@ -285,7 +284,7 @@ export default function AdminOrderListPage() {
                   <div>{p.orderStatus ?? "-"}</div>
 
                   <div className="act">
-                    {/* ✅ ปุ่ม Edit ไปหน้า Detail */}
+                    {/*  ปุ่ม Edit ไปหน้า Detail */}
                     <Link
                       to={getEditPath(p)}
                       aria-label="Edit order"
@@ -327,7 +326,7 @@ export default function AdminOrderListPage() {
         </div>
       </main>
 
-      {/* ✅ Popup ยืนยันการลบ */}
+      {/*  Popup ยืนยันการลบ */}
       {confirmOrder && (
         <div className="modal-overlay">
           <div className="modal">
@@ -345,11 +344,11 @@ export default function AdminOrderListPage() {
         </div>
       )}
 
-      {/* ✅ Popup ลบสำเร็จ */}
+      {/* Popup ลบสำเร็จ */}
       {showSuccess && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3>✅ ลบรายการสั่งซื้อนี้แล้ว</h3>
+            <h3>ลบรายการสั่งซื้อนี้แล้ว</h3>
             <button className="btn-ok" onClick={() => setShowSuccess(false)}>
               OK
             </button>

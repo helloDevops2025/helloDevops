@@ -10,11 +10,11 @@ import "./AdminDashboard.css";
  * - KPI cards, ตาราง, ค้นหา, Export CSV, Print, Date range + Apply
  */
 
-// ====== CONFIG ==========================================================
+// ====== CONFIG ====================
 const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:8080").replace(/\/$/, "");
 const apiUrl = (p) => `${API_BASE}/${String(p).replace(/^\//, "")}`;
 
-// ====== HELPERS =========================================================
+// ====== HELPERS ==================
 function toISODateOnly(d) {
     const dt = new Date(d);
     const y = dt.getFullYear();
@@ -23,7 +23,7 @@ function toISODateOnly(d) {
     return `${y}-${m}-${day}`;
 }
 
-// ตัด YYYY-MM-DD ถ้ามี; ถ้าไม่มีค่อย parse เป็น Date แล้วคืนตามโซนท้องถิ่นแบบ “วันล้วน”
+
 function toYMDPlus(v) {
     if (!v) return null;
     if (typeof v === "string") {
@@ -42,7 +42,7 @@ async function buildSoldMap(fromDate, toDate) {
     const listUrl =
         (fromDate && toDate)
             ? apiUrl(`/api/orders?from=${fromDate}&to=${toDate}&includeItems=true`)
-            : apiUrl(`/api/orders?includeItems=true`); // <-- all-time (ไม่กรองวันใน URL)
+            : apiUrl(`/api/orders?includeItems=true`); 
 
     const oRes = await fetch(listUrl);
     if (!oRes.ok) throw new Error(`orders failed ${oRes.status}`);
@@ -64,7 +64,7 @@ async function buildSoldMap(fromDate, toDate) {
 
     const ACCEPTED = new Set(["PREPARING", "READY_TO_SHIP", "SHIPPING", "DELIVERED"]);
 
-    // เงื่อนไขกรองวัน: ถ้าไม่มี from/to ให้ผ่านทุกอัน
+
     const toYMD = (v) => {
         if (!v) return null;
         if (typeof v === "string") { const m = v.match(/^(\d{4}-\d{2}-\d{2})/); if (m) return m[1]; }
@@ -96,7 +96,7 @@ async function buildSoldMap(fromDate, toDate) {
     return soldMap;
 }
 // ====== RESTOCK META (no-DB) ============================================
-const META_KEY = "pm_stock_meta"; // { [productKey]: { lastQty:number, lastRestocked:string|null } }
+const META_KEY = "pm_stock_meta"; 
 
 function loadMeta() {
     try { return JSON.parse(localStorage.getItem(META_KEY)) || {}; }
@@ -106,7 +106,7 @@ function saveMeta(meta) {
     localStorage.setItem(META_KEY, JSON.stringify(meta));
 }
 
-// คืน products ที่เติม field lastRestocked จาก meta และอัปเดต meta ถ้าพบ "สต็อกเพิ่มขึ้น"
+
 function applyRestockMeta(products) {
     const meta = loadMeta();
     const nowISO = new Date().toISOString();
@@ -117,16 +117,16 @@ function applyRestockMeta(products) {
         const rec = meta[key];
 
         if (!rec) {
-            // ครั้งแรก: ตั้ง baseline แต่ยังไม่ถือว่า restock
+         
             meta[key] = { lastQty: qty, lastRestocked: p.lastRestocked || null };
             return { ...p, lastRestocked: p.lastRestocked || null };
         }
 
-        // ถ้า "สต็อกเพิ่มขึ้น" จากค่าที่เคยจำไว้ → ถือว่าเพิ่ง restock
+      
         if (Number.isFinite(rec.lastQty) && qty > rec.lastQty) {
             rec.lastRestocked = nowISO;
         }
-        // อัปเดต lastQty ทุกครั้ง
+    
         rec.lastQty = qty;
 
         return { ...p, lastRestocked: p.lastRestocked || rec.lastRestocked || null };
@@ -136,7 +136,7 @@ function applyRestockMeta(products) {
     return withMeta;
 }
 
-// utility แสดงวันแบบมนุษย์อ่าน
+
 function fmtDateYMD(s) {
     if (!s) return "—";
     const d = new Date(s);
@@ -149,7 +149,6 @@ function fmtDateYMD(s) {
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
-    // ---------------------------------------------------------------------
     // page scope (สำหรับ CSS scoping เดิม)
     useEffect(() => {
         const app = document.querySelector(".app");
@@ -158,42 +157,39 @@ export default function AdminDashboard() {
         return () => (prev ? app.setAttribute("data-page", prev) : app?.removeAttribute("data-page"));
     }, []);
 
-    // ---------------------------------------------------------------------
     // โหมดทำงาน: เก็บของเดิม + เพิ่มโหมดใหม่
-    const [mode, setMode] = useState("legacy"); // "legacy" | "byDate"
+    const [mode, setMode] = useState("legacy"); 
     const [filterSoldOnly, setFilterSoldOnly] = useState(true);
 
-    // ถ้าเปลี่ยนโหมดเป็น legacy ให้ปิดกรองอัตโนมัติ
+   
     useEffect(() => {
         setFilterSoldOnly(mode === "byDate");
     }, [mode]);
 
-
-    // ---------------------------------------------------------------------
     // Date range state
     const todayISO = toISODateOnly(new Date());
     const [dateFrom, setDateFrom] = useState(todayISO);
     const [dateTo, setDateTo] = useState(todayISO);
 
-    // ---------------------------------------------------------------------
+   
     // Data state
-    const [products, setProducts] = useState([]);  // [{id,name,...}]
+    const [products, setProducts] = useState([]);  
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     // ---------------------------------------------------------------------
     // ========== FETCH FUNCTIONS ==========
-    // 1) ของเดิม (ดึงทั้งหมด ไม่กรองวัน)
+
     async function fetchStockDataLegacy({ fromDate, toDate }) {
         setLoading(true);
         setError(null);
         try {
-            // ดึงสินค้าทั้งหมดเหมือนเดิม
+          
             const res = await fetch(apiUrl(`/api/products`));
             if (!res.ok) throw new Error(`Fetch failed with status ${res.status}`);
             const data = await res.json();
 
-            // สร้างแผนที่ยอดขายตามช่วงวัน (จะใช้ใน KPI + คอลัมน์ Sold)
+         
             let soldMap = new Map();
             try { soldMap = await buildSoldMap(null, null); } catch (e) { console.warn("sold overlay failed:", e); }
 
@@ -226,12 +222,12 @@ export default function AdminDashboard() {
     }
 
 
-    // 2) โหมดใหม่: รวมยอดขายตามช่วงวันฝั่ง FE (ไม่แตะ DB)
+
     async function fetchStockDataByDate({ fromDate, toDate }) {
         setLoading(true);
         setError(null);
         try {
-            // 1) products — ทำฐานสำหรับผูกยอด
+          
             const prodRes = await fetch(apiUrl("/api/products"));
             if (!prodRes.ok) throw new Error(`products failed ${prodRes.status}`);
             const prodRaw = await prodRes.json();
@@ -254,7 +250,7 @@ export default function AdminDashboard() {
             if (!oRes.ok) throw new Error(`orders failed ${oRes.status}`);
             let orders = await oRes.json();
 
-            // 2.1 hydrate: ถ้า list ไม่มี items → ดึงรายตัว
+        
             const needsHydrate = (o) => !o?.items && !o?.orderItems && !o?.order_items;
             if (Array.isArray(orders) && orders.some(needsHydrate)) {
                 const hydrated = await Promise.all(
@@ -264,7 +260,7 @@ export default function AdminDashboard() {
                             const r = await fetch(apiUrl(`/api/orders/${o.id}`), { headers: { Accept: "application/json" } });
                             if (!r.ok) return o;
                             const full = await r.json();
-                            // รวมฟิลด์เดิม + ฟิลด์เต็ม
+                           
                             return { ...o, ...full };
                         } catch {
                             return o;
@@ -274,11 +270,11 @@ export default function AdminDashboard() {
                 orders = hydrated;
             }
 
-            // 3) กรองช่วงวัน + สถานะที่นับเป็น "ขาย" ฝั่ง FE
+           
             const ACCEPTED = new Set(["PREPARING", "READY_TO_SHIP", "SHIPPING", "DELIVERED"]);
             const inRange = (ymd) => ymd && (ymd >= fromDate && ymd <= toDate);
 
-            const soldMap = new Map(); // productId -> qty
+            const soldMap = new Map(); 
 
             for (const o of orders || []) {
                 const orderedYMD = toYMDPlus(
@@ -327,9 +323,6 @@ export default function AdminDashboard() {
         }
     }
 
-
-
-    // 3) ฟังก์ชันตัวกลาง (คงชื่อเดิม) เรียกตามโหมด
     async function fetchStockData({ fromDate, toDate }) {
         if (mode === "byDate") return fetchStockDataByDate({ fromDate, toDate });
         return fetchStockDataLegacy({ fromDate, toDate });
@@ -340,8 +333,8 @@ export default function AdminDashboard() {
     // Load initial
     useEffect(() => {
         fetchStockData({ fromDate: dateFrom, toDate: dateTo });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mode]); // เปลี่ยนโหมดให้โหลดใหม่อัตโนมัติ
+        
+    }, [mode]); 
 
     // ---------------------------------------------------------------------
     // Apply button
@@ -359,7 +352,7 @@ export default function AdminDashboard() {
     }, [products, mode, filterSoldOnly]);
 
     const metrics = useMemo(() => {
-        const src = visibleProducts;       // ใช้ชุดที่ถูกกรองแล้ว
+        const src = visibleProducts;       
         const lowStockThreshold = 10;
 
         const totalProducts = src.length;
@@ -398,8 +391,8 @@ export default function AdminDashboard() {
         }
         // legacy: แสดงสัปดาห์ปัจจุบัน
         const now = new Date();
-        const day = now.getDay(); // 0=Sun
-        const diffToMon = (day + 6) % 7; // days since Monday
+        const day = now.getDay();
+        const diffToMon = (day + 6) % 7; 
         const monday = new Date(now);
         monday.setDate(now.getDate() - diffToMon);
         const sunday = new Date(monday);

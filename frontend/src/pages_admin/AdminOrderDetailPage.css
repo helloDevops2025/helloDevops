@@ -49,8 +49,8 @@ body { font-family: system-ui, Arial, sans-serif; }
 
 /* การ์ดแต่ละใบ */
 .admin-order-detail-page .card-top {
-    flex: 1;                    /* ทำให้แต่ละกล่องกว้างเท่ากัน */
-    max-width: 50%;             /* จำกัดไม่ให้กินเกินครึ่งหนึ่งของแถว */
+    flex: 1;                
+    max-width: 50%;             
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: var(--radius);

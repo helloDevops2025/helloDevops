@@ -134,11 +134,11 @@
 
 /* Product cell */
 .app[data-page="AdminProductListPage"] .prod {
-  display: flex;               /* ใช้ flex ปกติพอ ไม่ต้อง inline-flex */
+  display: flex;               
   align-items: center;
   gap: 10px;
-  white-space: normal;         /* ✅ อนุญาตให้ตัดบรรทัด */
-  word-break: break-word;      /* ✅ บังคับให้ตัดคำเมื่อยาวเกิน */
+  white-space: normal;         
+  word-break: break-word;      
   max-width: 200px;
 }
 
@@ -268,15 +268,10 @@
   }
 }
 
-/* ------------------------------------------------------------------
-   ✅ ADD-ON: ตกแต่งช่อง Search + Dropdown (minimal, ไม่ทับดีไซน์เดิม)
-   - ใช้เฉพาะการ override/เพิ่มจากของเดิม
--------------------------------------------------------------------*/
 
-/* ยืดความกว้างเล็กน้อย + เอฟเฟกต์โฟกัส */
 .app[data-page="AdminProductListPage"] .search {
   gap: 10px;
-  max-width: 560px; /* เดิม 440px */
+  max-width: 560px;
   transition: box-shadow .15s ease, border-color .15s ease;
 }
 .app[data-page="AdminProductListPage"] .search:focus-within {
@@ -314,18 +309,17 @@
   background-size: 14px 14px, 14px 14px;
 }
 
-/* เส้นกั้นบางๆ ระหว่าง select กับ input ให้ดูเป็นชิ้นเดียวกัน */
+
 .app[data-page="AdminProductListPage"] .search select + input {
   border-left: 1px solid var(--line);
   padding-left: 12px;
 }
 
-/* Placeholder สีอ่อนลงเล็กน้อย */
 .app[data-page="AdminProductListPage"] .search input::placeholder {
   color: #9ca3af;
 }
 
-/* Responsive: ให้ช่องค้นหากว้างเต็มบรรทัดเมื่อจอแคบ */
+
 @media (max-width: 900px) {
   .app[data-page="AdminProductListPage"] .search {
     max-width: 100%;

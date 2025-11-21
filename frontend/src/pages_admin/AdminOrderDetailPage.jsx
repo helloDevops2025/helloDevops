@@ -14,7 +14,7 @@ const THB = (n) =>
     maximumFractionDigits: 2,
   });
 
-// ✅ ฟอร์แมตวันที่/เวลาเป็น ค.ศ. + AM/PM (เช่น 25 Jan 2025 • 01:45 PM)
+
 function fmtDateTime(isoLike) {
   if (!isoLike) return "–";
   try {
@@ -38,7 +38,6 @@ function fmtDateTime(isoLike) {
   }
 }
 
-// แผนที่ label ที่โชว์ ↔ code ที่ backend ต้องการ
 const TITLE_BY_STATUS = {
   PENDING: "Pending",
   PREPARING: "Preparing",
@@ -49,7 +48,6 @@ const TITLE_BY_STATUS = {
 };
 const ALL_STATUS_CODES = Object.keys(TITLE_BY_STATUS);
 
-// ยิงอัปเดตแบบ “ยืดหยุ่น” ให้ครอบคลุม backend หลายสไตล์
 async function updateOrderStatusFlexible(orderId, code) {
   const s = String(code || "").trim().toUpperCase();
 
@@ -89,7 +87,7 @@ async function updateOrderStatusFlexible(orderId, code) {
     }
   }
 
-  // fallback: form-urlencoded
+  
   for (const ep of endpoints) {
     const form = new URLSearchParams();
     form.set("status", s);
@@ -115,15 +113,15 @@ async function updateOrderStatusFlexible(orderId, code) {
 
 export default function AdminOrderDetailPage() {
   const navigate = useNavigate();
-  const { id } = useParams(); // /admin/orders/:id
+  const { id } = useParams(); 
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [statusDraft, setStatusDraft] = useState(""); // เก็บค่า code จาก select
+  const [statusDraft, setStatusDraft] = useState(""); 
 
-  // popup แจ้งเตือน
+  
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertList, setAlertList] = useState([]);
 
@@ -153,7 +151,7 @@ export default function AdminOrderDetailPage() {
           ? data.items
           : [];
 
-        // ✅ รองรับหลายชื่อคีย์ของเวลา
+     
         const orderedAt =
           data.orderedAt ??
           data.ordered_at ??
@@ -165,7 +163,7 @@ export default function AdminOrderDetailPage() {
 
         const updatedAt = data.updatedAt ?? data.updated_at ?? null;
 
-        // ✅ รับ discount จาก backend (รองรับหลายชื่อฟิลด์)
+  
         const discountTotalRaw = data.discount_total ?? data.discountTotal ?? 0;
 
         const normalized = {
@@ -187,9 +185,9 @@ export default function AdminOrderDetailPage() {
             ),
             brandName: it.brandName || it?.product?.brandName || "",
           })),
-          // totalAmount / shippingCost / status รองรับหลายชื่อ field
+          
           totalAmount:
-            data.totalAmount ?? data.total ?? null, // อนุญาตให้เป็น null เพื่อคำนวณเองตอนหลัง
+            data.totalAmount ?? data.total ?? null, 
           shippingCost: Number(data.shippingCost ?? data.shipping_cost ?? 0),
           orderStatus: String(data.orderStatus || data.status || "PENDING").toUpperCase(),
         };
@@ -222,8 +220,6 @@ export default function AdminOrderDetailPage() {
 
   const shippingCost = Number(order?.shippingCost ?? 0) || 0;
 
-  // ถ้า backend มี totalAmount/grandTotal ให้ใช้เลย
-  // ถ้าไม่มี ให้ใช้ subtotal - discount + shipping
   const totalAmount =
     order?.grandTotal ??
     order?.grand_total ??
@@ -252,7 +248,7 @@ export default function AdminOrderDetailPage() {
     } catch (e) {
       console.error(e);
       showAlert(
-        "❌ อัปเดตสถานะไม่สำเร็จ — กรุณาตรวจสอบ log ใน Console/Network"
+        "อัปเดตสถานะไม่สำเร็จ — กรุณาตรวจสอบ log ใน Console/Network"
       );
     } finally {
       setSaving(false);
