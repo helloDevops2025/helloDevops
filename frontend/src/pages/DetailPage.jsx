@@ -269,12 +269,15 @@ export default function DetailPage() {
           //     // imgUrl = cover.imageUrl;   <-- ลบ/คอมเมนต์ทิ้ง
           // }
 
-          // --- FIX: ใช้รูปจริงตามไฟล์ใน server ---
-          // ตัวอย่าง productId: "#0003" → "0003.jpg"
-          const fileName = (p.productId || "").replace("#", "") + ".jpg";
-          let imgUrl = `${API_URL}/api/products/${fileName}`;
+          // --- FIX: รูป product map กับไฟล์จริงใน server ---
 
-          // ไม่ต้องใช้ cover.imageUrl เพราะ backend ไม่ส่ง path ถูกต้อง
+          // productId เช่น "#00003" → "003"
+          const raw = p.productId || "";
+          const digitsOnly = raw.replace("#", "").replace(/^0+/, ""); // "3"
+          const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";
+
+          // API_URL ต้องไม่มี `/api` ต่อท้ายใน .env
+          let imgUrl = `${API_URL}/api/products/${fileName}`;
 
 
           const mapped = {
