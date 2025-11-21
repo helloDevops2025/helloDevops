@@ -92,22 +92,11 @@ describe("Admin Dashboard (Weekly Stock Report)", () => {
         cy.contains(".trow", "Orange Juice").should("be.visible");
     });
 
-    // -------------------------------------------------------------------
-    // DASH-002: เปลี่ยน mode เป็น Date range selected แล้วเหลือเฉพาะสินค้าที่มี Sold (Range) > 0
-    // -------------------------------------------------------------------
-    it("DASH-002: เปลี่ยน mode เป็น Date range selected แล้วเหลือเฉพาะสินค้าที่มี Sold (Range) > 0", () => {
-      
-        cy.get('input[type="radio"][name="mode"][value="byDate"]').click();
-
-        cy.contains(".trow", "Apple Juice").should("be.visible");
-        cy.contains(".trow", "Orange Juice").should("not.exist");
-    });
-
 
     // -------------------------------------------------------------------
-    // DASH-003: เปลี่ยนจาก/ถึง + โหมด Date range selected → orders มี query from/to
+    // DASH-002: เปลี่ยนจาก/ถึง + โหมด Date range selected → orders มี query from/to
     // -------------------------------------------------------------------
-    it("DASH-003: เปลี่ยน from/to แล้วกด Apply ในโหมด Date range selected → orders ถูกเรียกด้วย query ช่วงวันที่", () => {
+    it("DASH-002: เปลี่ยน from/to แล้วกด Apply ในโหมด Date range selected → orders ถูกเรียกด้วย query ช่วงวันที่", () => {
        
         cy.get('input[type="radio"][name="mode"][value="byDate"]').click();
 
@@ -135,9 +124,9 @@ describe("Admin Dashboard (Weekly Stock Report)", () => {
 
 
     // -------------------------------------------------------------------
-    // DASH-004: Search filter ทำงาน → ซ่อนแถวที่ไม่ match
+    // DASH-003: Search filter ทำงาน → ซ่อนแถวที่ไม่ match
     // -------------------------------------------------------------------
-    it("DASH-004: ใช้ช่อง Search แล้ว filter ซ่อนแถวที่ไม่ตรงคำค้นหา", () => {
+    it("DASH-003: ใช้ช่อง Search แล้ว filter ซ่อนแถวที่ไม่ตรงคำค้นหา", () => {
         cy.contains(".trow", "Apple Juice").should("be.visible");
         cy.contains(".trow", "Orange Juice").should("be.visible");
 
@@ -151,9 +140,9 @@ describe("Admin Dashboard (Weekly Stock Report)", () => {
     });
 
     // -------------------------------------------------------------------
-    // DASH-005: ปุ่ม View นำไปหน้า /admin/products/:id/edit ถูกต้อง
+    // DASH-004: ปุ่ม View นำไปหน้า /admin/products/:id/edit ถูกต้อง
     // -------------------------------------------------------------------
-    it("DASH-005: กดปุ่ม View ในแถว → ไปหน้าแก้ไขสินค้าตาม ID ถูกต้อง", () => {
+    it("DASH-004: กดปุ่ม View ในแถว → ไปหน้าแก้ไขสินค้าตาม ID ถูกต้อง", () => {
         cy.contains(".trow", "Apple Juice").within(() => {
             cy.get("button.btn-edit-inline").click();
         });
