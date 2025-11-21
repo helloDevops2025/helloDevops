@@ -2,7 +2,7 @@ name: Build Frontend, Run Cypress Tests snd Deploy to Docker
 
 on:
   push:
-    branches: [ main, develop, deployment-test ]
+    branches: [ main,deployment-test ]
   workflow_dispatch:
 
 jobs:
