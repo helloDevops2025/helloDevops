@@ -349,7 +349,7 @@ textarea.inp:focus-visible {
 }
 
 .assigned-item .grow {
-  flex: 1; /* ดันเนื้อหาทางซ้าย */
+  flex: 1; 
 }
 
 .assigned-item + .assigned-item {
@@ -447,7 +447,7 @@ textarea.inp:focus-visible {
 .promo-confirm-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.35); /* overlay มืด ๆ */
+  background: rgba(15, 23, 42, 0.35); 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -467,13 +467,13 @@ textarea.inp:focus-visible {
   margin: 0 0 8px;
   font-size: 22px;
   font-weight: 700;
-  color: #020617; /* almost-black */
+  color: #020617; 
 }
 
 .promo-confirm-dialog p {
   margin: 0 0 24px;
   font-size: 14px;
-  color: #64748b; /* slate-500 */
+  color: #64748b; 
 }
 
 .promo-confirm-actions {
@@ -482,7 +482,7 @@ textarea.inp:focus-visible {
   gap: 12px;
 }
 
-/* ปุ่ม Cancel (สีอ่อนใหญ่ ๆ) */
+
 .promo-btn-cancel {
   flex: 1;
   height: 48px;
@@ -496,7 +496,7 @@ textarea.inp:focus-visible {
   cursor: pointer;
 }
 
-/* ปุ่ม Confirm (สีเข้ม) */
+
 .promo-btn-confirm {
   flex: 1;
   height: 48px;
@@ -526,17 +526,14 @@ textarea.inp:focus-visible {
   .editor .row.gap {
     padding-right: 32px;
 }
-/* ให้ทุก row ใน editor center */
 .editor .row {
   justify-content: center;
 }
 
-/* ป้องกันช่องซ้ายกินพื้นที่ ไปดันปุ่ม */
 .editor .row .flex {
   flex: 0 0 auto !important;
 }
 
-/* ปุ่มใน editor ไม่ให้ขยาย */
 .editor .btn {
   flex: 0 0 auto !important;
 }

@@ -177,11 +177,9 @@ export default function AdminAddProductPage() {
       btn.textContent = "×";
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
-       // ✅ ใช้ confirm modal แบบ custom แทน window.confirm
         openConfirm(
           "This image is about to be deleted. Are you sure you want to continue?",
           () => {
-            // ถ้ากด “ตกลง” ค่อยลบจริง
             setCoverFile(null);
             setServerCoverUrl("");
 
@@ -256,14 +254,12 @@ export default function AdminAddProductPage() {
     }
 
     if (name === "price") {
-      // ✅ กรองให้เหลือเฉพาะตัวเลขและจุดทศนิยม
+  
       let cleaned = value.replace(/[^\d.]/g, "");
 
-      // ✅ จำกัดให้ไม่เกิน 2 จุดทศนิยม
       const parts = cleaned.split(".");
       if (parts.length > 2) cleaned = parts[0] + "." + parts[1];
 
-      // ✅ จำกัดราคาไม่เกิน 10000
       const num = Number(cleaned);
       if (num > 10000) cleaned = "10000";
 
@@ -277,13 +273,13 @@ export default function AdminAddProductPage() {
 
 
 
-  // กันเว้นวรรคใน Product ID
+
   const onProductIdChange = (e) => {
-    const v = digitsOnly(e.target.value).slice(0, 5); // ตัวเลขเท่านั้น สูงสุด 5 หลัก
+    const v = digitsOnly(e.target.value).slice(0, 5); 
     setForm((s) => ({ ...s, productId: v }));
     const vr = validateProductId(v);
     setPidError(vr.ok ? "" : vr.msg);
-    setPidOkUnique(null); // reset ผลเช็คซ้ำทุกครั้งที่พิมพ์
+    setPidOkUnique(null); 
   };
 
   const onProductIdBlur = async () => {
@@ -300,14 +296,12 @@ export default function AdminAddProductPage() {
     try {
       const dup = await clientCheckDuplicateProductId(pidRes.value);
 
-      // ถ้ามีรหัสสินค้าซ้ำ
       if (dup) {
         setPidError("This product code has already been assigned");
         productIdRef.current?.focus();
         return;
       }
 
-      // ถ้าไม่ซ้ำ
       setPidError("");
     } finally {
       setCheckingPid(false);
@@ -319,15 +313,11 @@ export default function AdminAddProductPage() {
 
 
 
-  // เช็คซ้ำแบบ client: พยายามเรียกด้วย query ก่อน ไม่ได้ค่อยดึงทั้งหมดแล้ว filter
   const clientCheckDuplicateProductId = async (pid) => {
     if (!pid) return false;
     const target = normCode(pid);
 
-    // ใช้ฟังก์ชันช่วยเช็กซ้ำ (เทียบแบบ normalize)
     const isDupHit = (rec) => normCode(rec?.productId) === target;
-
-    // 1) พยายาม query ก่อน
     const queryCandidates = [
       `${API_URL}/api/products?productId=${encodeURIComponent(pid)}`,
       `${API_URL}/api/products/search?productId=${encodeURIComponent(pid)}`,
@@ -342,7 +332,6 @@ export default function AdminAddProductPage() {
       } catch { }
     }
 
-    // 2) fallback ดึงลิสต์ทั้งหมดแล้วเช็ก
     const listCandidates = [
       `${API_URL}/api/products`,
       `${API_URL}/api/products/all`,
@@ -357,12 +346,11 @@ export default function AdminAddProductPage() {
         if (Array.isArray(arr)) return arr.some(isDupHit);
       } catch { }
     }
-    // ถ้าเรียกไม่ได้ ให้ถือว่า “ไม่รู้” → ไปดัก 409 ตอน POST
     return false;
   };
 
 
-  // บังคับ inStock ตามจำนวน: 0 -> false, ≥1 -> true
+
   useEffect(() => {
     const n = toInt(form.quantity);
     if (n === null) return;
@@ -370,7 +358,7 @@ export default function AdminAddProductPage() {
     if (form.inStock !== forced) {
       setForm((s) => ({ ...s, inStock: forced }));
     }
-  }, [form.quantity]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.quantity]); 
 
   const onCancel = (e) => {
     e.preventDefault();
