@@ -5,6 +5,8 @@ import "./CartPage.css";
 import "./breadcrumb.css";
 import Footer from "./../components/Footer.jsx";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+
 const LS_CART = "pm_cart";
 const LS_REORDER = "pm_reorder";
 
@@ -30,6 +32,17 @@ function loadJSON(key, fallback = []) {
 }
 function saveJSON(key, val) {
   localStorage.setItem(key, JSON.stringify(val));
+}
+
+/** helper เรียก API แบบกัน error เฉย ๆ */
+async function safeJson(url) {
+  try {
+    const r = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
 }
 
 // Hook: main cart
@@ -119,11 +132,14 @@ function usePick(keys) {
     });
   }, []);
 
-  const setAll = useCallback((on) => {
-    const next = on ? Array.from(keys) : [];
-    setPick(new Set(next));
-    saveJSON(LS_PICK, next);
-  }, [keys]);
+  const setAll = useCallback(
+    (on) => {
+      const next = on ? Array.from(keys) : [];
+      setPick(new Set(next));
+      saveJSON(LS_PICK, next);
+    },
+    [keys]
+  );
 
   const isAll = pick.size > 0 && pick.size === keys.length;
   const isNone = pick.size === 0;
@@ -164,11 +180,75 @@ export default function CartPage() {
   const { items, setQty, removeItem, clear, setItems } = useCart();
   const { reorder, clearReorder, setReorder } = useReorder();
 
+  // promoMap: productId(string) -> [promo labels...]
+  const [promoMap, setPromoMap] = useState(() => new Map());
+
+  // โหลดข้อมูล promotion แบบเดียวกับหน้า shop แต่ทำใน cart แทน
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const promos = await safeJson(
+          `${API_URL}/api/promotions?status=ACTIVE`
+        );
+        const map = new Map();
+
+        if (Array.isArray(promos)) {
+          for (const promo of promos) {
+            const plist = await safeJson(
+              `${API_URL}/api/promotions/${promo.id}/products`
+            );
+            (plist || []).forEach((prod) => {
+              const rawId = prod.id ?? prod.productId ?? prod.product_id;
+              if (rawId == null) return;
+              const pid = String(rawId); // ใช้ string ทุกที่
+              if (!map.has(pid)) map.set(pid, []);
+              const label = promo.name || promo.code || "PROMO";
+              map.get(pid).push(label);
+            });
+          }
+        }
+
+        if (!alive) return;
+        setPromoMap(map);
+      } catch {
+        if (!alive) return;
+        setPromoMap(new Map());
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // helper resolve label สุดท้ายจาก data ใน cart + promoMap
+  const resolvePromoLabel = useCallback(
+    (rawLabel, productId) => {
+      const base =
+        rawLabel && String(rawLabel).trim() !== ""
+          ? String(rawLabel).trim()
+          : null;
+
+      let fromMap = null;
+      if (promoMap instanceof Map) {
+        const key = String(productId);
+        const arr = promoMap.get(key) || [];
+        if (Array.isArray(arr) && arr.length) fromMap = arr[0];
+      }
+
+      return base || fromMap || "-";
+    },
+    [promoMap]
+  );
+
   // map ให้ฟิลด์ที่มาจากหลายหน้าเป็นรูปแบบเดียวกัน
   const rows = useMemo(
     () =>
       (items || []).map((x) => {
-        const productId = x.productId ?? x.id ?? x.product_id;
+        const productIdRaw = x.productId ?? x.id ?? x.product_id;
+        const productId = productIdRaw;
         const variantId = x.variantId ?? x.variant ?? x.sku ?? "";
         const title = x.title ?? x.name ?? x.productName ?? `#${productId}`;
         const image =
@@ -181,6 +261,11 @@ export default function CartPage() {
           "/assets/products/placeholder.png";
         const price = Number(x.price) || 0;
         const qty = Math.max(1, Number(x.qty) || 1);
+
+        const rawPromo =
+          x.promo || x.promotion || x.promoName || x.promotionName || null;
+        const promo = resolvePromoLabel(rawPromo, productId);
+
         return {
           key: `${productId}::${variantId}`,
           productId,
@@ -189,22 +274,30 @@ export default function CartPage() {
           image,
           price,
           qty,
+          promo,
         };
       }),
-    [items]
+    [items, resolvePromoLabel]
   );
 
   //  Pick/Selection
   const allKeys = useMemo(() => rows.map((r) => r.key), [rows]);
   const { pick, toggle, setAll, isAll, isNone } = usePick(allKeys);
 
-  const pickedRows = useMemo(() => rows.filter((r) => pick.has(r.key)), [rows, pick]);
+  const pickedRows = useMemo(
+    () => rows.filter((r) => pick.has(r.key)),
+    [rows, pick]
+  );
   const pickedQty = useMemo(
     () => pickedRows.reduce((s, x) => s + (Number(x.qty) || 0), 0),
     [pickedRows]
   );
   const pickedTotal = useMemo(
-    () => pickedRows.reduce((s, x) => s + (Number(x.qty) || 0) * (Number(x.price) || 0), 0),
+    () =>
+      pickedRows.reduce(
+        (s, x) => s + (Number(x.qty) || 0) * (Number(x.price) || 0),
+        0
+      ),
     [pickedRows]
   );
 
@@ -212,7 +305,8 @@ export default function CartPage() {
   const reorderRows = useMemo(
     () =>
       (reorder || []).map((x) => {
-        const productId = x.productId ?? x.id ?? x.product_id;
+        const productIdRaw = x.productId ?? x.id ?? x.product_id;
+        const productId = productIdRaw;
         const variantId = x.variantId ?? x.variant ?? x.sku ?? "";
         const title = x.title ?? x.name ?? x.productName ?? `#${productId}`;
         const image =
@@ -225,6 +319,11 @@ export default function CartPage() {
           "/assets/products/placeholder.png";
         const price = Number(x.price) || 0;
         const qty = Math.max(1, Number(x.qty) || 1);
+
+        const rawPromo =
+          x.promo || x.promotion || x.promoName || x.promotionName || null;
+        const promo = resolvePromoLabel(rawPromo, productId);
+
         return {
           key: `${productId}::${variantId}`,
           productId,
@@ -233,9 +332,10 @@ export default function CartPage() {
           image,
           price,
           qty,
+          promo,
         };
       }),
-    [reorder]
+    [reorder, resolvePromoLabel]
   );
 
   const reorderTotalQty = useMemo(
@@ -259,7 +359,10 @@ export default function CartPage() {
       const key = `${r.productId}::${r.variantId}`;
       const idx = next.findIndex((x) => makeKey(x) === key);
       if (idx >= 0) {
-        next[idx] = { ...next[idx], qty: (Number(next[idx].qty) || 0) + (Number(r.qty) || 0) };
+        next[idx] = {
+          ...next[idx],
+          qty: (Number(next[idx].qty) || 0) + (Number(r.qty) || 0),
+        };
       } else {
         next.push({
           productId: r.productId,
@@ -268,6 +371,7 @@ export default function CartPage() {
           price: r.price,
           qty: r.qty,
           img: r.image,
+          promo: r.promo,
         });
       }
     }
@@ -281,20 +385,28 @@ export default function CartPage() {
   }, [reorderRows, setItems, clearReorder]);
 
   // ปรับจำนวนในถาดชั่วคราว
-  const setReorderQty = useCallback((keyObj, qty) => {
-    const q = Math.max(0, Number(qty) || 0);
-    const next = (loadJSON(LS_REORDER, []) || [])
-      .map((x) => (makeKey(x) === makeKey(keyObj) ? { ...x, qty: q } : x))
-      .filter((x) => (x.qty || 0) > 0);
-    saveJSON(LS_REORDER, next);
-    setReorder(next);
-  }, [setReorder]);
+  const setReorderQty = useCallback(
+    (keyObj, qty) => {
+      const q = Math.max(0, Number(qty) || 0);
+      const next = (loadJSON(LS_REORDER, []) || [])
+        .map((x) => (makeKey(x) === makeKey(keyObj) ? { ...x, qty: q } : x))
+        .filter((x) => (x.qty || 0) > 0);
+      saveJSON(LS_REORDER, next);
+      setReorder(next);
+    },
+    [setReorder]
+  );
 
-  const removeReorderItem = useCallback((keyObj) => {
-    const next = (loadJSON(LS_REORDER, []) || []).filter((x) => makeKey(x) !== makeKey(keyObj));
-    saveJSON(LS_REORDER, next);
-    setReorder(next);
-  }, [setReorder]);
+  const removeReorderItem = useCallback(
+    (keyObj) => {
+      const next = (loadJSON(LS_REORDER, []) || []).filter(
+        (x) => makeKey(x) !== makeKey(keyObj)
+      );
+      saveJSON(LS_REORDER, next);
+      setReorder(next);
+    },
+    [setReorder]
+  );
 
   const handleCheckout = useCallback(() => {
     if (isNone) return;
@@ -308,6 +420,7 @@ export default function CartPage() {
         price: r.price,
         qty: r.qty,
         key: r.key,
+        promo: r.promo,
       })),
       totalQty: pickedQty,
       totalPrice: pickedTotal,
@@ -323,7 +436,9 @@ export default function CartPage() {
       <Header />
 
       <main className="cart-page container cart-container">
-        <Breadcrumb items={[{ label: "Home", href: "/home" }, { label: "Cart" }]} />
+        <Breadcrumb
+          items={[{ label: "Home", href: "/home" }, { label: "Cart" }]}
+        />
 
         <div className="title-row">
           <h1 className="title">Shopping Cart</h1>
@@ -337,7 +452,8 @@ export default function CartPage() {
           <section className="card summary-card" style={{ marginBottom: 24 }}>
             <h2 className="section-title">Buy Again</h2>
             <p className="muted" style={{ marginTop: -8 }}>
-              These items were selected from your Order History. They are separate from your cart until you add them.
+              These items were selected from your Order History. They are
+              separate from your cart until you add them.
             </p>
 
             <div className="cart-list" style={{ paddingTop: 8 }}>
@@ -348,6 +464,14 @@ export default function CartPage() {
                     <img src={it.image} alt={it.title} />
                     <div>
                       <p className="cart-item__name">{it.title}</p>
+                      {it.promo && it.promo !== "-" && (
+                        <div className="cart-promo-chip">
+                          <span className="cart-promo-chip__dot" />
+                          <span className="cart-promo-chip__text">
+                            {it.promo}
+                          </span>
+                        </div>
+                      )}
                       <p className="cart-item__meta">{THB(it.price)} / each</p>
                       <div className="qty" role="group" aria-label="Quantity">
                         <button
@@ -355,7 +479,10 @@ export default function CartPage() {
                           aria-label="Decrease"
                           onClick={() =>
                             setReorderQty(
-                              { productId: it.productId, variantId: it.variantId },
+                              {
+                                productId: it.productId,
+                                variantId: it.variantId,
+                              },
                               (it.qty || 1) - 1
                             )
                           }
@@ -368,7 +495,10 @@ export default function CartPage() {
                           aria-label="Increase"
                           onClick={() =>
                             setReorderQty(
-                              { productId: it.productId, variantId: it.variantId },
+                              {
+                                productId: it.productId,
+                                variantId: it.variantId,
+                              },
                               (it.qty || 1) + 1
                             )
                           }
@@ -411,10 +541,18 @@ export default function CartPage() {
             </div>
 
             <div className="reorder-actions">
-              <button className="btn btn-primary" type="button" onClick={mergeReorderIntoCart}>
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={mergeReorderIntoCart}
+              >
                 Add to Cart
               </button>
-              <button className="btn btn-outline danger-hover" type="button" onClick={clearReorder}>
+              <button
+                className="btn btn-outline danger-hover"
+                type="button"
+                onClick={clearReorder}
+              >
                 Discard
               </button>
             </div>
@@ -452,14 +590,27 @@ export default function CartPage() {
 
                       <div>
                         <p className="cart-item__name">{it.title}</p>
-                        <p className="cart-item__meta">{THB(it.price)} / each</p>
+                        {it.promo && it.promo !== "-" && (
+                          <div className="cart-promo-chip">
+                            <span className="cart-promo-chip__dot" />
+                            <span className="cart-promo-chip__text">
+                              {it.promo}
+                            </span>
+                          </div>
+                        )}
+                        <p className="cart-item__meta">
+                          {THB(it.price)} / each
+                        </p>
                         <div className="qty" role="group" aria-label="Quantity">
                           <button
                             type="button"
                             aria-label="Decrease"
                             onClick={() =>
                               setQty(
-                                { productId: it.productId, variantId: it.variantId },
+                                {
+                                  productId: it.productId,
+                                  variantId: it.variantId,
+                                },
                                 (it.qty || 1) - 1
                               )
                             }
@@ -472,7 +623,10 @@ export default function CartPage() {
                             aria-label="Increase"
                             onClick={() =>
                               setQty(
-                                { productId: it.productId, variantId: it.variantId },
+                                {
+                                  productId: it.productId,
+                                  variantId: it.variantId,
+                                },
                                 (it.qty || 1) + 1
                               )
                             }
@@ -516,9 +670,14 @@ export default function CartPage() {
                   onChange={(e) => setAll(e.target.checked)}
                   aria-label="Select all"
                 />
-                <span>{isAll ? "Selected all items" : "Select all items"}</span>
+                <span>
+                  {isAll ? "Selected all items" : "Select all items"}
+                </span>
               </label>
-              <p className="muted" style={{ marginTop: -4, marginBottom: 12 }}>
+              <p
+                className="muted"
+                style={{ marginTop: -4, marginBottom: 12 }}
+              >
                 Totals are calculated from <strong>selected items</strong>.
               </p>
 
@@ -542,11 +701,19 @@ export default function CartPage() {
                   onClick={handleCheckout}
                   disabled={isNone}
                   aria-disabled={isNone}
-                  title={isNone ? "Please select at least one item" : "Proceed to Checkout"}
+                  title={
+                    isNone
+                      ? "Please select at least one item"
+                      : "Proceed to Checkout"
+                  }
                 >
                   Proceed to Checkout
                 </button>
-                <button className="btn btn-outline" onClick={clear} type="button">
+                <button
+                  className="btn btn-outline"
+                  onClick={clear}
+                  type="button"
+                >
                   Clear Cart
                 </button>
               </div>

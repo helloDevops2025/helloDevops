@@ -123,7 +123,8 @@
   background: #90b6f5;
   color: #0b1b3a;
   display: grid;
-  grid-template-columns: 1fr 140px 140px 160px;
+  /* columns: Item | Unit Price | Discount | Qty | Total */
+  grid-template-columns: 1fr 140px 100px 140px 160px;
   gap: 1px;
   align-items: center;
   padding: 16px 18px;
@@ -139,24 +140,33 @@
   text-align: left;
 }
 
-.order-head>div:nth-child(2),
-.order-head>div:nth-child(3),
-.order-head>div:nth-child(4),
-.order-row .price,
-.order-row .qty,
-.order-row .subtotal {
+/* Unit Price: left-aligned */
+.order-head>div:nth-child(2) {
   text-align: left;
   padding-left: 12px;
 }
 
-.order-row .subtotal {
-  text-align: left;
-  padding-left: 18px;
+/* Discount: center */
+.order-head>div:nth-child(3) {
+  text-align: center;
+  padding-left: 0;
+}
+
+/* Qty */
+.order-head>div:nth-child(4) {
+  text-align: center;
+  padding-left: 0;
+}
+
+/* Total */
+.order-head>div:nth-child(5) {
+  text-align: right;
+  padding-left: 0;
 }
 
 .order-row {
   display: grid;
-  grid-template-columns: 1fr 140px 140px 160px;
+  grid-template-columns: 1fr 140px 100px 140px 160px;
   gap: 1px;
   align-items: center;
   padding: 16px 18px;
@@ -196,9 +206,19 @@
 }
 
 .price,
-.qty,
-.subtotal {
+.qty {
   text-align: center;
+}
+
+/* right-align the line total so it lines up under the Total header */
+.order-row .subtotal {
+  text-align: right;
+}
+
+/* center discount cells in rows */
+.order-row .discount {
+  text-align: center;
+  padding-left: 0;
 }
 
 .price,
@@ -242,7 +262,8 @@
 
   .order-head,
   .order-row {
-    grid-template-columns: 1fr 120px 120px 140px;
+    /* Item | Unit Price | Discount | Qty | Total (narrower on medium screens) */
+    grid-template-columns: 1fr 120px 90px 120px 140px;
   }
 }
 
@@ -499,14 +520,20 @@
   text-align: left
 }
 
-.tracking-page .items thead th:nth-child(1),
-.tracking-page .items thead th:nth-child(4) {
-  text-align: center
+.tracking-page .items thead th:nth-child(1) {
+  text-align: center;
 }
-
-.tracking-page .items thead th:nth-child(3),
+.tracking-page .items thead th:nth-child(3) {
+  text-align: right;
+}
+.tracking-page .items thead th:nth-child(4) {
+  text-align: center;
+}
 .tracking-page .items thead th:nth-child(5) {
-  text-align: right
+  text-align: center;
+}
+.tracking-page .items thead th:nth-child(6) {
+  text-align: right;
 }
 
 .tracking-page .items thead th:first-child {
@@ -544,20 +571,32 @@
 .tracking-page .items td.price {
   width: 120px;
   text-align: right;
-  padding-right: 12px
+  padding-right: 12px;
 }
 
 .tracking-page .items th:nth-child(4),
-.tracking-page .items td.qty {
-  width: 80px;
-  text-align: center
+.tracking-page .items td.discount {
+  width: 120px;
+  text-align: center;
+  padding-right: 12px;
 }
 
 .tracking-page .items th:nth-child(5),
+.tracking-page .items td.qty {
+  width: 80px;
+  text-align: center;
+}
+
+.tracking-page .items th:nth-child(6),
 .tracking-page .items td.total {
   width: 140px;
   text-align: right;
-  padding-right: 12px
+  padding-right: 12px;
+}
+
+/* ensure discount cells in print preview are centered */
+.tracking-page .items td.discount {
+  text-align: center;
 }
 
 /* ensure long product names wrap instead of overflowing */
