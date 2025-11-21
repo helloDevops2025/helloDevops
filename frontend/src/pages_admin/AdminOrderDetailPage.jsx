@@ -178,26 +178,38 @@ export default function AdminOrderDetailPage() {
     Number(order?.totalAmount || 0) || Number(subtotal + (order?.shippingCost || 0));
 
   // ===== Change status =====
-  async function handleChangeStatus() {
-    if (!order) return;
-    const code = String(statusDraft || "").toUpperCase();
-    if (!code) { alert("กรุณาเลือกสถานะก่อน"); return; }
-    if (!ALL_STATUS_CODES.includes(code)) { alert("รูปแบบสถานะไม่ถูกต้อง"); return; }
+    async function handleChangeStatus() {
+        if (!order) return;
 
-    try {
-      setSaving(true);
-      await updateOrderStatusFlexible(order.id ?? id, code);
-      setOrder((prev) => (prev ? { ...prev, orderStatus: code } : prev));
-      alert("อัปเดตสถานะเรียบร้อย");
-    } catch (e) {
-      console.error(e);
-      alert("❌ อัปเดตสถานะไม่สำเร็จ — กรุณาตรวจสอบ log ใน Console/Network");
-    } finally {
-      setSaving(false);
+        const code = String(statusDraft || "").toUpperCase();
+
+        if (!code) {
+            alert("Please select a status first.");
+            return;
+        }
+
+        if (!ALL_STATUS_CODES.includes(code)) {
+            alert("Invalid status selected.");
+            return;
+        }
+
+        try {
+            setSaving(true);
+            await updateOrderStatusFlexible(order.id ?? id, code);
+
+            setOrder((prev) => (prev ? { ...prev, orderStatus: code } : prev));
+
+            alert("Status updated successfully.");
+        } catch (e) {
+            console.error(e);
+            alert("❌ Failed to update status — please check the console or network log.");
+        } finally {
+            setSaving(false);
+        }
     }
-  }
 
-  // ===== Sidebar collapsing (เดิม) =====
+
+    // ===== Sidebar collapsing (เดิม) =====
   useEffect(() => {
     const sidebar = document.querySelector(".sidebar");
     const menuBtn = document.querySelector(".menu-btn");
