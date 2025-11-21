@@ -8,7 +8,7 @@ export default function AdminEditProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // ── master data (fallback) ────────────────────────────────────────────────────
+  // ── master data (fallback) ────────────────────
   const fallbackCategories = [
     { id: 1, name: "Jasmine Rice" },
     { id: 2, name: "Canned Fish" },
@@ -26,7 +26,7 @@ export default function AdminEditProductPage() {
   const [categories, setCategories] = useState(fallbackCategories);
   const [brands, setBrands] = useState(fallbackBrands);
 
-  // ── form state ────────────────────────────────────────────────────────────────
+  // ── form state ─────────────────────────────
   const [form, setForm] = useState({
     productId: "",
     name: "",
@@ -39,12 +39,12 @@ export default function AdminEditProductPage() {
   });
   const [original, setOriginal] = useState(null);
 
-  // ── image state ───────────────────────────────────────────────────────────────
+  // ── image state ───────────────────────
   const [serverCoverUrl, setServerCoverUrl] = useState("");
   const [coverFile, setCoverFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
 
-  // ── refs ─────────────────────────────────────────────────────────────────────
+  // ── refs ─────────────────────────────────
   const dropzoneRef = useRef(null);
   const filePickerRef = useRef(null);
   const hintRef = useRef(null);
@@ -53,7 +53,7 @@ export default function AdminEditProductPage() {
   const priceRef = useRef(null);
   const qtyRef = useRef(null);
 
-  // ── ui state ─────────────────────────────────────────────────────────────────
+  // ── ui state ───────────────────────────
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -75,10 +75,10 @@ export default function AdminEditProductPage() {
     setAlertLines(arr.filter(Boolean));
     setAlertOpen(true);
   };
-  // ลบรูปจริง ๆ (ใช้ตอนกด Confirm)
+  
   const performDeleteImage = async () => {
     if (coverFile) {
-      // ลบไฟล์ใหม่ที่ยังไม่อัปขึ้น server
+     
       setCoverFile(null);
       return;
     }
@@ -102,7 +102,7 @@ export default function AdminEditProductPage() {
           );
         }
       } catch {
-        // ignore error
+      
       }
       setServerCoverUrl("");
     }
@@ -125,7 +125,7 @@ export default function AdminEditProductPage() {
   };
 
 
-  // ── โหลดหมวด/ยี่ห้อ ─────────────────────────────────────────────────────────
+  // ── โหลดหมวด/ยี่ห้อ ────────────────
   useEffect(() => {
     let cancelled = false;
     const safeFetch = async (url) => {
@@ -149,7 +149,7 @@ export default function AdminEditProductPage() {
     return () => { cancelled = true; };
   }, [API_URL]);
 
-  // ── โหลดสินค้า + รูป ─────────────────────────────────────────────────────────
+  // ── โหลดสินค้า + รูป ────────────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -196,7 +196,7 @@ export default function AdminEditProductPage() {
     return () => { cancelled = true; };
   }, [API_URL, id]);
 
-  // ── พรีวิวไฟล์ใหม่ ───────────────────────────────────────────────────────────
+  // ── พรีวิวไฟล์ใหม่ ──────────────
   useEffect(() => {
     if (!coverFile) {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -210,7 +210,7 @@ export default function AdminEditProductPage() {
 
   const displayImageUrl = previewUrl || serverCoverUrl;
 
-  // ── sync dropzone + ปุ่มลบรูป ────────────────────────────────────────────────
+  // ── sync dropzone + ปุ่มลบรูป ────────────────
   useEffect(() => {
     const dz = dropzoneRef.current;
     if (!dz) return;
@@ -234,7 +234,7 @@ export default function AdminEditProductPage() {
       btn.textContent = "×";
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        // ✅ แทนที่ window.confirm ด้วย modal ของเรา
+
         openDeleteConfirm();
       });
       dz.appendChild(btn);
@@ -244,7 +244,7 @@ export default function AdminEditProductPage() {
     }
   }, [displayImageUrl, serverCoverUrl, API_URL, id, coverFile]);
 
-  // ── helpers ──────────────────────────────────────────────────────────────────
+  // ── helpers ────────────
   const toInt = (v) => {
     if (v === "" || v === null || v === undefined) return null;
     const n = Math.trunc(Number(String(v).replace(/[^\d-]/g, "")));
@@ -272,7 +272,7 @@ export default function AdminEditProductPage() {
     return d.replace(/^0+/, "") || "0";
   };
 
-  // ── handlers ─────────────────────────────────────────────────────────────────
+  // ── handlers ─────────────────
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((s) => ({ ...s, [name]: type === "checkbox" ? checked : value }));
@@ -292,7 +292,7 @@ export default function AdminEditProductPage() {
     }
 
     if (name === "price") {
-      // เฉพาะตัวเลข+จุดทศนิยม, จำกัด 1 จุดทศนิยม, ไม่เกิน 10000
+   
       let cleaned = value.replace(/[^\d.]/g, "");
       const parts = cleaned.split(".");
       if (parts.length > 2) cleaned = parts[0] + "." + parts[1];
@@ -324,7 +324,7 @@ export default function AdminEditProductPage() {
     if (f && f.type.startsWith("image/")) setCoverFile(f);
   };
 
-  // ── Product Code ─────────────────────────────────────────────────────────────
+  // ── Product Code ─────
   const onProductIdChange = (e) => {
     const v = digitsOnly(e.target.value).slice(0, 5);
     setForm((s) => ({ ...s, productId: v }));
@@ -357,7 +357,7 @@ export default function AdminEditProductPage() {
     }
   };
 
-  // ── sync inStock จาก quantity ────────────────────────────────────────────────
+  // ── sync inStock จาก quantity
   useEffect(() => {
     const n = toInt(form.quantity);
     if (n === null) return;
@@ -365,14 +365,14 @@ export default function AdminEditProductPage() {
     if (form.inStock !== forced) {
       setForm((s) => ({ ...s, inStock: forced }));
     }
-  }, [form.quantity]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.quantity]); 
 
   const onCancel = (e) => {
     e.preventDefault();
     navigate("/admin/products");
   };
 
-  // ── เช็คซ้ำ productId ฝั่ง client (ยกเว้นตัวเอง) ────────────────────────────
+
   const clientCheckDuplicateProductId = async (pid) => {
     if (!pid) return false;
     const target = normCode(pid);
@@ -413,9 +413,8 @@ export default function AdminEditProductPage() {
     setMsg("");
     setNameError(""); setPriceError(""); setQtyError("");
 
-    if (checkingPid) return; // กันกดระหว่างเช็ค PID
+    if (checkingPid) return; 
 
-    // ✅ ตรวจรวมทุกช่องที่จำเป็น แล้ว alert ทีเดียว
     const missing = [];
     let firstFocus = null;
 
@@ -464,20 +463,12 @@ export default function AdminEditProductPage() {
     // category / brand
     if (!form.categoryId) missing.push("Please select a category");
     if (!form.brandId) missing.push("Please select a brand");
-
-    // if (missing.length) {
-    //   window.alert("• " + missing.join("\n• "));
-    //   (firstFocus || nameRef.current || productIdRef.current)?.focus();
-    //   return;
-    // }
     if (missing.length) {
-      openAlert(missing); // ✅ ใช้ modal แทน alert เดิม
+      openAlert(missing); 
       (firstFocus || nameRef.current || productIdRef.current)?.focus();
       return;
     }
 
-
-    // validate + กันซ้ำ Product Code (เว้นถ้าไม่เปลี่ยน)
     const pidRes = validateProductId(form.productId);
     if (!pidRes.ok) {
       setPidError(pidRes.msg);
@@ -766,7 +757,7 @@ export default function AdminEditProductPage() {
               left: 10,
               fontSize: 12,
               color: "rgba(102,102,102,0.2)",
-              zIndex: -1,            // ✅ ดันไปอยู่ “หลัง” layer อื่นทั้งหมด
+              zIndex: -1,            
               pointerEvents: "none",
             }}
           >

@@ -7,7 +7,6 @@ h1 { margin: 24px; text-align: center; font-size: 28px; }
    (scoped)
    ========================= */
 
-/* ใช้ตัวแปรกับสไตล์พื้นฐานบนคอนเทนเนอร์ของหน้านี้เท่านั้น */
 .app[data-page="AdminEditProductPage"] {
   --bg: #ebeff7;
   --card: #ffffff;

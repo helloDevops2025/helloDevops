@@ -915,7 +915,7 @@ export default function AdminPromotion() {
                     </div>
                     <button
                       className="btn ghost danger"
-                      onClick={() => handleAskDetach(p)}   // ← เดิมคือ handleDetachOne(p.id)
+                      onClick={() => handleAskDetach(p)} 
                     >
                       Remove
                     </button>

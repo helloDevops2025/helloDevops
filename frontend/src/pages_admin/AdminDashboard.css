@@ -518,19 +518,15 @@
 
 /* ================= PRINT (Admin Dashboard) ================= */
 @media print {
-
-  /* ===== 1) ซ่อนทุกอย่างยกเว้น .admin-dashboard ===== */
   body * {
     visibility: hidden !important;
   }
 
-  /* ===== 2) แสดงเฉพาะเนื้อหา dashboard ตอน print ===== */
   .admin-dashboard,
   .admin-dashboard * {
     visibility: visible !important;
   }
 
-  /* ===== 3) ให้เนื้อหา dashboard ขึ้นต้นกระดาษ ===== */
   .admin-dashboard {
     position: absolute !important;
     left: 0 !important;
@@ -540,7 +536,6 @@
     padding: 0 !important;
   }
 
-  /* ===== 4) ซ่อน Headline ===== */
   header,
   nav,
   .topbar,
@@ -555,7 +550,6 @@
     visibility: hidden !important;
   }
 
-  /* ===== 5) ซ่อน sidebar ===== */
   .sidebar,
   .side-bar,
   .app-sidebar,

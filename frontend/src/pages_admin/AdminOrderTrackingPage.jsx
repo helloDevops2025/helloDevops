@@ -44,14 +44,13 @@ export default function AdminOrderTrackingPage() {
         if (!res.ok) throw new Error("โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ");
         const data = await res.json();
 
-        // รองรับ key ที่ต่างกัน (orderItems/items)
+  
         const rawItems = Array.isArray(data.orderItems)
           ? data.orderItems
           : Array.isArray(data.items)
           ? data.items
           : [];
 
-        // ✅ เก็บทั้ง productDbId (เลขจริง) และ productCode (#00001)
         const items = rawItems.map((it) => {
           const productDbId =
             it.product_id_fk ?? it.productIdFk ?? it?.product?.id ?? it.productIdNumeric;
