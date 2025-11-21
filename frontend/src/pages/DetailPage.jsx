@@ -277,7 +277,7 @@ export default function DetailPage() {
           const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";
 
           // API_URL ต้องไม่มี `/api` ต่อท้ายใน .env
-          let imgUrl = `${API_URL}/api/products/${fileName}`;
+          let imgUrl = `${API_URL}/products/${fileName}`;
 
 
           const mapped = {
