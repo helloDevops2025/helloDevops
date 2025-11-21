@@ -117,8 +117,8 @@ const OrderBox = ({ items }) => {
         {items.map((it) => {
           const price = Number(it.price || 0);
           const qty = Number(it.qty || 0);
-          const disc = Number(it.discountPerUnit || 0) || 0;
-          const lineTotal = Math.max(0, (price - disc) * (qty || 0));
+          const perUnitTotalDisc = Number(it.totalPerUnitDiscount || it.perUnitDisc || 0) || 0;
+          const lineTotal = Number(it.lineAfter ?? Math.max(0, (price - perUnitTotalDisc) * qty)) || 0;
           return (
             <div key={it.id} className="order-row">
               <div className="product">
@@ -129,7 +129,7 @@ const OrderBox = ({ items }) => {
                 </div>
               </div>
               <div className="price">{THB(price)}</div>
-              <div className="discount">{Number(disc || 0) === 0 ? "0" : THB(disc)}</div>
+              <div className="discount">{THB(perUnitTotalDisc)}</div>
               <div className="qty">
                 <span className="pill">{qty}</span>
               </div>
@@ -291,21 +291,49 @@ export default function TrackingUserPage() {
     };
   }, [orderId]);
 
-  const totals = useMemo(() => {
-    let subtotal = 0,
-      items = 0;
-    for (const it of order.cart || []) {
+  // Enrich cart items with allocated order-level discount (proportional by line value)
+  const enrichedCart = useMemo(() => {
+    const raw = Array.isArray(order.cart) ? order.cart : [];
+    const items = raw.map((it) => {
       const price = Number(it.price || 0);
-      const qty = Number(it.qty || it.qty || 0);
-      const disc = Number(it.discountPerUnit || 0);
-      const line = Math.max(0, (price - disc) * (qty || 0));
-      subtotal += line;
-      items += qty || 0;
+      const qty = Number(it.qty || it.quantity || 0) || 0;
+      const perUnitDisc = Number(
+        it.discountPerUnit ?? it.discount_per_unit ?? it.discount_each ?? it.discountEach ?? it.discountAmount ?? it.discount ?? 0
+      ) || 0;
+      const lineBefore = Math.max(0, (price - perUnitDisc) * qty);
+      return { ...it, price, qty, perUnitDisc, lineBefore };
+    });
+
+    const subtotalBefore = items.reduce((s, i) => s + (i.lineBefore || 0), 0);
+    const orderDiscount = Number(order.discount || 0) || 0;
+
+    if (orderDiscount > 0 && subtotalBefore > 0) {
+      return items.map((i) => {
+        const allocatedTotal = (i.lineBefore / subtotalBefore) * orderDiscount;
+        const allocatedPerUnit = i.qty > 0 ? allocatedTotal / i.qty : 0;
+        const totalPerUnitDiscount = (i.perUnitDisc || 0) + allocatedPerUnit;
+        const lineAfter = Math.max(0, (i.price - totalPerUnitDiscount) * i.qty);
+        return { ...i, allocatedTotal, allocatedPerUnit, totalPerUnitDiscount, lineAfter };
+      });
     }
+
+    // no order-level discount to allocate
+    return items.map((i) => ({
+      ...i,
+      allocatedTotal: 0,
+      allocatedPerUnit: 0,
+      totalPerUnitDiscount: i.perUnitDisc || 0,
+      lineAfter: i.lineBefore || 0,
+    }));
+  }, [order.cart, order.discount]);
+
+  const totals = useMemo(() => {
+    const subtotal = (enrichedCart || []).reduce((s, i) => s + (i.lineAfter || 0), 0);
+    const items = (enrichedCart || []).reduce((s, i) => s + (i.qty || 0), 0);
     const discount = Number(order.discount || 0);
-    const total = subtotal + (order.shippingFee || 0) + (order.tax || 0) - discount;
+    const total = subtotal + (order.shippingFee || 0) + (order.tax || 0);
     return { subtotal, items, discount, total };
-  }, [order]);
+  }, [enrichedCart, order.shippingFee, order.tax, order.discount]);
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSrc, setPreviewSrc] = useState("");
@@ -317,7 +345,7 @@ export default function TrackingUserPage() {
   ];
 
   const openPreview = () => {
-    const items = order.cart || [];
+    const items = enrichedCart || [];
     if (!items.length) return alert("No items to preview");
 
     const styles = Array.from(
@@ -331,9 +359,9 @@ export default function TrackingUserPage() {
       .map((it, idx) => {
         const price = Number(it.price || 0);
         const qty = Number(it.qty || 0);
-        const disc = Number(it.discountPerUnit || 0) || 0;
-        const lineTotal = Math.max(0, (price - disc) * (qty || 0));
-        const discDisplay = Number(disc || 0) === 0 ? "0" : THB(disc);
+        const perUnitTotalDisc = Number(it.totalPerUnitDiscount || it.perUnitDisc || 0) || 0;
+        const lineTotal = Number(it.lineAfter ?? Math.max(0, (price - perUnitTotalDisc) * qty)) || 0;
+        const discDisplay = THB(perUnitTotalDisc);
         return `
           <tr>
             <td class="idx" style="width:40px">${idx + 1}</td>
@@ -342,7 +370,7 @@ export default function TrackingUserPage() {
               ${it.desc ? `<div class="item-desc">${it.desc}</div>` : ""}
             </td>
             <td class="price" style="width:120px">${THB(price)}</td>
-            <td class="discount" style="width:120px;text-align:right">${discDisplay}</td>
+            <td class="discount" style="width:120px;text-align:center">${discDisplay}</td>
             <td class="qty" style="width:80px;text-align:center">${qty}</td>
             <td class="total" style="width:140px;text-align:right">${THB(lineTotal)}</td>
           </tr>
@@ -358,7 +386,7 @@ export default function TrackingUserPage() {
     const tax = order.tax || 0;
     const discount = totals.discount || 0;
     const grandTotal = totals.total;
-    const discountDisplay = Number(discount || 0) === 0 ? "0" : `-${THB(discount)}`;
+    const discountDisplay = Number(discount || 0) === 0 ? THB(0) : `-${THB(discount)}`;
 
     const html = `
       <html>
@@ -402,7 +430,7 @@ export default function TrackingUserPage() {
                   <th style="width:40px">#</th>
                   <th>Item</th>
                   <th style="width:120px;text-align:right">Unit Price</th>
-                  <th style="width:120px;text-align:right">Discount</th>
+                  <th style="width:120px;text-align:center">Discount</th>
                   <th style="width:80px;text-align:center">Qty</th>
                   <th style="width:140px;text-align:right">Total</th>
                 </tr>
@@ -543,7 +571,7 @@ export default function TrackingUserPage() {
         {/* แสดงขั้นตอนที่แมปจากสถานะจริง + ธงยกเลิก */}
         <ProgressCard steps={steps} cancelled={cancelled} />
 
-        <OrderBox items={order.cart} />
+        <OrderBox items={enrichedCart} />
 
         <section className="card" style={{ padding: 16, marginTop: 16 }}>
           <div style={{ maxWidth: 420, marginLeft: "auto" }}>
@@ -561,7 +589,7 @@ export default function TrackingUserPage() {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
               <div className="muted">Discount</div>
-              <div style={{ color: "#0b2545" }}>{Number(totals.discount || 0) === 0 ? "0" : `-${THB(totals.discount)}`}</div>
+              <div style={{ color: "#0b2545" }}>{Number(totals.discount || 0) === 0 ? THB(0) : `-${THB(totals.discount)}`}</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
               <div style={{ fontSize: 16, fontWeight: 700 }}>Grand Total ({totals.items} items)</div>
