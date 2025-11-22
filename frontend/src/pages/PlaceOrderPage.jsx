@@ -23,7 +23,7 @@ function resolveUserId() {
   return 1;
 }
 
-// Utils
+// ===== Utils =====
 function isValidThaiMobile(raw) {
   const digits = raw.replace(/\D/g, "");
   if (digits.startsWith("66")) {
@@ -41,7 +41,7 @@ function formatThaiMobile(raw) {
   return d.slice(0, 3) + "-" + d.slice(3, 6) + "-" + d.slice(6);
 }
 const currencyTHB = (n) =>
-  n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
+  Number(n || 0).toLocaleString("th-TH", { style: "currency", currency: "THB" });
 
 function formatZipCode(raw) {
   if (!raw) return "";
@@ -52,7 +52,7 @@ function isValidZipCode(raw) {
   return /^\d{5}$/.test(d);
 }
 
-// Breadcrumb
+// ===== Breadcrumb =====
 function Breadcrumb({ items = [] }) {
   if (!items.length) return null;
   return (
@@ -74,7 +74,7 @@ function Breadcrumb({ items = [] }) {
   );
 }
 
-// API helpers (addresses)
+// ===== Address API helpers =====
 async function apiGetAddresses(userId) {
   const res = await fetch(`${API}/api/addresses/${encodeURIComponent(userId)}`);
   if (!res.ok) throw new Error("โหลดที่อยู่ไม่สำเร็จ");
@@ -105,7 +105,7 @@ async function apiDeleteAddress(id) {
   if (!res.ok) throw new Error("ลบที่อยู่ไม่สำเร็จ");
 }
 
-// Mapper: FE <-> BE
+// ===== Mapper: FE <-> BE (Address) =====
 function toRequest(addr) {
   return {
     name: addr.name,
@@ -139,7 +139,7 @@ function fromResponse(r) {
   };
 }
 
-// Order API (จริง)
+// ===== Order API =====
 function toProductIdFk(item) {
   if (item == null) return null;
   if (typeof item.id === "string" && item.id.startsWith("#")) {
@@ -191,15 +191,18 @@ async function apiCreateOrder({
   return res.json();
 }
 
-/* ---------- Promotion helpers (อ่านจาก backend) ---------- */
+/* ===== Promotion helpers (อ่านจาก backend) ===== */
 
 function normalizePromotion(p) {
   if (!p) return null;
+  const scopeRaw = p.scope ?? "ORDER";
+  const scope = String(scopeRaw).toUpperCase(); // กันเคส backend ส่งมาเป็น lower
+
   return {
     id: p.id ?? null,
     code: p.code ?? p.promoCode ?? p.promotionCode ?? "",
     promoType: p.promo_type ?? p.promoType ?? "PERCENT_OFF",
-    scope: p.scope ?? "ORDER",
+    scope, // ORDER / PRODUCT / ...
     percentOff: Number(p.percent_off ?? p.percentOff ?? 0) || 0,
     amountOff: Number(p.amount_off ?? p.amountOff ?? 0) || 0,
     fixedPrice: p.fixed_price ?? p.fixedPrice ?? null,
@@ -240,7 +243,7 @@ async function apiListProductsOfPromotion(promoId) {
     : raw?.items || raw?.data || raw?.content || raw?.results || [];
 }
 
-// คำนวณส่วนลดต่อบรรทัด จาก promotion ระดับสินค้า
+// ส่วนลดต่อบรรทัดสำหรับ promotion ระดับสินค้า
 function calcLineDiscount(unitPrice, qty, promo) {
   const price = Number(unitPrice) || 0;
   const q = Math.max(1, Number(qty) || 1);
@@ -276,7 +279,7 @@ function calcLineDiscount(unitPrice, qty, promo) {
   return 0;
 }
 
-/* ---------- helper รวมสูตร subtotal / discount ใช้ทั้ง FE + ส่งเข้า backend ---------- */
+/* ===== computeCartTotals ใช้ได้ทั้งโชว์หน้า FE และส่งค่าเข้า backend ===== */
 function computeCartTotals(cart, productPromosByProductId, orderPromos) {
   let subtotal = 0;
   let itemsCount = 0;
@@ -294,15 +297,21 @@ function computeCartTotals(cart, productPromosByProductId, orderPromos) {
     const promosForProduct =
       (productPromosByProductId && productPromosByProductId[key]) || [];
     if (promosForProduct.length > 0) {
-      const promo = promosForProduct[0]; // ตอนนี้สมมติ 1 โปรต่อสินค้า
+      const promo = promosForProduct[0]; // สมมติ 1 โปรต่อสินค้า
       productDiscountTotal += calcLineDiscount(price, qty, promo);
     }
   }
 
+  // เฉพาะโปรที่ scope = ORDER เท่านั้นที่ใช้เป็น order-level
+  const validOrderPromos = (orderPromos || []).filter(
+    (p) => String(p.scope || "ORDER").toUpperCase() === "ORDER"
+  );
+
   let orderDiscount = 0;
   const baseAfterProduct = subtotal - productDiscountTotal;
-  if (orderPromos && orderPromos.length && baseAfterProduct > 0) {
-    for (const promo of orderPromos) {
+
+  if (validOrderPromos.length && baseAfterProduct > 0) {
+    for (const promo of validOrderPromos) {
       const minAmt = promo.minOrderAmount || 0;
       if (minAmt > 0 && baseAfterProduct < minAmt) continue;
 
@@ -314,7 +323,7 @@ function computeCartTotals(cart, productPromosByProductId, orderPromos) {
         const off = promo.amountOff || 0;
         if (off > 0) d = Math.min(baseAfterProduct, off);
       }
-      if (d > orderDiscount) orderDiscount = d;
+      if (d > orderDiscount) orderDiscount = d; // ใช้ส่วนลดที่ดีที่สุด
     }
   }
 
@@ -322,7 +331,7 @@ function computeCartTotals(cart, productPromosByProductId, orderPromos) {
   return { subtotal, itemsCount, discount: totalDiscount };
 }
 
-// Address Form
+// ===== Address Form =====
 function AddressForm({ initial, onCancel, onSave, onError }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
@@ -491,11 +500,10 @@ function AddressForm({ initial, onCancel, onSave, onError }) {
   );
 }
 
-// Address List
+// ===== Address List =====
 function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
   if (!addresses.length) return null;
 
-  // กรณีมีที่อยู่เดียวและไม่มีตัวไหนเป็น default ให้ถือว่าอันนั้นถูกเลือกอัตโนมัติ
   const singleAndNoDefault =
     addresses.length === 1 && !addresses[0]?.isDefault;
 
@@ -589,7 +597,7 @@ function AddressList({ addresses, onSetDefault, onAddNew, onEdit, onDelete }) {
   );
 }
 
-// Confirm Dialog
+// ===== Confirm Dialog =====
 function ConfirmDialog({
   open,
   title,
@@ -626,7 +634,7 @@ function ConfirmDialog({
   );
 }
 
-// Order Summary + Coupon
+// ===== Order Summary + Coupon =====
 function OrderSummary({
   cart,
   canConfirm,
@@ -656,8 +664,7 @@ function OrderSummary({
       <h2 className="section-title">Your order</h2>
       <div id="order-list">
         {cart.map((item, idx) => {
-          const t =
-            (Number(item.price) || 0) * (Number(item.qty) || 0);
+          const t = (Number(item.price) || 0) * (Number(item.qty) || 0);
           return (
             <div key={item.id ?? idx} className="order-item">
               <img src={item.img} alt="" />
@@ -680,7 +687,7 @@ function OrderSummary({
         })}
       </div>
 
-      {/* Discount code section */}
+      {/* Discount code */}
       <div className="coupon-section">
         <label className="coupon-label">
           Discount code
@@ -731,8 +738,7 @@ function OrderSummary({
         </div>
         <div className="line total">
           <span>
-            {" "}
-            Total ({itemsCount} item{itemsCount > 1 ? "s" : ""}){" "}
+            Total ({itemsCount} item{itemsCount > 1 ? "s" : ""})
           </span>
           <span className="price">{currencyTHB(total)}</span>
         </div>
@@ -756,7 +762,7 @@ function OrderSummary({
   );
 }
 
-// แปลงแหล่งข้อมูลไปเป็น cart shape เดียวกัน
+// ===== map cart sources to unified shape =====
 function mapSelectionToCartItems(selItems = []) {
   return selItems.map((r, i) => ({
     id: r.productId ?? r.id ?? r.key ?? `sel-${i}`,
@@ -768,7 +774,6 @@ function mapSelectionToCartItems(selItems = []) {
   }));
 }
 
-// จาก pm_cart เดิม (หลายรูปแบบ field)
 function mapCartStorageToCartItems(raw = []) {
   return raw.map((x, i) => {
     const id =
@@ -799,7 +804,7 @@ function mapCartStorageToCartItems(raw = []) {
   });
 }
 
-// Main Page
+// ===== Main Page =====
 export default function PlaceOrderPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -831,23 +836,22 @@ export default function PlaceOrderPage() {
   const [appliedCoupon, setAppliedCoupon] = useState("");
   const [couponError, setCouponError] = useState("");
 
-  // state สำหรับ popup ลบ
+  // popup delete address
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  // load cart
   useEffect(() => {
     let initialCart = null;
 
-    // จาก selection
+    // from checkout selection
     try {
-      const sel = JSON.parse(
-        localStorage.getItem(LS_CHECKOUT) || "null"
-      );
+      const sel = JSON.parse(localStorage.getItem(LS_CHECKOUT) || "null");
       if (sel && Array.isArray(sel.items) && sel.items.length > 0) {
         initialCart = mapSelectionToCartItems(sel.items);
       }
     } catch {}
 
-    // จาก buy-now
+    // from buy-now
     if (
       !initialCart &&
       location.state?.from === "buy-now" &&
@@ -856,7 +860,7 @@ export default function PlaceOrderPage() {
       initialCart = [location.state.item];
     }
 
-    // จาก history preview
+    // from history
     if (!initialCart) {
       const fromHistory = location.state?.from === "history";
       const raw = sessionStorage.getItem("pm_order_preview");
@@ -876,7 +880,7 @@ export default function PlaceOrderPage() {
       }
     }
 
-    // จาก pm_cart ทั้งหมด
+    // from localStorage cart
     if (!initialCart) {
       try {
         const ls = JSON.parse(localStorage.getItem(LS_CART) || "[]");
@@ -888,7 +892,7 @@ export default function PlaceOrderPage() {
     setCart(initialCart || []);
   }, [location.state]);
 
-  // โหลด promotion ตามสินค้าใน cart
+  // load promotions according to cart
   useEffect(() => {
     if (!cart || cart.length === 0) {
       setProductPromosByProductId({});
@@ -902,9 +906,16 @@ export default function PlaceOrderPage() {
     (async () => {
       try {
         const promos = await apiListActivePromotions();
-        const orderPromos = promos.filter((p) => p.scope === "ORDER");
-        const productPromos = promos.filter((p) => p.scope === "PRODUCT");
 
+        // แบ่งตาม scope
+        const orderPromos = promos.filter(
+          (p) => String(p.scope || "ORDER").toUpperCase() === "ORDER"
+        );
+        const productPromos = promos.filter(
+          (p) => String(p.scope || "").toUpperCase() === "PRODUCT"
+        );
+
+        // mapping PRODUCT promotions → productId
         const map = {};
         for (const promo of productPromos) {
           try {
@@ -928,10 +939,8 @@ export default function PlaceOrderPage() {
 
         setProductPromosByProductId(map);
 
-        // เก็บ order-level promotions ทั้งหมดไว้สำหรับค้นจากโค้ด
         setAllOrderPromos(orderPromos);
-        // เริ่มต้น: ยังไม่ใช้โค้ดส่วนลด → ไม่ใช้ order-level promo
-        setOrderLevelPromos([]);
+        setOrderLevelPromos([]); // ยังไม่ใช้โค้ดส่วนลด
         setAppliedCoupon("");
         setCouponError("");
       } catch (e) {
@@ -940,9 +949,10 @@ export default function PlaceOrderPage() {
     })();
   }, [cart]);
 
-  // ใช้โค้ดส่วนลด (front-end validate จากรายการ orderPromos ที่โหลดมา)
+  // ใช้โค้ดส่วนลด (Option A: เฉพาะ ORDER-level promos)
   const handleApplyCoupon = (rawCode) => {
     const code = String(rawCode || "").trim().toUpperCase();
+
     if (!code) {
       setCouponError("Please enter coupon code");
       setAppliedCoupon("");
@@ -950,24 +960,76 @@ export default function PlaceOrderPage() {
       return;
     }
 
+    // หาเฉพาะโปร scope = ORDER
     const promo = allOrderPromos.find(
       (p) => (p.code || "").toUpperCase() === code
     );
 
     if (!promo) {
-      setCouponError("Coupon code not valid or inactive");
+      setCouponError("Coupon code is incorrect or inactive");
       setAppliedCoupon("");
       setOrderLevelPromos([]);
       return;
     }
 
-    // ผ่าน → ใช้เฉพาะโปรนี้เป็น order-level promotion
+    // คำนวณยอดจาก cart ตอนนี้ (after product-level, before order-level)
+    const { subtotal, discount: productDiscount, itemsCount } =
+      computeCartTotals(cart, productPromosByProductId, []);
+    const baseAfterProduct = subtotal - productDiscount;
+
+    const minAmt = promo.minOrderAmount || 0;
+    const minQty = promo.minQuantity || 0;
+
+    if (minAmt > 0 && baseAfterProduct < minAmt) {
+      setCouponError(
+        `This coupon is valid, but minimum order amount is ${currencyTHB(minAmt)}`
+      );
+      setAppliedCoupon("");
+      setOrderLevelPromos([]);
+      return;
+    }
+
+    if (minQty > 0 && itemsCount < minQty) {
+      setCouponError(
+        `This coupon is valid, but you need at least ${minQty} item(s) in your cart`
+      );
+      setAppliedCoupon("");
+      setOrderLevelPromos([]);
+      return;
+    }
+
+    // ผ่านทุกอย่าง → ใช้โค้ดได้
     setCouponError("");
     setAppliedCoupon(code);
     setOrderLevelPromos([promo]);
   };
 
-  // โหลด Address จาก DB
+  // ถ้า cart เปลี่ยนแล้วไม่เข้าเงื่อนไขของ coupon เดิม → ลบ coupon ออก
+  useEffect(() => {
+    if (!appliedCoupon) return;
+    if (!orderLevelPromos.length) return;
+
+    const promo = orderLevelPromos[0];
+    const { subtotal, discount: productDiscount, itemsCount } =
+      computeCartTotals(cart, productPromosByProductId, []);
+    const baseAfterProduct = subtotal - productDiscount;
+
+    const minAmt = promo.minOrderAmount || 0;
+    const minQty = promo.minQuantity || 0;
+
+    if (
+      (minAmt > 0 && baseAfterProduct < minAmt) ||
+      (minQty > 0 && itemsCount < minQty)
+    ) {
+      setCouponError(
+        `Your order no longer meets conditions for this coupon, it has been removed.`
+      );
+      setAppliedCoupon("");
+      setOrderLevelPromos([]);
+    }
+  }, [cart, appliedCoupon, orderLevelPromos, productPromosByProductId]);
+
+  // ===== Address actions =====
   const refreshAddresses = async () => {
     setLoadingAddr(true);
     try {
@@ -987,13 +1049,6 @@ export default function PlaceOrderPage() {
     refreshAddresses();
   }, [userId]);
 
-  const breadcrumbItems = [
-    { label: "Home", href: "/home" },
-    { label: "Cart", href: "/cart" },
-    { label: "Checkout" },
-  ];
-
-  /* Actions (addresses) */
   const handleSetDefault = async (id) => {
     const target = addresses.find((a) => a.id === id);
     if (!target) return;
@@ -1004,6 +1059,7 @@ export default function PlaceOrderPage() {
       showToast(e.message);
     }
   };
+
   const handleAddNew = () => {
     setEditing(null);
     setMode("add");
@@ -1013,14 +1069,12 @@ export default function PlaceOrderPage() {
     setMode("edit");
   };
 
-  // เมื่อกดปุ่ม Delete ใน list ให้แค่เปิด popup
   const handleRequestDelete = (id) => {
     const target = addresses.find((a) => a.id === id);
     if (!target) return;
     setDeleteTarget(target);
   };
 
-  // กดยืนยันลบใน popup
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     try {
@@ -1031,7 +1085,6 @@ export default function PlaceOrderPage() {
       showToast(e.message);
     }
   };
-
   const handleCancelDelete = () => setDeleteTarget(null);
 
   const handleSave = async (payload) => {
@@ -1049,7 +1102,6 @@ export default function PlaceOrderPage() {
     }
   };
 
-  // set address
   const canConfirm =
     addresses.length === 1 || addresses.some((a) => a.isDefault);
 
@@ -1068,13 +1120,13 @@ export default function PlaceOrderPage() {
       selectedAddress.province || ""
     } ${selectedAddress.zipcode || ""}`.trim();
 
-    // ✅ คำนวณ subtotal / discount จาก cart + promotions เดียวกับที่โชว์ในหน้า
-    const { subtotal, itemsCount, discount } = computeCartTotals(
+    // subtotal / discount จาก cart + promotions
+    const { subtotal, discount } = computeCartTotals(
       cart,
       productPromosByProductId,
       orderLevelPromos
     );
-    const shippingFee = 0; // ตอนนี้ fix 0 ก่อน
+    const shippingFee = 0;
     const grandTotal = subtotal - discount + shippingFee;
 
     try {
@@ -1108,6 +1160,12 @@ export default function PlaceOrderPage() {
       showToast(e.message || "สร้างคำสั่งซื้อไม่สำเร็จ", "error");
     }
   };
+
+  const breadcrumbItems = [
+    { label: "Home", href: "/home" },
+    { label: "Cart", href: "/cart" },
+    { label: "Checkout" },
+  ];
 
   return (
     <div className="place-order-page">
@@ -1205,7 +1263,7 @@ export default function PlaceOrderPage() {
 
       <Footer />
 
-      {/* Sticky bottom action (mobile-first) */}
+      {/* Sticky bottom bar (mobile) */}
       <div className="sticky-checkout-bar">
         <button
           className="btn-primary"

@@ -3,7 +3,7 @@ import "../components/header.css";
 import "./breadcrumb.css";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useParams, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import Header from "../components/header";
 import Footer from "./../components/Footer.jsx";
 
@@ -53,7 +53,6 @@ const Breadcrumb = ({ items = [] }) => {
 /* ===== Progress Card ===== */
 const ProgressCard = ({ steps, cancelled }) => {
   const { percent } = useMemo(() => {
-    // ถ้ายกเลิก → ให้ 0%
     if (cancelled) return { percent: 0 };
     const total = steps.length || 1;
     const done = steps.filter((s) => s.done).length;
@@ -128,8 +127,9 @@ const OrderBox = ({ items }) => {
           const perUnitTotalDisc =
             Number(it.totalPerUnitDiscount || it.perUnitDisc || 0) || 0;
           const lineTotal =
-            Number(it.lineAfter ?? Math.max(0, (price - perUnitTotalDisc) * qty)) ||
-            0;
+            Number(
+              it.lineAfter ?? Math.max(0, (price - perUnitTotalDisc) * qty)
+            ) || 0;
 
           return (
             <div key={it.id} className="order-row">
@@ -162,7 +162,6 @@ function normalizeStatus(s) {
 function buildStepsFromStatus(rawStatus) {
   const st = normalizeStatus(rawStatus);
 
-  // โครงตามลำดับเดียวกับ Admin
   const base = [
     { label: "Preparing", sub: "", done: false },
     { label: "Ready to Ship", sub: "", done: false },
@@ -170,7 +169,6 @@ function buildStepsFromStatus(rawStatus) {
     { label: "Delivered", sub: "Pending", done: false },
   ];
 
-  // ยกเลิก = ไม่ติ๊ก และปัก "Cancelled" ทุกขั้น
   if (st === "CANCELLED" || st === "CANCELED") {
     base.forEach((s) => {
       s.done = false;
@@ -179,7 +177,6 @@ function buildStepsFromStatus(rawStatus) {
     return { steps: base, cancelled: true };
   }
 
-  // เดินหน้าแบบปกติ
   switch (st) {
     case "PENDING":
     case "PREPARING":
@@ -209,7 +206,6 @@ function buildStepsFromStatus(rawStatus) {
       break;
 
     default:
-      // ไม่รู้จัก → ให้เริ่มอย่างน้อยที่ Preparing
       base[0].done = true;
       break;
   }
@@ -220,7 +216,6 @@ function buildStepsFromStatus(rawStatus) {
 /* ===== Main Page ===== */
 export default function TrackingUserPage() {
   const { orderId } = useParams();
-  const location = useLocation();
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -231,13 +226,11 @@ export default function TrackingUserPage() {
     cart: [],
     shippingFee: 0,
     tax: 0,
-    // ✅ ฟิลด์ใหม่: ดึงจาก backend เพื่อให้รู้ส่วนลด +ยอดหลังลด
     discountTotal: 0,
     grandTotal: 0,
     status: "PENDING",
   });
 
-  // โหลดออเดอร์จริงจาก API ด้วย orderId
   useEffect(() => {
     let aborted = false;
 
@@ -256,14 +249,12 @@ export default function TrackingUserPage() {
 
         const data = await res.json();
 
-        // map เป็นโครงสำหรับหน้าแสดงผล
         const addrText = data.shippingAddress || "-";
         const mappedItems = Array.isArray(data.orderItems)
           ? data.orderItems.map((it) => {
               const p = it.product || {};
               const pid = p.id ?? it.productIdFk ?? it.productId;
 
-              // 👇 ดึงส่วนลดต่อชิ้นจากหลายชื่อ field
               const discountPerUnit = Number(
                 it.discountPerUnit ??
                   it.discount_per_unit ??
@@ -301,7 +292,6 @@ export default function TrackingUserPage() {
           cart: mappedItems,
           shippingFee: Number(data.shippingFee ?? data.shipping_fee ?? 0),
           tax: Number(data.taxTotal ?? data.tax_total ?? 0),
-          // ✅ ดึงส่วนลด + ยอดหลังลด จาก backend
           discountTotal: Number(
             data.discountTotal ?? data.discount_total ?? 0
           ),
@@ -325,7 +315,7 @@ export default function TrackingUserPage() {
     };
   }, [orderId]);
 
-  // ✅ enrich cart เพื่อใช้ส่วนลดต่อชิ้น/บรรทัด
+  /* enrich cart ให้มีราคา/ส่วนลดต่อบรรทัด */
   const enrichedCart = useMemo(() => {
     const raw = Array.isArray(order.cart) ? order.cart : [];
 
@@ -358,37 +348,28 @@ export default function TrackingUserPage() {
     });
   }, [order.cart]);
 
-  // ✅ ใช้ grandTotal / discountTotal จาก backend เป็นหลัก
+  /* ✅ คำนวณยอดจากราคาเต็ม + ส่วนลดจาก backend (ไม่ใช้ grandTotal ตายตัว) */
   const totals = useMemo(() => {
-    const cart = enrichedCart || [];
-    let subtotal = 0,
-      items = 0;
+    const cart = Array.isArray(enrichedCart) ? enrichedCart : [];
+
+    let subtotal = 0;
+    let items = 0;
 
     for (const it of cart) {
-      const line = it.lineAfter ?? (it.price || 0) * (it.qty || 0);
-      subtotal += line;
-      items += it.qty || 0;
+      const price = Number(it.price || 0);
+      const qty = Number(it.qty || 0);
+      subtotal += price * qty;
+      items += qty;
     }
 
     const discount = Number(order.discountTotal || 0);
     const shipping = Number(order.shippingFee || 0);
     const tax = Number(order.tax || 0);
 
-    // ถ้ามี grandTotal จาก DB ให้ใช้เลย (ราคา "หลังลด")
-    let total = Number(order.grandTotal || 0);
-    if (!total) {
-      // backup: subtotal + shipping + tax (ถือว่า discountTotal หักแล้วที่ subtotal)
-      total = subtotal + shipping + tax;
-    }
+    const total = Math.max(0, subtotal - discount + shipping + tax);
 
     return { subtotal, items, discount, shipping, tax, total };
-  }, [
-    enrichedCart,
-    order.discountTotal,
-    order.shippingFee,
-    order.tax,
-    order.grandTotal,
-  ]);
+  }, [enrichedCart, order.discountTotal, order.shippingFee, order.tax]);
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSrc, setPreviewSrc] = useState("");
@@ -443,7 +424,6 @@ export default function TrackingUserPage() {
     const shippingText = order.address ? order.address.text : "-";
     const paymentMethod = order.paymentMethod || "-";
 
-    // ✅ ใช้ totals ที่คำนวณจาก grandTotal / discountTotal แล้ว
     const shippingFee = totals.shipping;
     const tax = totals.tax;
     const discount = totals.discount || 0;
@@ -584,7 +564,6 @@ export default function TrackingUserPage() {
     );
   }
 
-  // แปลงสถานะจริงจาก Admin เพื่อสร้างขั้นตอน + ธงยกเลิก
   const { steps, cancelled } = buildStepsFromStatus(order.status);
 
   return (
@@ -595,7 +574,6 @@ export default function TrackingUserPage() {
       <main className="container tracking">
         <Breadcrumb items={breadcrumb} />
 
-        {/* ป้ายแจ้งยกเลิก ชัดเจนแบบเดียวกับฝั่ง Admin */}
         {cancelled && (
           <section
             className="card"
@@ -654,12 +632,10 @@ export default function TrackingUserPage() {
           </section>
         )}
 
-        {/* แสดงขั้นตอนที่แมปจากสถานะจริง + ธงยกเลิก */}
         <ProgressCard steps={steps} cancelled={cancelled} />
 
         <OrderBox items={enrichedCart} />
 
-        {/* Summary ด้านล่างพร้อม breakdown */}
         <section className="card" style={{ padding: 16, marginTop: 16 }}>
           <div style={{ maxWidth: 420, marginLeft: "auto" }}>
             <div
