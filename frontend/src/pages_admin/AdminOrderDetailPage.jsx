@@ -296,9 +296,9 @@ export default function AdminOrderDetailPage() {
       <main className="content">
         <header className="header">
           <h1>ORDER DETAIL</h1>
-          <button className="back-btn" onClick={() => navigate(-1)}>
-            ← Back
-          </button>
+          {/*<button className="back-btn" onClick={() => navigate(-1)}>*/}
+          {/*  ← Back*/}
+          {/*</button>*/}
         </header>
 
         {/* ===== Summary ===== */}
