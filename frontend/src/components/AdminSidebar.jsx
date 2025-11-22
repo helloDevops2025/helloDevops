@@ -166,12 +166,6 @@ export default function AdminSidebar() {
           <NavLink to="/admin/orders" className={subItemClass}>
             Order List
           </NavLink>
-          <NavLink to="/admin/orders/1" className={subItemClass}>
-            Order Detail
-          </NavLink>
-          <NavLink to="/admin/orders/tracking" className={subItemClass}>
-            Order Tracking
-          </NavLink>
         </div>
       </div>
     </aside>

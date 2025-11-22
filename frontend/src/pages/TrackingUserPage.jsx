@@ -10,6 +10,21 @@ import Footer from "./../components/Footer.jsx";
 /* ===== Config / Utils ===== */
 const API_BASE = import.meta.env.VITE_API_URL ;
 
+async function fetchCoverUrl(productId) {
+    try {
+        const r = await fetch(`${API_BASE}/api/products/${productId}/images`);
+        if (!r.ok) return null;
+
+        const arr = await r.json();
+        if (!Array.isArray(arr) || arr.length === 0) return null;
+
+        const cover = arr.find(x => x.isCover) || arr[0];
+        return `${API_BASE}/api/products/${productId}/images/${cover.id}/raw`;
+    } catch (e) {
+        return null;
+    }
+}
+
 const THB = (n) =>
   Number(n || 0).toLocaleString("th-TH", {
     style: "currency",
@@ -249,38 +264,48 @@ export default function TrackingUserPage() {
         const data = await res.json();
 
         const addrText = data.shippingAddress || "-";
-        const mappedItems = Array.isArray(data.orderItems)
-          ? data.orderItems.map((it) => {
-            const p = it.product || {};
-            const pid = p.id ?? it.productIdFk ?? it.productId;
+          const mappedItems = Array.isArray(data.orderItems)
+              ? await Promise.all(
+                  data.orderItems.map(async (it) => {
+                      const p = it.product || {};
+                      const pid = p.id ?? it.productIdFk ?? it.productId;
 
-            const discountPerUnit = Number(
-              it.discountPerUnit ??
-              it.discount_per_unit ??
-              it.discount_each ??
-              it.discountEach ??
-              it.discountAmount ??
-              it.discount ??
-              0
-            );
-            return {
-              id: String(pid ?? Math.random()),
-              name: p.name || it.productName || "-",
-              desc: p.description || "",
-              price: Number(p.price ?? it.priceEach ?? 0),
-              qty: Number(it.quantity || 1),
-              discountPerUnit: isNaN(discountPerUnit) ? 0 : discountPerUnit,
-              img:
-                pid !== undefined
-                  ? `${API_BASE}/api/products/${encodeURIComponent(
-                    pid
-                  )}/cover`
-                  : "/assets/products/placeholder.jpg",
-            };
-          })
-          : [];
+                      const discountPerUnit = Number(
+                          it.discountPerUnit ??
+                          it.discount_per_unit ??
+                          it.discount_each ??
+                          it.discountEach ??
+                          it.discountAmount ??
+                          it.discount ??
+                          0
+                      );
 
-        const mapped = {
+                      const coverUrl = await fetchCoverUrl(pid);
+
+                      return {
+                          id: String(pid ?? Math.random()),
+                          name: p.name || it.productName || "-",
+                          desc: p.description || "",
+                          price: Number(p.price ?? it.priceEach ?? 0),
+                          qty: Number(it.quantity || 1),
+                          img: coverUrl
+                              ? coverUrl
+                              : (() => {
+                                  // fallback (rare)
+                                  const raw = p.productId || pid;
+                                  const digitsOnly = String(raw)
+                                      .replace("#", "")
+                                      .replace(/^0+/, "");
+                                  const fileName =
+                                      digitsOnly.toString().padStart(3, "0") + ".jpg";
+                                  return `${API_BASE}/products/${fileName}`;
+                              })(),
+                      };
+                  })
+              )
+              : [];
+
+          const mapped = {
           orderId: String(data.id ?? data.orderCode ?? orderId),
           createdAt:
             data.createdAt || data.updatedAt || new Date().toISOString(),

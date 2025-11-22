@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./AdminEditProductPage.css";
+import {fetchProductCover} from "../utils/getProductCover.js";
 
 export default function AdminEditProductPage() {
   const API_URL = import.meta.env.VITE_API_URL ;
@@ -149,54 +150,51 @@ export default function AdminEditProductPage() {
     return () => { cancelled = true; };
   }, [API_URL]);
 
-  // ── โหลดสินค้า + รูป ────────────────
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setMsg("");
-      try {
-        const r = await fetch(`${API_URL}/api/products/${encodeURIComponent(id)}`, {
-          headers: { Accept: "application/json" },
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        if (cancelled) return;
+    // ── โหลดสินค้า + รูป ────────────────
+    useEffect(() => {
+        let cancelled = false;
 
-        setOriginal(data);
-        setForm((f) => ({
-          ...f,
-          productId: data.productId ?? "",
-          name: data.name ?? "",
-          description: data.description ?? "",
-          price: data.price ?? "",
-          quantity: Number.isFinite(Number(data.quantity)) ? Number(data.quantity) : "",
-          categoryId: data.categoryId ?? "",
-          brandId: data.brandId ?? "",
-          inStock: typeof data.inStock === "boolean" ? data.inStock : true,
-        }));
+        (async () => {
+            setLoading(true);
 
-        try {
-          const imgRes = await fetch(
-            `${API_URL}/api/products/${encodeURIComponent(id)}/images`,
-            { headers: { Accept: "application/json" } }
-          );
-          if (imgRes.ok) {
-            const imgs = await imgRes.json();
-            const cover = imgs.find((x) => x.isCover) || imgs[0];
-            if (cover?.imageUrl) setServerCoverUrl(cover.imageUrl);
-          }
-        } catch { }
-      } catch (e) {
-        setMsg(`โหลดข้อมูลไม่สำเร็จ: ${e.message}`);
-      } finally {
-        setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [API_URL, id]);
+            try {
+                // โหลด product data
+                const r = await fetch(`${API_URL}/api/products/${id}`);
+                const data = await r.json();
+                if (cancelled) return;
 
-  // ── พรีวิวไฟล์ใหม่ ──────────────
+                // set form
+                setOriginal(data);
+
+                setForm((f) => ({
+                    ...f,
+                    productId: data.productId ?? "",
+                    name: data.name ?? "",
+                    description: data.description ?? "",
+                    price: data.price ?? "",
+                    quantity: data.quantity ?? "",
+                    categoryId: data.categoryId ?? "",
+                    brandId: data.brandId ?? "",
+                    inStock: data.inStock ?? true,
+                }));
+
+                // โหลดรูป cover จาก DB
+                const coverUrl = await fetchProductCover(API_URL, id);
+                if (coverUrl) setServerCoverUrl(coverUrl);
+
+            } catch (e) {
+                setMsg("โหลดข้อมูลไม่สำเร็จ " + e.message);
+            } finally {
+                setLoading(false);
+            }
+        })();
+
+        return () => cancelled = true;
+    }, [API_URL, id]);
+
+
+
+    // ── พรีวิวไฟล์ใหม่ ──────────────
   useEffect(() => {
     if (!coverFile) {
       if (previewUrl) URL.revokeObjectURL(previewUrl);

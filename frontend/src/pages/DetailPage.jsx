@@ -301,13 +301,14 @@ export default function DetailPage() {
 
           // --- FIX: รูป product map กับไฟล์จริงใน server ---
 
-          // productId เช่น "#00003" → "003"
-          const raw = p.productId || "";
-          const digitsOnly = raw.replace("#", "").replace(/^0+/, ""); // "3"
-          const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";
+          // --- FIX: โหลดรูปจาก cover ใน DB ---
+          let imgUrl = FALLBACK_IMG;
 
-          // API_URL ต้องไม่มี `/api` ต่อท้ายใน .env
-          let imgUrl = `${API_URL}/products/${fileName}`;
+          if (Array.isArray(imgs) && imgs.length > 0) {
+              const cover = imgs.find(x => x.isCover) || imgs[0];
+              imgUrl = `${API_URL}/api/products/${encodeURIComponent(id)}/images/${cover.id}/raw`;
+          }
+
 
         // promo ของสินค้าหลัก
         const selfPid = p.id ?? p.productId ?? p.product_id ?? id;
@@ -789,12 +790,21 @@ export default function DetailPage() {
                           </span>
                         )}
 
-                        <img
-                          src={r.cover}
-                          alt={r.title}
-                          loading="lazy"
-                          onError={handleImgError}
-                        />
+                          <img
+                              src={r.cover}
+                              alt={r.title}
+                              loading="lazy"
+                              onError={(e) => {
+                                  // 1) ถ้ารูปหลักโหลดไม่ได้ → ใช้ fallbackCover
+                                  if (!e.currentTarget.dataset.fallback) {
+                                      e.currentTarget.dataset.fallback = 1;
+                                      e.currentTarget.src = r.fallbackCover;
+                                      return;
+                                  }
+                                  // 2) ถ้า fallback ก็พัง → ใช้ placeholder
+                                  e.currentTarget.src = FALLBACK_IMG;
+                              }}
+                          />
                       </Link>
 
                       <h3 className="product-card__title">{r.title}</h3>
