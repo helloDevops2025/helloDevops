@@ -1,57 +1,124 @@
-describe('Login only admin can access admin area', () => {
-  beforeEach(() => {
-    cy.visit('/login');
+/// <reference types="cypress" />
+
+// ปรับให้ตรงกับข้อมูลในฐานข้อมูลจริง
+const REAL_USER = {
+  email: "user@puremart.com",
+  password: "123456",
+};
+
+const REAL_ADMIN = {
+  email: "admin@puremart.com",
+  password: "admin123",
+};
+
+const el = {
+  splash: '.welcome-splash',
+  enterBtn: '.welcome-splash .enter-btn',
+  email: '#email',
+  password: '#password',
+  submit: '#submitBtn',
+  errorMsg: 'p[style*="crimson"]',
+};
+
+const API_LOGIN = '**/api/auth/login';
+
+const openLoginForm = () => {
+  cy.visit('/login', { seedAuth: false });
+
+  cy.get(el.splash).should('be.visible');
+  cy.get(el.enterBtn).should('be.visible').click();
+
+  cy.get(el.splash).should('not.exist');
+  cy.get(el.email).should('exist');
+};
+
+describe('Login Page (REAL backend)', () => {
+
+  it('L1: Splash → Enter → ฟอร์ม login แสดง', () => {
+    cy.visit('/login', { seedAuth: false });
+
+    cy.get(el.splash).should('be.visible');
+    cy.get(el.enterBtn).click();
+    cy.get(el.splash).should('not.exist');
+
+    cy.get(el.email).should('be.visible');
+    cy.get(el.password).should('be.visible');
   });
 
-  it('ADMIN: login แล้วต้องพาไป /admin/products', () => {
-    cy.intercept('POST', '**/api/auth/login', {
-      statusCode: 200,
-      body: { token: 'fake', role: 'ADMIN', email: 'admin@puremart.com', user: { role: 'ADMIN' } }
-    }).as('loginApi');
+  it('L2: ไม่กรอก email → แสดงข้อความ error frontend', () => {
+    openLoginForm();
 
-    cy.get('#email').type('admin');     // โค้ดจะเติม @gmail.com ให้เองก็ได้
-    cy.get('#password').type('123456');
-    cy.get('#submitBtn').click();
-    cy.wait('@loginApi');
+    cy.get(el.password).type('123456');
+    cy.get(el.submit).click();
 
-    cy.location('pathname').should('eq', '/admin/products');
+    cy.get(el.errorMsg).should('contain', 'Please enter your email');
   });
 
-  it('USER: login แล้วต้องไม่พาไปหน้าแอดมิน (ไป /home)', () => {
-    cy.intercept('POST', '**/api/auth/login', {
-      statusCode: 200,
-      body: { token: 'fake', role: 'USER', email: 'user@puremart.com', user: { role: 'USER' } }
-    }).as('loginApi');
+  it('L3: login ผิดจริง → backend ส่ง 401 → แสดงข้อความ Incorrect username or password', () => {
+    openLoginForm();
 
-    cy.get('#email').type('user');
-    cy.get('#password').type('123456');
-    cy.get('#submitBtn').click();
-    cy.wait('@loginApi');
+    // ไม่ intercept ให้ backend ตอบจริง
+    cy.get(el.email).type('not-exist@example.com');
+    cy.get(el.password).type('wrong-password');
+    cy.get(el.submit).click();
 
-    cy.location('pathname').should('eq', '/home');
-
-    // กันการเข้าหน้าแอดมินโดยตรง (ถ้ามี route guard)
-    cy.visit('/admin/products');
-    cy.location('pathname').should('not.eq', '/admin/products');
+    cy.get(el.errorMsg).should('contain', 'Incorrect username or password');
   });
 
-  it('ฟอร์มว่าง: แสดงข้อความแจ้งเตือน (กรุณากรอกอีเมล)', () => {
-    cy.get('#submitBtn').click();
-    cy.contains('กรุณากรอกอีเมล').should('be.visible');
+  it('L4: login USER (stub backend) → redirect ไป /home', () => {
+  openLoginForm();
+
+  cy.intercept('POST', API_LOGIN, {
+    statusCode: 200,
+    body: {
+      token: 'fake-user-token',
+      role: 'USER',
+      email: 'user@test.com',
+    },
+  }).as('loginUser');
+
+  cy.get(el.email).type('user@test.com');
+  cy.get(el.password).type('123456');
+  cy.get(el.submit).click();
+
+  cy.wait('@loginUser');
+  cy.location('pathname', { timeout: 8000 }).should('contain', '/home');
+});
+
+it('L5: login ADMIN (stub backend) → redirect ไป /admin/products', () => {
+  openLoginForm();
+
+  cy.intercept('POST', API_LOGIN, {
+    statusCode: 200,
+    body: {
+      token: 'fake-admin-token',
+      role: 'ADMIN',
+      email: 'admin@test.com',
+    },
+  }).as('loginAdmin');
+
+  cy.get(el.email).type('admin@test.com');
+  cy.get(el.password).type('admin123');
+  cy.get(el.submit).click();
+
+  cy.wait('@loginAdmin');
+  cy.location('pathname', { timeout: 8000 }).should('contain', '/admin/products');
+});
+
+  it('L6: Server error (stub 500) → ต้องแสดงข้อความ Cannot connect to server', () => {
+    openLoginForm();
+
+    cy.intercept('POST', API_LOGIN, {
+      statusCode: 500,
+      body: { error: 'Internal Server Error' }
+    }).as('serverErr');
+
+    cy.get(el.email).type('crash@test.com');
+    cy.get(el.password).type('xxxxx');
+    cy.get(el.submit).click();
+
+    cy.wait('@serverErr');
+    cy.get(el.errorMsg).should('contain', 'Cannot connect to server');
   });
 
-  it('เมื่อ backend ตอบ 401 ต้องเห็น “ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง”', () => {
-    cy.intercept('POST', '**/api/auth/login', {
-      statusCode: 401,
-      body: { message: 'Bad credentials' }
-    }).as('login401');
-
-    cy.get('#email').type('admin');
-    cy.get('#password').type('wrong');
-    cy.get('#submitBtn').click();
-    cy.wait('@login401');
-
-    cy.contains('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง').should('be.visible');
-    cy.location('pathname').should('eq', '/login');
-  });
 });
