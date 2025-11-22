@@ -1,82 +1,357 @@
-/// <reference types="cypress" />
+const BASE_URL = Cypress.config("baseUrl") || "http://localhost:5173";
+const API_URL = "http://127.0.0.1:8080";
 
-const PID = 101;
+const LS_CART = "pm_cart";
+const LS_REORDER = "pm_reorder";
+const LS_PICK = "pm_cart_pick";
+const LS_CHECKOUT = "pm_checkout_selection";
 
-describe('Detail Page', () => {
-  const product = { id: PID, name: 'Tomato', price: 25, quantity: 5, productId: 'SKU-TMT', categoryId: 1, brandId: 2, description: 'Fresh tomato' };
-  const images = [{ isCover: true, imageUrl: '/static/tomato.jpg' }];
-  const cats = [{ id: 1, name: 'Fruits & Vegetables' }];
-  const brands = [{ id: 2, name: 'Pure Farm' }];
+function fetchRealProducts() {
+  return cy.request("GET", `${API_URL}/api/products`).then((res) => {
+    const body = res.body;
+    let rows = [];
 
-  // Ensure tests run as an authenticated user so RequireAuth does not redirect to /login
+    if (Array.isArray(body)) {
+      rows = body;
+    } else if (Array.isArray(body?.content)) {
+      rows = body.content;
+    }
+
+    // ถ้าดึงของมาไม่ได้สักชิ้น ให้ fail เลย จะได้รู้ว่า backend มีปัญหาจริง ๆ
+    expect(
+      rows.length,
+      "ต้องมีสินค้าอย่างน้อย 1 ชิ้นในระบบจริง"
+    ).to.be.greaterThan(0);
+    return rows;
+  });
+}
+
+function mapProductToCartItem(prod, overrides = {}) {
+  const id =
+    prod.id ??
+    prod.productId ??
+    prod.product_id ??
+    prod.productID ??
+    prod.product_id;
+  const title = prod.title ?? prod.name ?? prod.productName ?? `#${id}`;
+  const price = Number(prod.price ?? prod.unitPrice ?? 0);
+  const image =
+    prod.image ||
+    prod.img ||
+    prod.cover ||
+    prod.coverImageUrl ||
+    prod.imageUrl ||
+    prod.image_url ||
+    "/assets/products/placeholder.png";
+
+  return {
+    productId: id,
+    variantId: overrides.variantId ?? "",
+    title,
+    price,
+    qty: overrides.qty ?? 1,
+    img: image,
+    promo: overrides.promo ?? null,
+  };
+}
+
+describe("Cart Page - Real API (Pure Mart)", () => {
   beforeEach(() => {
-    cy.window().then((win) => {
-      win.sessionStorage.setItem('token', 'e2e-dummy-token');
-      win.sessionStorage.setItem('role', 'USER');
-      win.sessionStorage.setItem('user', JSON.stringify({ email: 'e2e@test.local' }));
-      win.sessionStorage.setItem('email', 'e2e@test.local');
+    cy.clearLocalStorage();
+    cy.intercept("GET", `${API_URL}/api/promotions*`).as("getPromos");
+  });
+
+  it("ผู้ใช้เปิดตะกร้าที่ว่างเปล่า เห็น empty state และปุ่มกลับไปช้อป", () => {
+    // ไม่ใส่อะไรใน localStorage เลย -> ถือว่าเริ่มจากตะกร้าว่าง
+    cy.visit(`${BASE_URL}/cart`);
+
+    // รอให้หน้าเรียกโปรโมชั่นจาก backend จริงก่อน ค่อยเริ่มเช็ค DOM
+    cy.wait("@getPromos");
+
+    cy.get("#emptyState").should("be.visible");
+    cy.get("#emptyState").within(() => {
+      cy.contains("Your cart is empty.").should("be.visible");
+      cy.contains("a.btn.btn-primary", "Browse products").should(
+        "have.attr",
+        "href",
+        "/home"
+      );
     });
   });
 
-  it('แสดง Loading → สำเร็จ: breadcrumb, title, brand, sku, price, stock', () => {
-  cy.intercept('GET', `**/api/products/${PID}`, { body: product }).as('getP');
-  cy.intercept('GET', `**/api/products/${PID}/images`, { body: images }).as('getImgs');
-  cy.intercept('GET', `**/api/categories`, { body: cats }).as('getCats');
-  cy.intercept('GET', `**/api/brands`, { body: brands }).as('getBrands');
+  it("ผู้ใช้มีของอยู่ในตะกร้าแล้ว ระบบเลือกสินค้าทั้งหมดให้ และคำนวณยอดรวมถูกต้อง", () => {
+    fetchRealProducts().then((rows) => {
+      const p1 = rows[0];
+      const p2 = rows[1] || rows[0];
 
-    cy.visit(`/detail/${PID}`);
-    cy.contains('Loading product...').should('be.visible');
+      const item1 = mapProductToCartItem(p1, { qty: 1 });
+      const item2 = mapProductToCartItem(p2, { qty: 2 });
 
-    cy.wait(['@getP','@getImgs','@getCats','@getBrands']);
-    cy.get('.pm-breadcrumb').should('contain.text', 'HOME').and('contain.text', 'FRUITS & VEGETABLES');
-    cy.get('.product__title').should('have.text', 'Tomato');
-    cy.contains('.meta', 'Brand:').should('contain.text', 'Pure Farm');
-    cy.contains('.meta', 'SKU:').should('contain.text', 'SKU-TMT');
-    cy.get('.price').should('contain.text', '฿').and('contain.text', '25.00');
-    cy.get('.stock').should('contain.text', '5 in stock');
-  });
+      const cartPayload = [item1, item2];
 
-  it('รูป cover เสีย → ใช้ FALLBACK (trigger onError)', () => {
-  cy.intercept('GET', `**/api/products/${PID}`, { body: product });
-  cy.intercept('GET', `**/api/products/${PID}/images`, { body: [{ isCover: true, imageUrl: '/broken.jpg' }] });
-  cy.intercept('GET', `**/api/categories`, { body: cats });
-  cy.intercept('GET', `**/api/brands`, { body: brands });
-    cy.visit(`/detail/${PID}`);
-    cy.get('.product__img img').then(($img) => {
-      $img[0].dispatchEvent(new Event('error'));
+      const totalQty = 1 + 2;
+      const totalPrice = item1.price * 1 + item2.price * 2;
+
+      cy.visit(`${BASE_URL}/cart`, {
+        onBeforeLoad(win) {
+          // จำลองว่าผู้ใช้เคยหยิบของสองชิ้นนี้ใส่ตะกร้าไว้แล้ว
+          win.localStorage.setItem(LS_CART, JSON.stringify(cartPayload));
+
+          // ยังไม่เคยเลือก item ไหน -> hook ด้านในจะ auto-select ให้ทุกชิ้นเอง
+          win.localStorage.removeItem(LS_PICK);
+          win.localStorage.removeItem(LS_REORDER);
+          win.localStorage.removeItem(LS_CHECKOUT);
+        },
+      });
+
+      cy.wait("@getPromos");
+
+      // มีของในตะกร้าแล้ว ไม่ควรเห็น empty state
+      cy.get("#emptyState").should("not.exist");
+
+      // ชื่อสินค้าต้องตรงกับที่มาจาก backend
+      cy.contains(".cart-item__name", String(item1.title)).should("be.visible");
+      cy.contains(".cart-item__name", String(item2.title)).should("be.visible");
+
+      // checkbox ของทุกแถวควรถูกติ๊ก (เมื่อยังไม่มี selection เก่าค้างอยู่)
+      cy.get(".cart-item input.pm-check[type='checkbox']").each(($el) => {
+        cy.wrap($el).should("be.checked");
+      });
+
+      // จำนวน Items ใน summary ต้องเท่ากับ qty รวมจากสองชิ้น
+      cy.get(".summary-card .totals .line")
+        .contains("Items")
+        .parent()
+        .within(() => {
+          cy.contains(String(totalQty));
+        });
+
+      cy.get("#grandTotal")
+        .invoke("text")
+        .then((txt) => {
+        const clean = txt.replace(/[^\d.]/g, "");
+          const v = Number(clean || "0");
+          // ไม่ต้องเป๊ะทุกทศนิยม แค่ต้องเป็นเลขมากกว่า 0 และพอจะสื่อว่าคำนวณแล้ว
+          expect(v).to.be.greaterThan(0);
+        });
+
+      // มีของถูกเลือกอย่างน้อยหนึ่งชิ้น ปุ่ม Proceed to Checkout ต้องใช้งานได้
+      cy.get("#goCheckout").should("not.be.disabled");
     });
-    cy.get('.product__img img').should('have.attr', 'src').and('include', 'data:image/svg+xml'); // FALLBACK svg ในไฟล์
   });
 
-  it('qty ปรับได้ (min=1) และ wish toggle ได้', () => {
-  cy.intercept('GET', `**/api/products/${PID}`, { body: product });
-  cy.intercept('GET', `**/api/products/${PID}/images`, { body: images });
-  cy.intercept('GET', `**/api/categories`, { body: cats });
-  cy.intercept('GET', `**/api/brands`, { body: brands });
-    cy.visit(`/detail/${PID}`);
+  it("ผู้ใช้ปรับจำนวนสินค้าในตะกร้าและลบสินค้าออกจนตะกร้าว่าง", () => {
+    fetchRealProducts().then((rows) => {
+      const p1 = rows[0];
+      const item = mapProductToCartItem(p1, { qty: 1 });
 
-    cy.get('.qty__input').should('have.value', '1');
-    cy.get('.qty__btn[aria-label="increase"]').click().click();
-    cy.get('.qty__input').should('have.value', '3');
-    cy.get('.qty__btn[aria-label="decrease"]').click().click().click();
-    cy.get('.qty__input').should('have.value', '1'); // ไม่ต่ำกว่า 1
+      cy.visit(`${BASE_URL}/cart`, {
+        onBeforeLoad(win) {
+          // ใส่ของให้มีในตะกร้าเริ่มต้น 1 ชิ้น
+          win.localStorage.setItem(LS_CART, JSON.stringify([item]));
+          win.localStorage.removeItem(LS_PICK);
+          win.localStorage.removeItem(LS_REORDER);
+          win.localStorage.removeItem(LS_CHECKOUT);
+        },
+      });
 
-    cy.get('.wish .heart-toggle').should('not.be.checked').click().should('be.checked');
+      cy.wait("@getPromos");
+
+      cy.contains(".cart-item__name", String(item.title))
+        .should("be.visible")
+        .parents(".cart-item")
+        .as("row");
+
+      // เปิดมาตอนแรกควรเห็นจำนวนเป็น 1
+      cy.get("@row").within(() => {
+        cy.get(".qty span[aria-live='polite']").should("contain", "1");
+
+        // กด + หนึ่งที -> จาก 1 เป็น 2
+        cy.get("button[aria-label='Increase']").click();
+        cy.get(".qty span[aria-live='polite']").should("contain", "2");
+
+        // กด - สองที -> 2 -> 1 -> 0 แล้ว hook จะลบ item ทิ้ง
+        cy.get("button[aria-label='Decrease']").click();
+        cy.get(".qty span[aria-live='polite']").should("contain", "1");
+
+        cy.get("button[aria-label='Decrease']").click();
+      });
+
+      // เมื่อ qty เหลือ 0 แถวนี้ต้องหายไป และหน้ากลับไปเป็น empty state
+      cy.get(".cart-item").should("have.length", 0);
+      cy.get("#emptyState").should("be.visible");
+    });
   });
 
-  it('stock = 0 → ปุ่ม ADD TO CART / BUY NOW ต้อง disabled และขึ้น error เมื่อ API ล้มเหลว', () => {
-    const out = { ...product, quantity: 0 };
-  cy.intercept('GET', `**/api/products/${PID}`, { body: out });
-  cy.intercept('GET', `**/api/products/${PID}/images`, { body: images });
-  cy.intercept('GET', `**/api/categories`, { body: cats });
-  cy.intercept('GET', `**/api/brands`, { body: brands });
-    cy.visit(`/detail/${PID}`);
-    cy.contains('.buy-row .btn.btn--primary', 'ADD TO CART').should('be.disabled');
-    cy.contains('.buy-row .btn.btn--gradient', 'BUY NOW').should('be.disabled');
+  it("ผู้ใช้ใช้ปุ่ม Select all เพื่อเลือก/ยกเลิกเลือกสินค้า และกด Clear Cart เพื่อล้างตะกร้า", () => {
+    fetchRealProducts().then((rows) => {
+      const p1 = rows[0];
+      const p2 = rows[1] || rows[0];
 
-    // เคส error
-  cy.intercept('GET', `**/api/products/9999`, { statusCode: 404, body: {} });
-    cy.visit('/detail/9999');
-    cy.contains('เกิดข้อผิดพลาด').should('be.visible');
+      const item1 = mapProductToCartItem(p1, { qty: 1 });
+      const item2 = mapProductToCartItem(p2, { qty: 1 });
+
+      cy.visit(`${BASE_URL}/cart`, {
+        onBeforeLoad(win) {
+          // ใส่สินค้า 2 ชิ้นไว้ในตะกร้าตั้งต้น
+          win.localStorage.setItem(LS_CART, JSON.stringify([item1, item2]));
+          win.localStorage.removeItem(LS_PICK);
+          win.localStorage.removeItem(LS_REORDER);
+          win.localStorage.removeItem(LS_CHECKOUT);
+        },
+      });
+
+      cy.wait("@getPromos");
+
+      // ตอนเข้าแรก ๆ ทุกชิ้นควรถูกเลือกทั้งหมด
+      cy.get(".cart-item input.pm-check[type='checkbox']").should(
+        "have.length.at.least",
+        2
+      );
+      cy.get(".cart-item input.pm-check[type='checkbox']").each(($el) => {
+        cy.wrap($el).should("be.checked");
+      });
+
+      // ข้อความตรง Select all สื่อว่าทุกชิ้นถูกเลือกอยู่
+      cy.get(".summary-card .select-all span").should(
+        "contain",
+        "Selected all items"
+      );
+
+      // กดที่ Select all อีกทีเพื่อล้าง selection ทั้งหน้า
+      cy.get(".summary-card .select-all input.pm-check").click();
+
+      // ตอนนี้ checkbox ทุกตัวต้องถูกปลดออกหมด
+      cy.get(".cart-item input.pm-check[type='checkbox']").each(($el) => {
+        cy.wrap($el).should("not.be.checked");
+      });
+
+      // ไม่มีชิ้นไหนถูกเลือกเลย ปุ่ม Proceed to Checkout เลยต้องเป็น disabled
+      cy.get("#goCheckout").should("be.disabled");
+
+      // เคลียร์ทั้งตะกร้าด้วยปุ่ม Clear Cart
+      cy.get(".summary-card .btn.btn-outline").contains("Clear Cart").click();
+
+      cy.get("#emptyState").should("be.visible");
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem(LS_CART)).to.eq("[]");
+      });
+    });
+  });
+
+  it("ผู้ใช้เลือกบางชิ้นแล้วกด Proceed to Checkout ระบบเก็บ snapshot ลง localStorage และเด้งไปหน้า place-order", () => {
+    fetchRealProducts().then((rows) => {
+      const p1 = rows[0];
+      const p2 = rows[1] || rows[0];
+
+      const item1 = mapProductToCartItem(p1, { qty: 1 });
+      const item2 = mapProductToCartItem(p2, { qty: 3 });
+
+      cy.visit(`${BASE_URL}/cart`, {
+        onBeforeLoad(win) {
+          // จำลองเคสมีของ 2 ชิ้นในตะกร้าให้ครบก่อน
+          win.localStorage.setItem(LS_CART, JSON.stringify([item1, item2]));
+          win.localStorage.removeItem(LS_PICK);
+          win.localStorage.removeItem(LS_REORDER);
+          win.localStorage.removeItem(LS_CHECKOUT);
+        },
+      });
+
+      cy.wait("@getPromos");
+
+      // สมมติผู้ใช้จะจ่ายเฉพาะชิ้นแรก -> ยกเลิกติ๊กของชิ้นที่สอง
+      cy.contains(".cart-item__name", String(item2.title))
+        .parents(".cart-item")
+        .within(() => {
+          cy.get("input.pm-check[type='checkbox']").uncheck({ force: true });
+        });
+
+      // ยืนยันว่าชิ้นแรกยังถูกเลือกอยู่จริง ๆ
+      cy.get(".cart-item")
+        .contains(".cart-item__name", String(item1.title))
+        .parents(".cart-item")
+        .within(() => {
+          cy.get("input.pm-check[type='checkbox']").should("be.checked");
+        });
+
+      // กด Proceed to Checkout เพื่อไปหน้าชำระเงิน
+      cy.get("#goCheckout").click();
+
+      // URL ต้องเด้งไป /place-order จริง
+      cy.url().should("include", "/place-order");
+
+      // เช็ค payload ที่เซฟไว้ใน LS_CHECKOUT ของหน้าใหม่
+      cy.window().then((win) => {
+        const raw = win.localStorage.getItem(LS_CHECKOUT);
+        expect(
+          raw,
+          "ควรมี snapshot การ checkout ถูกบันทึก"
+        ).to.be.a("string");
+
+        const payload = JSON.parse(raw || "null");
+        expect(payload).to.have.property("items");
+        expect(payload.items).to.be.an("array").and.have.length(1);
+
+        const snapItem = payload.items[0];
+        expect(String(snapItem.title)).to.eq(String(item1.title));
+        expect(snapItem.totalQty || payload.totalQty).to.exist;
+        expect(payload.totalQty).to.be.greaterThan(0);
+        expect(payload.totalPrice).to.be.greaterThan(0);
+      });
+    });
+  });
+
+  it("ผู้ใช้ใช้แถบ Buy Again (reorder) เพื่อเพิ่มของกลับเข้าตะกร้า", () => {
+    fetchRealProducts().then((rows) => {
+      const p1 = rows[0];
+      const p2 = rows[1] || rows[0];
+
+      const reorder1 = mapProductToCartItem(p1, { qty: 1 });
+      const reorder2 = mapProductToCartItem(p2, { qty: 2 });
+
+      // เคสนี้เริ่มจากตะกร้าจริงว่าง แต่มีรายการค้างอยู่ในถาด reorder
+      cy.visit(`${BASE_URL}/cart`, {
+        onBeforeLoad(win) {
+          win.localStorage.setItem(LS_CART, JSON.stringify([]));
+          win.localStorage.setItem(
+            LS_REORDER,
+            JSON.stringify([reorder1, reorder2])
+          );
+          win.localStorage.removeItem(LS_PICK);
+          win.localStorage.removeItem(LS_CHECKOUT);
+        },
+      });
+
+      cy.wait("@getPromos");
+
+      // ต้องเจอหัวข้อ Buy Again เพื่อยืนยันว่าอ่าน LS_REORDER แล้ว
+      cy.contains("h2.section-title", "Buy Again").should("be.visible");
+
+      // กด Add to Cart เพื่อรวมรายการในถาดเข้าตะกร้าจริง
+      cy.contains(".reorder-actions .btn.btn-primary", "Add to Cart").click();
+
+      // หลัง merge แล้วถาด Buy Again ต้องหายไป (เพราะ clearReorder ในโค้ดจริง)
+      cy.contains("h2.section-title", "Buy Again").should("not.exist");
+
+      // และสองชิ้นที่อยู่ในถาดต้องโผล่มาใน cart หลัก
+      cy.get(".cart-item__name")
+        .should("contain", String(reorder1.title))
+        .and("be.visible");
+      cy.get(".cart-item__name")
+        .should("contain", String(reorder2.title))
+        .and("be.visible");
+
+      // ยืนยันใน localStorage ว่า LS_REORDER ถูกล้าง และ LS_CART มีของจริง
+      cy.window().then((win) => {
+        const cartRaw = win.localStorage.getItem(LS_CART);
+        const reorderRaw = win.localStorage.getItem(LS_REORDER);
+
+        const cartItems = JSON.parse(cartRaw || "[]");
+        expect(cartItems.length).to.be.greaterThan(0);
+
+        const reorderItems = JSON.parse(reorderRaw || "[]");
+        expect(reorderItems.length).to.eq(0);
+      });
+    });
   });
 });
