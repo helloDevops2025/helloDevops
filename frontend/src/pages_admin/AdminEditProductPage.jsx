@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./AdminEditProductPage.css";
+import {fetchProductCover} from "../utils/getProductCover.js";
 
 export default function AdminEditProductPage() {
   const API_URL = import.meta.env.VITE_API_URL ;
@@ -152,47 +153,48 @@ export default function AdminEditProductPage() {
     // ── โหลดสินค้า + รูป ────────────────
     useEffect(() => {
         let cancelled = false;
+
         (async () => {
             setLoading(true);
-            setMsg("");
+
             try {
-                const r = await fetch(`${API_URL}/api/products/${encodeURIComponent(id)}`, {
-                    headers: { Accept: "application/json" },
-                });
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                // โหลด product data
+                const r = await fetch(`${API_URL}/api/products/${id}`);
                 const data = await r.json();
                 if (cancelled) return;
 
+                // set form
                 setOriginal(data);
+
                 setForm((f) => ({
                     ...f,
                     productId: data.productId ?? "",
                     name: data.name ?? "",
                     description: data.description ?? "",
                     price: data.price ?? "",
-                    quantity: Number.isFinite(Number(data.quantity)) ? Number(data.quantity) : "",
+                    quantity: data.quantity ?? "",
                     categoryId: data.categoryId ?? "",
                     brandId: data.brandId ?? "",
-                    inStock: typeof data.inStock === "boolean" ? data.inStock : true,
+                    inStock: data.inStock ?? true,
                 }));
 
-                // ✅ SHOW IMAGE from productId (same method as DetailPage)
-                const raw = data.productId || data.id || "";
-                const digits = String(raw).replace("#", "").replace(/^0+/, "");
-                const fileName = digits.padStart(3, "0") + ".jpg";
-                setServerCoverUrl(`${API_URL}/products/${fileName}`);
+                // โหลดรูป cover จาก DB
+                const coverUrl = await fetchProductCover(API_URL, id);
+                if (coverUrl) setServerCoverUrl(coverUrl);
 
             } catch (e) {
-                setMsg(`โหลดข้อมูลไม่สำเร็จ: ${e.message}`);
+                setMsg("โหลดข้อมูลไม่สำเร็จ " + e.message);
             } finally {
                 setLoading(false);
             }
         })();
-        return () => { cancelled = true; };
+
+        return () => cancelled = true;
     }, [API_URL, id]);
 
 
-  // ── พรีวิวไฟล์ใหม่ ──────────────
+
+    // ── พรีวิวไฟล์ใหม่ ──────────────
   useEffect(() => {
     if (!coverFile) {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
