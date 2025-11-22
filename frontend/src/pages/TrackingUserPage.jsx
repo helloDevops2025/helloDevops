@@ -77,9 +77,8 @@ const ProgressCard = ({ steps, cancelled }) => {
           {steps.map((s, i) => (
             <div
               key={i}
-              className={`step ${s.done ? "done" : ""} ${
-                cancelled ? "cancel" : ""
-              }`}
+              className={`step ${s.done ? "done" : ""} ${cancelled ? "cancel" : ""
+                }`}
             >
               <div className="dot" />
               <div className="step-label">
@@ -252,34 +251,33 @@ export default function TrackingUserPage() {
         const addrText = data.shippingAddress || "-";
         const mappedItems = Array.isArray(data.orderItems)
           ? data.orderItems.map((it) => {
-              const p = it.product || {};
-              const pid = p.id ?? it.productIdFk ?? it.productId;
+            const p = it.product || {};
+            const pid = p.id ?? it.productIdFk ?? it.productId;
 
-              const discountPerUnit = Number(
-                it.discountPerUnit ??
-                  it.discount_per_unit ??
-                  it.discount_each ??
-                  it.discountEach ??
-                  it.discountAmount ??
-                  it.discount ??
-                  0
-              );
-
-              return {
-                id: String(pid ?? Math.random()),
-                name: p.name || it.productName || "-",
-                desc: p.description || "",
-                price: Number(p.price ?? it.priceEach ?? 0),
-                qty: Number(it.quantity || 1),
-                  img: (() => {
-                      // productId จริง เช่น "#00003" → "003"
-                      const raw = p.productId || p.id || "";
-                      const digitsOnly = String(raw).replace("#", "").replace(/^0+/, "");  // ตัด # และ 0 หน้า
-                      const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";   // → 003.jpg
-                      return `${API_BASE}/products/${fileName}`;
-                  })(),
-              };
-            })
+            const discountPerUnit = Number(
+              it.discountPerUnit ??
+              it.discount_per_unit ??
+              it.discount_each ??
+              it.discountEach ??
+              it.discountAmount ??
+              it.discount ??
+              0
+            );
+            return {
+              id: String(pid ?? Math.random()),
+              name: p.name || it.productName || "-",
+              desc: p.description || "",
+              price: Number(p.price ?? it.priceEach ?? 0),
+              qty: Number(it.quantity || 1),
+              discountPerUnit: isNaN(discountPerUnit) ? 0 : discountPerUnit,
+              img:
+                pid !== undefined
+                  ? `${API_BASE}/api/products/${encodeURIComponent(
+                    pid
+                  )}/cover`
+                  : "/assets/products/placeholder.jpg",
+            };
+          })
           : [];
 
         const mapped = {
@@ -325,12 +323,12 @@ export default function TrackingUserPage() {
       const perUnitDisc =
         Number(
           it.discountPerUnit ??
-            it.discount_per_unit ??
-            it.discount_each ??
-            it.discountEach ??
-            it.discountAmount ??
-            it.discount ??
-            0
+          it.discount_per_unit ??
+          it.discount_each ??
+          it.discountEach ??
+          it.discountAmount ??
+          it.discount ??
+          0
         ) || 0;
 
       const lineBefore = price * qty;
@@ -413,8 +411,8 @@ export default function TrackingUserPage() {
             <td class="discount" style="width:120px;text-align:center">${discDisplay}</td>
             <td class="qty" style="width:80px;text-align:center">${qty}</td>
             <td class="total" style="width:140px;text-align:right">${THB(
-              lineTotal
-            )}</td>
+          lineTotal
+        )}</td>
           </tr>
         `;
       })
@@ -432,86 +430,91 @@ export default function TrackingUserPage() {
       Number(discount || 0) === 0 ? THB(0) : `-${THB(discount)}`;
 
     const html = `
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          ${base}
-          ${styles}
-        </head>
-        <body>
-          <div class="tracking-page">
-            <div class="receipt">
-            <header class="r-header">
-              <div class="left">
-                <img src="/assets/logo.png" class="logo" alt="Store logo" />
-              </div>
-              <div class="center">
-                <div class="company">Pure Mart</div>
-                <div class="meta">Pure Mart Co., Ltd.</div>
-                <div class="meta small">
-                  <div>xx/x Moo x, xxxxxxxx 1xxxx • Tel: 0xx-xxx-xxxx</div>
-                  <div>contact@puremart.example</div>
-                </div>
-              </div>
-              <div class="right">
-                <div class="order-title">Order Receipt</div>
-                <div class="order-id">${order.orderId || "-"}</div>
-                <div class="meta">Date: ${orderDate}</div>
-                <div class="meta">Payment: ${paymentMethod}</div>
-              </div>
-            </header>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    ${base}
+    ${styles}
 
-            <section style="margin-bottom:12px">
-              <strong>Ship to</strong>
-              <div style="color:#444;margin-top:6px">${
-                order.address?.name || "-"
-              }</div>
-              <div style="color:#666;margin-top:6px">${shippingText}</div>
-            </section>
+    <style>
+      /* บังคับให้เห็นตอน print */
+      @media print {
+        html, body, .tracking-page, .receipt {
+          visibility: visible !important;
+        }
+        body * {
+          visibility: visible !important;
+        }
+      }
+    </style>
+  </head>
 
-            <table class="items">
-              <thead>
-                <tr>
-                  <th style="width:40px">#</th>
-                  <th>Item</th>
-                  <th style="width:120px;text-align:right">Unit Price</th>
-                  <th style="width:120px;text-align:center">Discount</th>
-                  <th style="width:80px;text-align:center">Qty</th>
-                  <th style="width:140px;text-align:right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows}
-              </tbody>
-            </table>
+  <body>
+    <div class="tracking-page receipt-preview-body">
+      <div class="receipt">
 
-            <div class="totals-wrap">
-              <div class="totals-card">
-                <div class="row"><div class="muted">Subtotal</div><div>${THB(
-                  totals.subtotal
-                )}</div></div>
-                <div class="row">
-                  <div class="muted">Discount</div>
-                  <div style="color:#0b2545">${discountDisplay}</div>
-                </div>
-                <div class="row"><div class="muted">Shipping Fee</div><div>${THB(
-                  shippingFee
-                )}</div></div>
-                <div class="row"><div class="muted">Tax / VAT</div><div>${THB(
-                  tax
-                )}</div></div>
-                <div class="grand">Grand Total&nbsp;&nbsp;${THB(
-                  grandTotal
-                )}</div>
-              </div>
-            </div>
-
-            <div style="margin-top:18px;color:#6b7280;font-size:13px">Thank you for ordering with Pure Mart — for questions contact contact@puremart.example</div>
+        <header class="r-header">
+          <div class="left">
+            <img src="/assets/logo.png" class="logo" alt="Store logo" />
+          </div>
+          <div class="center">
+            <div class="company">Pure Mart</div>
+            <div class="meta">Pure Mart Co., Ltd.</div>
+            <div class="meta small">
+              <div>xx/x Moo x, xxxxxxxx • Tel: 0xx-xxx-xxxx</div>
+              <div>contact@puremart.example</div>
             </div>
           </div>
-        </body>
-      </html>
-    `;
+          <div class="right">
+            <div class="order-title">Order Receipt</div>
+            <div class="order-id">${order.orderId || "-"}</div>
+            <div class="meta">Date: ${orderDate}</div>
+            <div class="meta">Payment: ${paymentMethod}</div>
+          </div>
+        </header>
+
+        <section style="margin-bottom:12px">
+          <strong>Ship to</strong>
+          <div style="color:#444;margin-top:6px">${order.address?.name || "-"}</div>
+          <div style="color:#666;margin-top:6px">${shippingText}</div>
+        </section>
+
+        <table class="items">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Item</th>
+              <th style="text-align:right;width:120px">Unit Price</th>
+              <th style="text-align:center;width:120px">Discount</th>
+              <th style="text-align:center;width:80px">Qty</th>
+              <th style="text-align:right;width:140px">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+
+        <div class="totals-wrap">
+          <div class="totals-card">
+            <div class="row"><div class="muted">Subtotal</div><div>${THB(totals.subtotal)}</div></div>
+            <div class="row"><div class="muted">Discount</div><div>${discountDisplay}</div></div>
+            <div class="row"><div class="muted">Shipping Fee</div><div>${THB(totals.shipping)}</div></div>
+            <div class="row"><div class="muted">Tax / VAT</div><div>${THB(totals.tax)}</div></div>
+            <div class="grand">Grand Total&nbsp;&nbsp;${THB(totals.total)}</div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px;color:#6b7280;font-size:13px">
+          Thank you for ordering with Pure Mart — for questions contact contact@puremart.example
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>
+`;
+
 
     setPreviewSrc(html);
     setPreviewOpen(true);
