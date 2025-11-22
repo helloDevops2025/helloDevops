@@ -42,7 +42,7 @@ async function buildSoldMap(fromDate, toDate) {
     const listUrl =
         (fromDate && toDate)
             ? apiUrl(`/api/orders?from=${fromDate}&to=${toDate}&includeItems=true`)
-            : apiUrl(`/api/orders?includeItems=true`); 
+            : apiUrl(`/api/orders?includeItems=true`);
 
     const oRes = await fetch(listUrl);
     if (!oRes.ok) throw new Error(`orders failed ${oRes.status}`);
@@ -65,12 +65,19 @@ async function buildSoldMap(fromDate, toDate) {
     const ACCEPTED = new Set(["PREPARING", "READY_TO_SHIP", "SHIPPING", "DELIVERED"]);
 
 
-    const toYMD = (v) => {
+        const toYMD = (v) => {
         if (!v) return null;
-        if (typeof v === "string") { const m = v.match(/^(\d{4}-\d{2}-\d{2})/); if (m) return m[1]; }
-        const d = new Date(v); if (isNaN(d)) return null;
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const d = new Date(v);
+        if (Number.isNaN(d.getTime())) return null;
+
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+
+        // ใช้วันตาม timezone ของ browser (เหมือนหน้า Order List)
+        return `${y}-${m}-${day}`;
     };
+
     const useDateFilter = !!(fromDate && toDate);
     const inRange = (ymd) => !useDateFilter || (ymd && ymd >= fromDate && ymd <= toDate);
 
@@ -82,21 +89,35 @@ async function buildSoldMap(fromDate, toDate) {
         const st = String(o.order_status ?? o.status ?? o.orderStatus ?? "").toUpperCase();
         if (!ACCEPTED.has(st)) continue;
 
-        const items = o.items ?? o.orderItems ?? o.order_items ?? [];
+                const items = o.items ?? o.orderItems ?? o.order_items ?? [];
         for (const it of items) {
+            // ให้ใช้ productId/product_id ก่อน (เหมือน product) แล้วค่อย fallback เป็น FK หรือ id
             const pid =
-                it.product_id_fk ?? it.productIdFk ?? it.productId ?? it.product_id ??
-                it.product?.id ?? it.product?.product_id ?? it.product?.productId;
+                it.productId ??
+                it.product_id ??
+                it.product_id_fk ??
+                it.productIdFk ??
+                it.product?.productId ??
+                it.product?.product_id ??
+                it.product?.id;
+
             const qty = Number(it.quantity ?? it.qty ?? 0);
             if (!pid || !qty) continue;
-            const key = isNaN(Number(pid)) ? String(pid) : Number(pid);
-            soldMap.set(key, (soldMap.get(key) || 0) + qty);
+
+            const keyStr = String(pid);
+            const keyNum = Number.isNaN(Number(pid)) ? null : Number(pid);
+
+            if (keyNum != null) {
+                soldMap.set(keyNum, (soldMap.get(keyNum) || 0) + qty);
+            }
+            soldMap.set(keyStr, (soldMap.get(keyStr) || 0) + qty);
         }
+
     }
     return soldMap;
 }
 // ====== RESTOCK META (no-DB) ============================================
-const META_KEY = "pm_stock_meta"; 
+const META_KEY = "pm_stock_meta";
 
 function loadMeta() {
     try { return JSON.parse(localStorage.getItem(META_KEY)) || {}; }
@@ -117,16 +138,16 @@ function applyRestockMeta(products) {
         const rec = meta[key];
 
         if (!rec) {
-         
+
             meta[key] = { lastQty: qty, lastRestocked: p.lastRestocked || null };
             return { ...p, lastRestocked: p.lastRestocked || null };
         }
 
-      
-        if (Number.isFinite(rec.lastQty) && qty > rec.lastQty) {
+
+        if (Number.isFinite(rec.lastQty) && qty !== rec.lastQty) {
             rec.lastRestocked = nowISO;
         }
-    
+
         rec.lastQty = qty;
 
         return { ...p, lastRestocked: p.lastRestocked || rec.lastRestocked || null };
@@ -158,10 +179,10 @@ export default function AdminDashboard() {
     }, []);
 
     // โหมดทำงาน: เก็บของเดิม + เพิ่มโหมดใหม่
-    const [mode, setMode] = useState("legacy"); 
+    const [mode, setMode] = useState("legacy");
     const [filterSoldOnly, setFilterSoldOnly] = useState(true);
 
-   
+
     useEffect(() => {
         setFilterSoldOnly(mode === "byDate");
     }, [mode]);
@@ -171,9 +192,9 @@ export default function AdminDashboard() {
     const [dateFrom, setDateFrom] = useState(todayISO);
     const [dateTo, setDateTo] = useState(todayISO);
 
-   
+
     // Data state
-    const [products, setProducts] = useState([]);  
+    const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -184,31 +205,50 @@ export default function AdminDashboard() {
         setLoading(true);
         setError(null);
         try {
-          
+
             const res = await fetch(apiUrl(`/api/products`));
             if (!res.ok) throw new Error(`Fetch failed with status ${res.status}`);
             const data = await res.json();
 
-         
+
             let soldMap = new Map();
             try { soldMap = await buildSoldMap(null, null); } catch (e) { console.warn("sold overlay failed:", e); }
 
 
-            const normalized = data.map((item) => {
-                const pid = item.id ?? item.product_id ?? item.productId ?? "";
-                const sold = (isNaN(Number(pid)) ? soldMap.get(String(pid)) : soldMap.get(Number(pid))) || 0;
+                        const normalized = data.map((item) => {
+                // id จริงใน DB (ไว้ใช้ตอนกด View ไปหน้า /admin/products/:id/edit)
+                const realId = item.id ?? item.product_id ?? null;
+
+                // ใช้ productId (รหัสสินค้า) เป็น key หลักก่อน แล้วค่อย fallback เป็น id
+                const pid = item.productId ?? item.product_id ?? item.id ?? "";
+
+                const numKey = Number.isNaN(Number(pid)) ? null : Number(pid);
+                const soldFromMap =
+                    (numKey != null ? soldMap.get(numKey) : undefined) ??
+                    soldMap.get(String(pid)) ??
+                    0;
+
                 return {
-                    id: pid,
+                    realId, // 👈 เพิ่ม field นี้
+                    id: pid, // ให้ id ใน dashboard ใช้ key เดียวกับที่ orders ใช้
                     name: item.name ?? item.product_name ?? "",
                     category: item.category ?? "",
                     brand: item.brand ?? "",
                     price: Number(item.price ?? 0),
                     stock: Number(item.quantity ?? item.qty ?? item.in_stock ?? item.stock ?? 0),
-                    soldThisWeek: Number(item.soldThisWeek ?? item.sold_week ?? sold), // ใช้ของ backend ถ้ามี ไม่งั้นทับด้วย soldMap
+                    // ถ้า backend ส่ง soldThisWeek มา ให้ใช้ก่อน ไม่งั้นใช้จาก soldMap
+                    soldThisWeek: Number(item.soldThisWeek ?? item.sold_week ?? soldFromMap),
                     lastRestocked:
-                        item.lastRestocked ?? item.last_restocked ?? item.updated_at ?? item.updatedAt ?? item.restock_date ?? "",
+                        item.lastRestocked ??
+                        item.last_restocked ??
+                        item.updated_at ??
+                        item.updatedAt ??
+                        item.restock_date ??
+                        "",
                 };
             });
+
+
             const finalRows = applyRestockMeta(normalized);
             setProducts(finalRows);
 
@@ -224,104 +264,58 @@ export default function AdminDashboard() {
 
 
     async function fetchStockDataByDate({ fromDate, toDate }) {
-        setLoading(true);
-        setError(null);
-        try {
-          
-            const prodRes = await fetch(apiUrl("/api/products"));
-            if (!prodRes.ok) throw new Error(`products failed ${prodRes.status}`);
-            const prodRaw = await prodRes.json();
+    setLoading(true);
+    setError(null);
+    try {
+        const prodRes = await fetch(apiUrl("/api/products"));
+        if (!prodRes.ok) throw new Error(`products failed ${prodRes.status}`);
+        const prodRaw = await prodRes.json();
 
-            const baseProducts = prodRaw.map((item) => ({
-                id: item.id ?? item.product_id ?? item.productId ?? "",
+        const soldMap = await buildSoldMap(fromDate, toDate);
+
+                const normalized = prodRaw.map((item) => {
+            // id จริงใน DB (ใช้ตอน View)
+            const realId = item.id ?? item.product_id ?? null;
+
+            const pid = item.productId ?? item.product_id ?? item.id ?? "";
+
+            const numKey = Number.isNaN(Number(pid)) ? null : Number(pid);
+            const sold =
+                (numKey != null ? soldMap.get(numKey) : undefined) ??
+                soldMap.get(String(pid)) ??
+                0;
+
+            return {
+                realId, // 👈 เพิ่ม field นี้
+                id: pid,
                 name: item.name ?? item.product_name ?? "",
                 category: item.category ?? "",
                 brand: item.brand ?? "",
                 price: Number(item.price ?? 0),
                 stock: Number(item.quantity ?? item.qty ?? item.in_stock ?? item.stock ?? 0),
+                soldThisWeek: Number(sold || 0),
                 lastRestocked:
-                    item.lastRestocked ?? item.last_restocked ?? item.updated_at ?? item.restock_date ?? "",
-                soldThisWeek: 0,
-            }));
+                    item.lastRestocked ??
+                    item.last_restocked ??
+                    item.updated_at ??
+                    item.restock_date ??
+                    "",
+            };
+        });
 
-            // 2) ดึง orders (ไม่ส่ง status เผื่อ backend ไม่รองรับ)
-            const listUrl = apiUrl(`/api/orders?from=${fromDate}&to=${toDate}&includeItems=true`);
-            const oRes = await fetch(listUrl);
-            if (!oRes.ok) throw new Error(`orders failed ${oRes.status}`);
-            let orders = await oRes.json();
 
-        
-            const needsHydrate = (o) => !o?.items && !o?.orderItems && !o?.order_items;
-            if (Array.isArray(orders) && orders.some(needsHydrate)) {
-                const hydrated = await Promise.all(
-                    orders.map(async (o) => {
-                        if (!needsHydrate(o)) return o;
-                        try {
-                            const r = await fetch(apiUrl(`/api/orders/${o.id}`), { headers: { Accept: "application/json" } });
-                            if (!r.ok) return o;
-                            const full = await r.json();
-                           
-                            return { ...o, ...full };
-                        } catch {
-                            return o;
-                        }
-                    })
-                );
-                orders = hydrated;
-            }
-
-           
-            const ACCEPTED = new Set(["PREPARING", "READY_TO_SHIP", "SHIPPING", "DELIVERED"]);
-            const inRange = (ymd) => ymd && (ymd >= fromDate && ymd <= toDate);
-
-            const soldMap = new Map(); 
-
-            for (const o of orders || []) {
-                const orderedYMD = toYMDPlus(
-                    o.created_at ?? o.orderedAt ?? o.createdAt ?? o.orderDate ?? o.order_date
-                );
-                if (!inRange(orderedYMD)) continue;
-
-                const status = (o.order_status ?? o.status ?? o.orderStatus ?? "").toUpperCase();
-                if (!ACCEPTED.has(status)) continue;
-
-                const items = o.items ?? o.orderItems ?? o.order_items ?? [];
-                for (const it of items) {
-                    const pid =
-                        it.product_id_fk ??
-                        it.productIdFk ??
-                        it.productId ??
-                        it.product_id ??
-                        it.product?.id ??
-                        it.product?.product_id ??
-                        it.product?.productId;
-
-                    const qty = Number(it.quantity ?? it.qty ?? it.count ?? 0);
-                    if (!pid || !qty) continue;
-
-                    const pidKey = isNaN(Number(pid)) ? String(pid) : Number(pid);
-                    soldMap.set(pidKey, (soldMap.get(pidKey) || 0) + qty);
-                }
-            }
-
-            // 4) ผูกยอดกลับเข้ากับสินค้า
-            const merged = baseProducts.map((p) => {
-                const keyNum = isNaN(Number(p.id)) ? null : Number(p.id);
-                const sold = (keyNum != null ? soldMap.get(keyNum) : undefined) ?? soldMap.get(String(p.id)) ?? 0;
-                return { ...p, soldThisWeek: Number(sold || 0) };
-            });
-
-            const finalRows = applyRestockMeta(merged);
-            setProducts(finalRows);
-
-        } catch (err) {
-            console.error("fetchStockDataByDate error:", err);
-            setError(err.message || "Failed to load data");
-            setProducts([]);
-        } finally {
-            setLoading(false);
-        }
+        const finalRows = applyRestockMeta(normalized);
+        setProducts(finalRows);
+    } catch (err) {
+        console.error("fetchStockDataByDate error:", err);
+        setError(err.message || "Failed to load data");
+        setProducts([]);
+    } finally {
+        setLoading(false);
     }
+}
+
+
 
     async function fetchStockData({ fromDate, toDate }) {
         if (mode === "byDate") return fetchStockDataByDate({ fromDate, toDate });
@@ -333,8 +327,8 @@ export default function AdminDashboard() {
     // Load initial
     useEffect(() => {
         fetchStockData({ fromDate: dateFrom, toDate: dateTo });
-        
-    }, [mode]); 
+
+    }, [mode]);
 
     // ---------------------------------------------------------------------
     // Apply button
@@ -352,7 +346,7 @@ export default function AdminDashboard() {
     }, [products, mode, filterSoldOnly]);
 
     const metrics = useMemo(() => {
-        const src = visibleProducts;       
+        const src = visibleProducts;
         const lowStockThreshold = 10;
 
         const totalProducts = src.length;
@@ -392,7 +386,7 @@ export default function AdminDashboard() {
         // legacy: แสดงสัปดาห์ปัจจุบัน
         const now = new Date();
         const day = now.getDay();
-        const diffToMon = (day + 6) % 7; 
+        const diffToMon = (day + 6) % 7;
         const monday = new Date(now);
         monday.setDate(now.getDate() - diffToMon);
         const sunday = new Date(monday);
@@ -653,7 +647,7 @@ export default function AdminDashboard() {
                                         className="btn-edit-inline"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            navigate(`/admin/products/${p.id}/edit`);
+                                            navigate(`/admin/products/${p.realId ?? p.id}/edit`);
                                         }}
                                     >
                                         View
