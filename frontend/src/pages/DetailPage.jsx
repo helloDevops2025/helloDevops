@@ -789,12 +789,21 @@ export default function DetailPage() {
                           </span>
                         )}
 
-                        <img
-                          src={r.cover}
-                          alt={r.title}
-                          loading="lazy"
-                          onError={handleImgError}
-                        />
+                          <img
+                              src={r.cover}
+                              alt={r.title}
+                              loading="lazy"
+                              onError={(e) => {
+                                  // 1) ถ้ารูปหลักโหลดไม่ได้ → ใช้ fallbackCover
+                                  if (!e.currentTarget.dataset.fallback) {
+                                      e.currentTarget.dataset.fallback = 1;
+                                      e.currentTarget.src = r.fallbackCover;
+                                      return;
+                                  }
+                                  // 2) ถ้า fallback ก็พัง → ใช้ placeholder
+                                  e.currentTarget.src = FALLBACK_IMG;
+                              }}
+                          />
                       </Link>
 
                       <h3 className="product-card__title">{r.title}</h3>
