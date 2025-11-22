@@ -1,12 +1,9 @@
-/* =========================
-   Tracking Page (compact, with page gutters)
-========================= */
-
-/* ปรับที่เดียวจบ: ขนาดวงกลม (เดสก์ท็อป) */
-:root { --dot: 68px; }
+:root {
+  --dot: 68px;
+}
 
 /* ---- Page gutters: ให้ทั้งหน้ามีระยะจากขอบ (ยกเว้น header) ---- */
-.container.tracking{
+.container.tracking {
   /* เพิ่มระยะซ้าย-ขวาให้เนื้อหาโล่งขึ้น */
   padding-left: 32px;
   padding-right: 32px;
@@ -16,168 +13,334 @@
 }
 
 /* ===== Card: Detail ===== */
-.progress-card{
-  background:#fff;
-  border-radius:16px;
-  box-shadow:0 6px 16px rgba(0,0,0,.06);
-  padding:20px 20px 22px;
-  margin:12px auto 28px;
+.progress-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .06);
+  padding: 20px 20px 22px;
+  margin: 12px auto 28px;
 }
-.progress-card .card-title{
-  font:700 20px/1.2 Poppins, Inter, system-ui;
-  margin:0 0 12px;
+
+.progress-card .card-title {
+  font: 700 20px/1.2 Poppins, Inter, system-ui;
+  margin: 0 0 12px;
 }
 
 /* ===== Timeline / Progress ===== */
-.progress{ position:relative; margin-top:8px; }
-.progress-line{
-  position:absolute;
-  top: calc(var(--dot)/2);      /* เส้นผ่านกึ่งกลางวงกลมเสมอ */
-  left:0; right:0;
-  height:3px;
-  background:#d9e3f7;
-  border-radius:999px;
-  z-index:1;
+.progress {
+  position: relative;
+  margin-top: 8px;
 }
-.progress-line .line-fill{
-  display:block; height:100%;
-  background:#92caff;
-  border-radius:999px;
-  transition:width .3s ease;
+
+.progress-line {
+  position: absolute;
+  top: calc(var(--dot)/2);
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #d9e3f7;
+  border-radius: 999px;
+  z-index: 1;
 }
-.steps{
-  display:flex; justify-content:space-between;
-  position:relative; z-index:2;
+
+.progress-line .line-fill {
+  display: block;
+  height: 100%;
+  background: #92caff;
+  border-radius: 999px;
+  transition: width .3s ease;
 }
-.step{
-  display:flex; flex-direction:column; align-items:center;
-  text-align:center; flex:1;
+
+.steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
 }
 
 /* วงกลม */
-.dot{
-  width: var(--dot); height: var(--dot);
-  border-radius:50%;
-  background:#d1e1ff; box-shadow:0 0 0 2px #d1e1ff;
-  position:relative;
+.dot {
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+  background: #d1e1ff;
+  box-shadow: 0 0 0 2px #d1e1ff;
+  position: relative;
 }
-.step.done .dot{
-  background:#b9cffd; box-shadow:0 0 0 2px #b9cffd;
+
+.step.done .dot {
+  background: #b9cffd;
+  box-shadow: 0 0 0 2px #b9cffd;
 }
 
 /* ติ๊กถูก: ทำให้ “ใหญ่ขึ้นเมื่อเทียบกับวงกลม” */
-.step.done .dot::before{
-  content:"";
-  position:absolute; left:50%; top:50%;
-  width: calc(var(--dot) * 0.38);     /* เดิม ~0.30 ⇒ ใหญ่ขึ้น */
+.step.done .dot::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--dot) * 0.38);
   height: calc(var(--dot) * 0.22);
   border-left: calc(var(--dot) * 0.06) solid #111;
   border-bottom: calc(var(--dot) * 0.06) solid #111;
   transform: translate(-50%, -55%) rotate(-45deg);
-  box-sizing:border-box;
+  box-sizing: border-box;
 }
 
 /* Labels ใต้จุด (กระชับขึ้น) */
-.step-label{ margin-top:8px; }
-.step-label strong{ 
-  display:block;              /* บังคับให้ขึ้นบรรทัดของตัวเอง */
+.step-label {
+  margin-top: 8px;
 }
-.step-label small{
-  display:block;              /* ไม่ต่อท้ายในบรรทัดเดียวกับ strong */
+
+.step-label strong {
+  display: block;
+}
+
+.step-label small {
+  display: block;
   margin-top: 2px;
 }
 
 /* ===== Order Table (mock) ===== */
-.order-box{
-  background:#fff; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.05);
-  overflow:hidden; margin-top:22px; margin-bottom:40px;
+.order-box {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .05);
+  overflow: hidden;
+  margin-top: 22px;
+  margin-bottom: 40px;
 }
-.order-head{
-  background:#90b6f5; color:#0b1b3a;
-  display:grid; grid-template-columns:1fr 140px 140px 160px;
-  gap:1px; align-items:center; padding:16px 18px; font-weight:700;
-  border-bottom:4px solid #6ea0ef;
+
+.order-head {
+  background: #90b6f5;
+  color: #0b1b3a;
+  display: grid;
+  /* columns: Item | Unit Price | Discount | Qty | Total */
+  grid-template-columns: 1fr 140px 100px 140px 160px;
+  gap: 1px;
+  align-items: center;
+  padding: 16px 18px;
+  font-weight: 700;
+  border-bottom: 4px solid #6ea0ef;
 }
-.order-head > div{ text-align: center; }
-.order-head > div:first-child{ text-align: left; }
-/* จัดหัวข้อและคอลัมน์ Price / Quantity / Subtotal ชิดซ้ายเล็กน้อย */
-.order-head > div:nth-child(2),
-.order-head > div:nth-child(3),
-.order-head > div:nth-child(4),
-.order-row .price,
-.order-row .qty,
+
+.order-head>div {
+  text-align: center;
+}
+
+.order-head>div:first-child {
+  text-align: left;
+}
+
+/* Unit Price: left-aligned */
+.order-head>div:nth-child(2) {
+  text-align: left;
+  padding-left: 12px;
+}
+
+/* Discount: center */
+.order-head>div:nth-child(3) {
+  text-align: center;
+  padding-left: 0;
+}
+
+/* Qty */
+.order-head>div:nth-child(4) {
+  text-align: center;
+  padding-left: 0;
+}
+
+/* Total */
+.order-head>div:nth-child(5) {
+  text-align: right;
+  padding-left: 0;
+}
+
+.order-row {
+  display: grid;
+  grid-template-columns: 1fr 140px 100px 140px 160px;
+  gap: 1px;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.order-row:last-child {
+  border-bottom: none;
+}
+
+.product {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 12px;
+  align-items: center;
+  box-shadow: none;
+}
+
+.product img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #f5f6f8;
+}
+
+.product .name {
+  font: 600 16px/1.4 Poppins, Inter, system-ui;
+  margin: 0 0 4px;
+  color: #222;
+}
+
+.product .desc {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.price,
+.qty {
+  text-align: center;
+}
+
+/* right-align the line total so it lines up under the Total header */
 .order-row .subtotal {
-  text-align: left;       /* เดิมเป็น center */
-  padding-left: 12px;     /* เพิ่มระยะจากเส้นตาราง */
+  text-align: right;
 }
-.order-row .subtotal {
-  text-align: left;       /* เปลี่ยนจาก left เป็น right */
-  padding-left: 18px;     /* ขยับเข้าขอบขวามากขึ้น */
+
+/* center discount cells in rows */
+.order-row .discount {
+  text-align: center;
+  padding-left: 0;
 }
-.order-row{
-  display:grid; grid-template-columns:1fr 140px 140px 160px;
-  gap:1px; align-items:center; padding:16px 18px;
-  border-bottom:1px solid #e5e7eb; background:#fff;
+
+.price,
+.subtotal {
+  font-weight: 600;
 }
-.order-row:last-child{ border-bottom:none; }
-.product{ display:grid; grid-template-columns:72px 1fr; gap:12px; align-items:center; box-shadow: none;}
-.product img{ width:72px; height:72px; object-fit:cover; border-radius:10px; background:#f5f6f8; }
-.product .name{ font:600 16px/1.4 Poppins, Inter, system-ui; margin:0 0 4px; color:#222; }
-.product .desc{ font-size:13px; color:#6b7280; }
-.price,.qty,.subtotal{ text-align:center; }
-.price,.subtotal{ font-weight:600; }
-.qty .pill{
-  display:inline-flex; align-items:center; gap:10px;
-  border:1px solid #e5e7eb; border-radius:12px; padding:6px 10px;
-  font-weight:600; min-width:88px; justify-content:center;
+
+.qty .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 6px 10px;
+  font-weight: 600;
+  min-width: 88px;
+  justify-content: center;
 }
 
 /* ===== Responsive ===== */
-@media (max-width: 1200px){
-  .container.tracking{ padding-inline:28px; max-width:1100px; }
-}
-@media (max-width: 992px){
-  :root{ --dot: 60px; }
-  .container.tracking{ padding-inline:24px; max-width:960px; }
-  .progress-card{ padding:18px 16px 20px; }
-  .order-head,.order-row{ grid-template-columns:1fr 120px 120px 140px; }
-}
-@media (max-width: 760px){
-  :root{ --dot: 54px; }
-  .container.tracking{ padding-inline:18px; max-width:100%; }
-  .order-head{ display:none; }
-  .order-row{ grid-template-columns:1fr; gap:20px; }
-  .price,.qty,.subtotal{ text-align:left; }
-  .step-label strong{ font-size:16px; }
-  .step-label small{ font-size:12px; }
-}
-@media (max-width: 480px){
-  :root{ --dot: 48px; }
-  .container.tracking{ padding-inline:14px; }
-  .step-label strong{ font-size:15px; }
-  .step-label small{ font-size:11px; }
+@media (max-width: 1200px) {
+  .container.tracking {
+    padding-inline: 28px;
+    max-width: 1100px;
+  }
 }
 
-.tracking .order-row .price{
+@media (max-width: 992px) {
+  :root {
+    --dot: 60px;
+  }
+
+  .container.tracking {
+    padding-inline: 24px;
+    max-width: 960px;
+  }
+
+  .progress-card {
+    padding: 18px 16px 20px;
+  }
+
+  .order-head,
+  .order-row {
+    /* Item | Unit Price | Discount | Qty | Total (narrower on medium screens) */
+    grid-template-columns: 1fr 120px 90px 120px 140px;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --dot: 54px;
+  }
+
+  .container.tracking {
+    padding-inline: 18px;
+    max-width: 100%;
+  }
+
+  .order-head {
+    display: none;
+  }
+
+  .order-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .price,
+  .qty,
+  .subtotal {
+    text-align: left;
+  }
+
+  .step-label strong {
+    font-size: 16px;
+  }
+
+  .step-label small {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --dot: 48px;
+  }
+
+  .container.tracking {
+    padding-inline: 14px;
+  }
+
+  .step-label strong {
+    font-size: 15px;
+  }
+
+  .step-label small {
+    font-size: 11px;
+  }
+}
+
+.tracking .order-row .price {
   color: #111 !important;
   font-weight: 500;
   font-size: 16px;
 }
 
-.tracking .order-row .subtotal{
+.tracking .order-row .subtotal {
   color: #3e40AE !important;
   font-weight: 700;
   font-size: 18px;
 }
 
-.tracking-page .title, .tracking-page .card-title {
-    color: #111 ;
+.tracking-page .title,
+.tracking-page .card-title {
+  color: #111;
 }
 
 /* Print/save button (header) - scoped to tracking page */
 .tracking-page .print-btn {
   padding: 10px 18px;
-  background: #c0392b; /* solid red */
+  background: #c0392b;
+  /* solid red */
   color: #fff;
   font-weight: 700;
   border-radius: 10px;
@@ -186,13 +349,21 @@
   transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
   margin-top: 6px;
 }
-.tracking-page .print-btn:hover{
-  background:#992e22; transform: translateY(-2px); box-shadow: 0 10px 26px rgba(153, 46, 34, 0.12);
+
+.tracking-page .print-btn:hover {
+  background: #992e22;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(153, 46, 34, 0.12);
 }
-.tracking-page .print-btn:active{ transform: translateY(0); box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+
+.tracking-page .print-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
 .tracking-page .btn-primary {
   padding: 10px 20px;
-  background-color: #3e40ae; /* สีที่เหมาะสมกว่าคือสีน้ำเงินเข้ม */
+  background-color: #3e40ae;
   color: white;
   font-weight: bold;
   border-radius: 6px;
@@ -202,20 +373,21 @@
 }
 
 .tracking-page .btn-primary:hover {
-  background-color: #32409f; /* สีเข้มขึ้นเมื่อ hover */
+  background-color: #32409f;
 }
 
 .tracking-page .btn-danger {
   padding: 10px 20px;
-  background-color: #d33; /* ใช้สีแดงเมื่อจำเป็น */
+  background-color: #d33;
   color: white;
   font-weight: bold;
   border-radius: 6px;
   border: none;
   cursor: pointer;
 }
+
 .tracking-page .btn-danger:hover {
-  background-color: #a53030; /* สีแดงเข้มขึ้นเมื่อ hover */
+  background-color: #a53030;
 }
 
 .tracking-page .receipt {
@@ -249,56 +421,281 @@
 }
 
 /* ===== Receipt preview styles moved from TrackingUserPage.jsx ===== */
-.tracking-page .receipt-preview-body{font-family: Inter, Roboto, Arial, Helvetica, sans-serif; color:#111; padding:20px; background:#f4f6f8}
-.tracking-page .receipt{max-width:820px;margin:0 auto;background:#fff;padding:22px;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,0.08);color:#0f1724}
-.tracking-page .r-header{display:flex;gap:16px;align-items:flex-start;border-bottom:1px solid #eef2f6;padding-bottom:10px;margin-bottom:14px}
-.tracking-page .r-header .left{flex:0 0 auto}
-.tracking-page .r-header .center{flex:1;text-align:left}
-.tracking-page .r-header .right{flex:0 0 220px;text-align:right}
-.tracking-page .receipt .logo{max-width:110px;height:auto;border-radius:6px;display:block;margin-top:-6px}
-.tracking-page .company{font-size:16px;font-weight:600;color:#2563eb}
-.tracking-page .meta{font-size:12px;color:#6b7280}
-.tracking-page .meta.small{margin-top:6px}
-.tracking-page .order-title{font-weight:600;color:#0b2545;font-size:13px}
-.tracking-page .order-id{font-weight:600;font-size:13px;margin-top:6px;color:#1f2d3a}
-.tracking-page .items{width:100%;/* use separate borders so the thead can have rounded corners */
-  border-collapse:separate;border-spacing:0;margin-top:12px;table-layout:fixed}
+.tracking-page .receipt-preview-body {
+  font-family: Inter, Roboto, Arial, Helvetica, sans-serif;
+  color: #111;
+  padding: 20px;
+  background: #f4f6f8
+}
+
+.tracking-page .receipt {
+  max-width: 820px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 22px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  color: #0f1724
+}
+
+.tracking-page .r-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  border-bottom: 1px solid #eef2f6;
+  padding-bottom: 10px;
+  margin-bottom: 14px
+}
+
+.tracking-page .r-header .left {
+  flex: 0 0 auto
+}
+
+.tracking-page .r-header .center {
+  flex: 1;
+  text-align: left
+}
+
+.tracking-page .r-header .right {
+  flex: 0 0 220px;
+  text-align: right
+}
+
+.tracking-page .receipt .logo {
+  max-width: 110px;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+  margin-top: -6px
+}
+
+.tracking-page .company {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2563eb
+}
+
+.tracking-page .meta {
+  font-size: 12px;
+  color: #6b7280
+}
+
+.tracking-page .meta.small {
+  margin-top: 6px
+}
+
+.tracking-page .order-title {
+  font-weight: 600;
+  color: #0b2545;
+  font-size: 13px
+}
+
+.tracking-page .order-id {
+  font-weight: 600;
+  font-size: 13px;
+  margin-top: 6px;
+  color: #1f2d3a
+}
+
+.tracking-page .items {
+  width: 100%;
+  /* use separate borders so the thead can have rounded corners */
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 12px;
+  table-layout: fixed
+}
+
 /* make header more prominent and unify font sizes across table */
-.tracking-page .items thead{background:#9cc0f7;border-bottom:4px solid #6ea0ef}
-.tracking-page .items thead th{font-weight:800;padding:18px 12px;color:#0b2545;font-size:15px;text-align:left}
-.tracking-page .items thead th:nth-child(1), .tracking-page .items thead th:nth-child(4){text-align:center}
-.tracking-page .items thead th:nth-child(3), .tracking-page .items thead th:nth-child(5){text-align:right}
-.tracking-page .items thead th:first-child{border-top-left-radius:12px}
-.tracking-page .items thead th:last-child{border-top-right-radius:12px}
-.tracking-page .items td{padding:14px 12px;border-bottom:1px dashed #eef2f6;color:#344455;vertical-align:top;font-size:14px;background:#fff}
+.tracking-page .items thead {
+  background: #9cc0f7;
+  border-bottom: 4px solid #6ea0ef
+}
+
+.tracking-page .items thead th {
+  font-weight: 800;
+  padding: 18px 12px;
+  color: #0b2545;
+  font-size: 15px;
+  text-align: left
+}
+
+.tracking-page .items thead th:nth-child(1) {
+  text-align: center;
+}
+.tracking-page .items thead th:nth-child(3) {
+  text-align: right;
+}
+.tracking-page .items thead th:nth-child(4) {
+  text-align: center;
+}
+.tracking-page .items thead th:nth-child(5) {
+  text-align: center;
+}
+.tracking-page .items thead th:nth-child(6) {
+  text-align: right;
+}
+
+.tracking-page .items thead th:first-child {
+  border-top-left-radius: 12px
+}
+
+.tracking-page .items thead th:last-child {
+  border-top-right-radius: 12px
+}
+
+.tracking-page .items td {
+  padding: 14px 12px;
+  border-bottom: 1px dashed #eef2f6;
+  color: #344455;
+  vertical-align: top;
+  font-size: 14px;
+  background: #fff
+}
 
 /* explicit column sizing and alignment to keep columns consistent */
-.tracking-page .items th:nth-child(1), .tracking-page .items td.idx{width:40px;text-align:center}
-.tracking-page .items th:nth-child(2), .tracking-page .items td.desc{ /* description column */ text-align:left;padding-right:8px}
-.tracking-page .items th:nth-child(3), .tracking-page .items td.price{width:120px;text-align:right;padding-right:12px}
-.tracking-page .items th:nth-child(4), .tracking-page .items td.qty{width:80px;text-align:center}
-.tracking-page .items th:nth-child(5), .tracking-page .items td.total{width:140px;text-align:right;padding-right:12px}
+.tracking-page .items th:nth-child(1),
+.tracking-page .items td.idx {
+  width: 40px;
+  text-align: center
+}
+
+.tracking-page .items th:nth-child(2),
+.tracking-page .items td.desc {
+  /* description column */
+  text-align: left;
+  padding-right: 8px
+}
+
+.tracking-page .items th:nth-child(3),
+.tracking-page .items td.price {
+  width: 120px;
+  text-align: right;
+  padding-right: 12px;
+}
+
+.tracking-page .items th:nth-child(4),
+.tracking-page .items td.discount {
+  width: 120px;
+  text-align: center;
+  padding-right: 12px;
+}
+
+.tracking-page .items th:nth-child(5),
+.tracking-page .items td.qty {
+  width: 80px;
+  text-align: center;
+}
+
+.tracking-page .items th:nth-child(6),
+.tracking-page .items td.total {
+  width: 140px;
+  text-align: right;
+  padding-right: 12px;
+}
+
+/* ensure discount cells in print preview are centered */
+.tracking-page .items td.discount {
+  text-align: center;
+}
 
 /* ensure long product names wrap instead of overflowing */
-.tracking-page .items td.desc{white-space:normal;word-break:break-word}
-.tracking-page .items td.price, .tracking-page .items td.total{font-weight:400;color:#1f2d3a;font-size:14px}
-.tracking-page .items td.desc > div:first-child{font-size:14px;font-weight:700;color:#0b2545}
-.tracking-page .accent{color:#2563eb}
-.tracking-page .item-desc{color:#6b7280;font-size:12px;margin-top:6px}
-.tracking-page .totals-wrap{display:flex;justify-content:flex-end;margin-top:18px}
-.tracking-page .totals-card{background:#f8fafc;padding:14px 18px;border-radius:10px;min-width:320px}
-.tracking-page .totals-card .row{display:flex;justify-content:space-between;padding:6px 0;color:#374151}
-.tracking-page .totals-card .row .label{color:#6b7280}
-.tracking-page .totals-card .grand{font-size:18px;font-weight:800;color:#0b2545;margin-top:6px;text-align:right}
-.tracking-page .totals-card .grand .amt{color:#2563eb;font-weight:900}
-.tracking-page .muted{color:#6b7280;font-size:13px}
-@media print{ .tracking-page .preview-controls{display:none} body{padding:6mm;background:#fff} .tracking-page .receipt{box-shadow:none;border-radius:0} }
-.tracking-page .page-break{page-break-inside:avoid}
+.tracking-page .items td.desc {
+  white-space: normal;
+  word-break: break-word
+}
+
+.tracking-page .items td.price,
+.tracking-page .items td.total {
+  font-weight: 400;
+  color: #1f2d3a;
+  font-size: 14px
+}
+
+.tracking-page .items td.desc>div:first-child {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0b2545
+}
+
+.tracking-page .accent {
+  color: #2563eb
+}
+
+.tracking-page .item-desc {
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 6px
+}
+
+.tracking-page .totals-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px
+}
+
+.tracking-page .totals-card {
+  background: #f8fafc;
+  padding: 14px 18px;
+  border-radius: 10px;
+  min-width: 320px
+}
+
+.tracking-page .totals-card .row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  color: #374151
+}
+
+.tracking-page .totals-card .row .label {
+  color: #6b7280
+}
+
+.tracking-page .totals-card .grand {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0b2545;
+  margin-top: 6px;
+  text-align: right
+}
+
+.tracking-page .totals-card .grand .amt {
+  color: #2563eb;
+  font-weight: 900
+}
+
+.tracking-page .muted {
+  color: #6b7280;
+  font-size: 13px
+}
+
+@media print {
+  .tracking-page .preview-controls {
+    display: none
+  }
+
+  body {
+    padding: 6mm;
+    background: #fff
+  }
+
+  .tracking-page .receipt {
+    box-shadow: none;
+    border-radius: 0
+  }
+}
+
+.tracking-page .page-break {
+  page-break-inside: avoid
+}
 
 /* helper class used when building preview HTML to ensure styles are applied */
 /* end receipt preview styles */
 
-.tracking-page .product-price, .tracking-page .product-quantity, .tracking-page .product-total {
+.tracking-page .product-price,
+.tracking-page .product-quantity,
+.tracking-page .product-total {
   text-align: right;
 }
 
@@ -314,24 +711,35 @@
   padding: 10px 0;
   color: #555;
 }
+
 .tracking-page .product-price {
-  font-weight: 500; /* ลดความหนาของราคาต่อหน่วย */
+  font-weight: 500;
   font-size: 14px;
   text-align: right;
   color: #333;
 }
 
 .tracking-page .product-total {
-  font-weight: 600; /* ทำให้ราคารวมชัดเจน */
+  font-weight: 600;
   font-size: 16px;
   text-align: right;
-  color: #3e40ae; /* ใช้สีที่เน้นสำหรับราคารวม */
+  color: #3e40ae;
 }
 
 .tracking-page .product-name {
   font-weight: 600;
   color: #444;
 }
-.progress-card .steps .step.cancel .dot { background:#d1d1d1; border-color:#ef4444; }
-.progress-card .steps .step.cancel .step-label small { color:#b91c1c; }
-.progress .line-fill.is-cancel { background:#fecaca; }
+
+.progress-card .steps .step.cancel .dot {
+  background: #d1d1d1;
+  border-color: #ef4444;
+}
+
+.progress-card .steps .step.cancel .step-label small {
+  color: #b91c1c;
+}
+
+.progress .line-fill.is-cancel {
+  background: #fecaca;
+}

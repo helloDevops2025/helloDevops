@@ -8,7 +8,7 @@
   font-family: "Poppins", system-ui, sans-serif;
 }
 
-/* ===== Breadcrumb ===== */
+/*  Breadcrumb  */
 .detail-page .pm-breadcrumb {
   margin: 14px 0 18px;
   font-size: 14px;
@@ -36,9 +36,9 @@
   min-width: 0;
 }
 
-.detail-page .pm-breadcrumb li+li::before {
+.detail-page .pm-breadcrumb li + li::before {
   content: "›";
-  opacity: .55;
+  opacity: 0.55;
   color: #a7b0c1;
   font-weight: 500;
 }
@@ -47,7 +47,7 @@
   text-decoration: none;
   color: #7f8aa1;
   text-transform: uppercase;
-  letter-spacing: .2px;
+  letter-spacing: 0.2px;
   font-weight: 600;
 }
 
@@ -60,7 +60,7 @@
   pointer-events: none;
 }
 
-.detail-page .pm-breadcrumb .current>span {
+.detail-page .pm-breadcrumb .current > span {
   display: block;
   max-width: 100%;
   white-space: nowrap;
@@ -68,7 +68,7 @@
   text-overflow: ellipsis;
 }
 
-/* ===== Container + Card ===== */
+/*  Container + Card  */
 .detail-page.container,
 .detail-page.page {
   max-width: 1200px;
@@ -80,16 +80,21 @@
   background: #fff;
   border: 1px solid #e8ebf2;
   border-radius: 14px;
-  box-shadow: 0 10px 24px rgba(10, 20, 60, .06);
+  box-shadow: 0 10px 24px rgba(10, 20, 60, 0.06);
   padding: 22px;
   margin-top: 24px;
 }
 
-/* ===== Product Hero ===== */
+/*  Product Hero  */
 .detail-page .product {
   display: grid;
   grid-template-columns: 520px 1fr;
   gap: 32px;
+}
+
+/* container ฝั่งรูป */
+.detail-page .product__media {
+  position: relative;
 }
 
 /* รูปหลัก */
@@ -103,6 +108,7 @@
   justify-content: center;
   padding: 18px;
   overflow: hidden;
+  position: relative; 
 }
 
 .detail-page .product__img img {
@@ -113,26 +119,44 @@
   background-color: #ffffff;
 }
 
-/* ===== Title + Brand ===== */
+/* Promotion badge */
+.detail-page .product__promo-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #ff4b5c;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/*  Title + Brand  */
 .detail-page .product__header {
   display: block;
   margin-bottom: 10px;
 }
 
-/* ✅ ปรับชื่อสินค้าให้ใหญ่ขึ้นและดูสบายตา */
+
 .detail-page .product__title {
   font-weight: 600;
-  font-size: 30px;               /* เดิม 22px → 30px */
+  font-size: 30px;
   line-height: 1.35;
   margin: 0 0 10px !important;
   color: #0a122f;
   word-break: break-word;
   text-align: left !important;
   letter-spacing: 0.3px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-/* ✅ จัด container ฝั่งขวาให้ชิดซ้ายทั้งหมด */
+/* จัด container ฝั่งขวาให้ชิดซ้ายทั้งหมด */
 .detail-page .product__info {
   display: flex;
   flex-direction: column;
@@ -155,7 +179,7 @@
   text-decoration: none;
 }
 
-/* ===== Price & Stock ===== */
+/*  Price & Stock  */
 .detail-page .price {
   font: 700 34px/1 "Poppins", system-ui;
   color: #0b1324;
@@ -187,7 +211,7 @@
   font-weight: 600;
 }
 
-/* ===== Excerpt ===== */
+/*  Excerpt  */
 .detail-page .excerpt {
   color: #4a5163;
   font-size: 14px;
@@ -200,11 +224,11 @@
   white-space: nowrap;
 }
 
-/* ===== Buy row: qty | add | buy ===== */
+/*  Buy row: qty | add | buy  */
 .detail-page .buy-row {
   display: grid;
   grid-template-columns: auto max-content max-content;
-  column-gap: 20px; /* เดิม 8px → เว้นห่างปุ่ม + กับปุ่มซื้อให้มากขึ้น */
+  column-gap: 20px; 
   row-gap: 8px;
   align-items: center;
   margin: 0 0 12px;
@@ -215,7 +239,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-right: 4px; /* กันแน่นเกินไป เพิ่มได้นิดหน่อย */
+  margin-right: 4px; 
 }
 
 .detail-page .qty__btn {
@@ -227,7 +251,7 @@
   cursor: pointer;
   font-size: 22px;
   color: #111;
-  transition: background-color .15s ease;
+  transition: background-color 0.15s ease;
 }
 
 .detail-page .qty__btn:hover {
@@ -255,7 +279,7 @@
   border-radius: 12px;
   border: 1px solid transparent;
   font-weight: 700;
-  letter-spacing: .2px;
+  letter-spacing: 0.2px;
   font-size: 13px;
   width: auto !important;
   flex: 0 0 auto !important;
@@ -265,32 +289,32 @@
 }
 
 .detail-page .btn--primary {
-  background: #3E40AE;
+  background: #3e40ae;
   color: #fff;
-  border-color: #3E40AE;
+  border-color: #3e40ae;
 }
 
 .detail-page .btn--primary:hover,
 .detail-page .btn--primary:focus-visible {
-  background: #34369A !important;
+  background: #34369a !important;
   color: #fff !important;
 }
 
 .detail-page .btn--gradient {
-  background: #4E9EC5;
+  background: #4e9ec5;
   color: #fff;
   border: none;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, .06) inset;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06) inset;
 }
 
 .detail-page .btn--gradient:hover,
 .detail-page .btn--gradient:focus-visible {
-  background: #3F8DB2 !important;
+  background: #3f8db2 !important;
   color: #fff !important;
 }
 
 .detail-page .btn:active {
-  transform: translateY(.5px);
+  transform: translateY(0.5px);
 }
 
 /* Wishlist (สินค้าเดี่ยว) */
@@ -325,7 +349,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  transition: color .2s, transform .2s;
+  transition: color 0.2s, transform 0.2s;
 }
 
 .detail-page .wish:hover .heart-toggle::before {
@@ -379,7 +403,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  transition: color .2s, transform .2s;
+  transition: color 0.2s, transform 0.2s;
 }
 
 .detail-page .wish--card:hover input[type="checkbox"]::before {
@@ -397,7 +421,7 @@
   outline-offset: 2px;
 }
 
-/* ===== Category ===== */
+/*  Category  */
 .detail-page .cat {
   margin-top: 24px;
   padding-top: 12px;
@@ -411,7 +435,7 @@
   text-decoration: none;
 }
 
-/* ===== Description ===== */
+/*  Description  */
 .detail-page .section {
   margin-top: 43px;
 }
@@ -428,14 +452,14 @@
 
 .detail-page .desc {
   display: grid;
-  grid-template-columns: 1.2fr .8fr;
+  grid-template-columns: 1.2fr 0.8fr;
   gap: 22px;
   align-items: flex-start;
 }
 
 .detail-page .desc__text {
   color: #333;
-  font-size: .95rem;
+  font-size: 0.95rem;
 }
 
 .detail-page .desc__img img {
@@ -445,7 +469,7 @@
   object-fit: contain;
 }
 
-/* ===== Related products ===== */
+/*  Related products  */
 .detail-page .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -459,13 +483,19 @@
   padding: 16px;
   border: 1px solid #e8ebf2;
   border-radius: 16px;
-  box-shadow: 0 10px 24px rgba(10, 20, 60, .06);
-  transition: transform .15s ease, box-shadow .15s ease;
+  box-shadow: 0 10px 24px rgba(10, 20, 60, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .detail-page .product-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 28px rgba(10, 20, 60, .08);
+  box-shadow: 0 14px 28px rgba(10, 20, 60, 0.08);
+}
+
+/* ทำให้ container รูปของ RELATED เป็น relative เพื่อวาง badge */
+.detail-page .product-card .thumb {
+  position: relative;
+  display: block;
 }
 
 .detail-page .product-card .thumb img {
@@ -503,7 +533,7 @@
   border-radius: 12px;
 }
 
-/* ---------- Modal (Popup) ---------- */
+/*  Modal (Popup)  */
 .pm-modal__overlay {
   position: fixed;
   inset: 0;
@@ -514,7 +544,7 @@
   justify-content: center;
   padding: 20px;
   z-index: 60;
-  animation: pm-fade-in .18s ease-out;
+  animation: pm-fade-in 0.18s ease-out;
 }
 
 .pm-modal {
@@ -522,9 +552,9 @@
   max-width: 460px;
   background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 16px 48px rgba(0,0,0,.25);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
   padding: 22px 22px 18px;
-  animation: pm-scale-in .18s ease-out;
+  animation: pm-scale-in 0.18s ease-out;
 }
 
 .pm-modal__header {
@@ -541,8 +571,8 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: #fee2e2;      /* red-100 */
-  color: #b91c1c;           /* red-700 */
+  background: #fee2e2; 
+  color: #b91c1c; 
 }
 
 .pm-modal__title {
@@ -583,39 +613,52 @@
 }
 
 /* Animations */
-@keyframes pm-fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes pm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 @keyframes pm-scale-in {
-  from { transform: translateY(2px) scale(.98); opacity: 0 }
-  to   { transform: translateY(0) scale(1); opacity: 1 }
+  from {
+    transform: translateY(2px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
-/* ---------- Stock dot (green/red) ---------- */
+/*  Stock dot (green/red)  */
 .stock .dot {
   display: inline-block;
-  width: 10px; height: 10px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
   margin-right: 8px;
   vertical-align: middle;
   box-shadow: 0 0 0 3px var(--dot-ring, #dcfce7);
 }
 .stock .dot--green {
-  background: #22c55e;                
-  --dot-ring: #dcfce7;                 
+  background: #22c55e;
+  --dot-ring: #dcfce7;
 }
 .stock .dot--red {
-  background: #ef4444;                 
-  --dot-ring: #fee2e2;                
+  background: #ef4444;
+  --dot-ring: #fee2e2;
 }
 
-
-/* ===== Responsive ===== */
-@media (max-width:1100px) {
+/*  Responsive  */
+@media (max-width: 1100px) {
   .detail-page .product {
     grid-template-columns: 420px 1fr;
   }
 }
 
-@media (max-width:900px) {
+@media (max-width: 900px) {
   .detail-page .product {
     grid-template-columns: 1fr;
   }
@@ -629,14 +672,14 @@
   }
 }
 
-@media (max-width:520px) {
+@media (max-width: 520px) {
   .detail-page .grid {
     grid-template-columns: 1fr;
   }
 
   .detail-page .buy-row {
     grid-template-columns: auto 1fr;
-    column-gap: 12px; /* มือถือให้แคบลง จะได้ไม่อึดอัด */
+    column-gap: 12px;  
     row-gap: 10px;
   }
 

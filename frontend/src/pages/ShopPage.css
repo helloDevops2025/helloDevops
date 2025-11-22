@@ -1,7 +1,5 @@
-/* ShopPage.css */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 
-/* ================= Vars ================= */
 :root {
     --primary: #3E40AE;
     --cta: #3662F4;
@@ -20,14 +18,14 @@
     --max: 1280px;
 }
 
-/* ====== Layout wrapper  ====== */
+/*  Layout wrapper  */
 .page-wrap {
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
 }
 
-/* ================= Base ================= */
+/*  Base  */
 .shop-page {
     background: var(--bg);
     color: var(--text);
@@ -42,7 +40,7 @@
     padding: 0 20px;
 }
 
-/* ================= Hero ================= */
+/*  Hero  */
 .wl-hero {
     background: #3E40AE;
     border-bottom: 1px solid rgba(255, 255, 255, .08);
@@ -83,7 +81,7 @@
     color: #fff;
 }
 
-/* ================= Toolbar ============== */
+/*  Toolbar  */
 .shop-toolbar.v2 {
     display: flex;
     flex-direction: column;
@@ -195,7 +193,7 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%233E40AE' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
 }
 
-/* ================= Layout =============== */
+/*  Layout  */
 .shop-layout {
     display: grid;
     grid-template-columns: 300px 1fr;
@@ -210,7 +208,7 @@
     }
 }
 
-/* ================= Sidebar ============== */
+/*  Sidebar  */
 .filters {
     background: var(--sidebar-bg);
     border: 1px solid var(--line-strong);
@@ -300,7 +298,7 @@
     background: #f7f8ff;
 }
 
-/* ================= Price (min–max) ============== */
+/* Price (min–max) */
 .price-row {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr) !important;
@@ -356,7 +354,7 @@
     border-color: #c7cdfa;
 }
 
-/* ================= Checklist ============== */
+/*  Checklist  */
 .checklist {
     display: grid;
     gap: 0;
@@ -483,7 +481,7 @@
     scrollbar-color: #cfd6ff transparent;
 }
 
-/* ================= Buttons ============== */
+/*  Buttons  */
 .btn {
     border: none;
     border-radius: 12px;
@@ -513,7 +511,7 @@
     background: var(--cta-dark);
 }
 
-/* ================= Products/Grid ========= */
+/*  Products/Grid  */
 .products .grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -550,6 +548,7 @@
     box-shadow: 0 0 0 3px rgba(167, 139, 250, .25), var(--shadow);
 }
 
+/*  รูป + ป้ายโปร  */
 .p-thumb {
     position: relative;
     background: #fff;
@@ -564,17 +563,27 @@
     max-width: 100%;
     max-height: 100%;
     display: block;
+    position: relative;
+    z-index: 1; 
 }
 
+/* ป้ายโปรโมชันพื้นฐาน (สำหรับ product card ทั่วไป) */
 .p-badge {
     position: absolute;
     top: 10px;
     left: 10px;
-    background: #5b21b6;
-    color: #fff;
-    padding: 6px 10px;
+    z-index: 3;
+    padding: 6px 14px;
     border-radius: 999px;
-    font: 700 12px/1 "Poppins", sans-serif;
+    background: #ef4444; 
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: "Poppins", sans-serif;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .18);
+    pointer-events: none;
 }
 
 .p-body {
@@ -646,7 +655,7 @@
     stroke-width: 1 !important;
 }
 
-/* ================= Pagination ============ */
+/*  Pagination  */
 .pagination {
     margin-top: 16px;
     display: flex;
@@ -673,7 +682,7 @@
     font: 700 13px/1 "Poppins", sans-serif;
 }
 
-/* ================= A11y ================= */
+/*  A11y  */
 .sr-only {
     position: absolute !important;
     height: 1px;
@@ -683,7 +692,7 @@
     white-space: nowrap;
 }
 
-/* ================= Hard Fix ============== */
+/*  Hard Fix  */
 .shop-page,
 .shop-page * {
     box-sizing: border-box;
@@ -771,7 +780,7 @@
     }
 }
 
-/* ===== RELATED PRODUCTS style (การ์ด) ===== */
+/*  RELATED PRODUCTS style (การ์ด)  */
 .shop-page .card {
     border: 1px solid #e6e9f6 !important;
     border-radius: 20px !important;
@@ -798,6 +807,8 @@
     object-fit: contain;
     width: 100%;
     height: 100%;
+    position: relative !important;
+    z-index: 1 !important;
     transition: transform .25s ease !important;
 }
 
@@ -864,12 +875,21 @@
     border-color: #2b2f8f !important;
 }
 
+/*  ป้ายโปรโมชันบนการ์ดในหน้า Shop — ใช้สไตล์เดียวกับหน้า Home */
 .shop-page .card .p-badge {
-    top: 16px !important;
-    left: 16px !important;
-    padding: 4px 8px !important;
-    font-size: 11px !important;
+    top: 14px !important;
+    left: 14px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
     border-radius: 999px !important;
+    background: #ef4444 !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    z-index: 3 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .2) !important;
+    pointer-events: none !important;
 }
 
 @media (max-width:560px) {

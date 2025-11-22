@@ -1,13 +1,23 @@
-:root{
-  --primary:#3E40AE;
-  --white:#FFFFFF;
+:root {
+  --primary: #3E40AE;
+  --white: #FFFFFF;
 }
 
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%; width:100%}
-body{
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%
+}
+
+body {
   font-family: "Poppins", system-ui, sans-serif;
-  overflow:hidden;
+  overflow: auto;
 }
 
 h1 {
@@ -27,62 +37,160 @@ h1 {
 }
 
 /* ตัวแบ่งครึ่งเต็มจอ */
-.shell{
-  display:grid;
-  grid-template-columns: 50vw 50vw;  /* ซ้าย 50% | ขวา 50% */
-  grid-template-rows: 100vh;         /* สูงเต็มจอ */
-  width:100vw;
-  height:100vh;
+.shell {
+  display: grid;
+  grid-template-columns: 50vw 50vw;
+  grid-auto-rows: auto;
+  width: 100vw;
+  min-height: 60vh;
+}
+
+/* Welcome splash (full-viewport hero shown before the login form) */
+.welcome-splash {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #f7f9ff 0%, #eef6ff 60%);
+  text-align: center;
+  padding: 40px;
+}
+
+.welcome-splash .welcome-inner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.splash-logo {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  margin-bottom: 20px;
+}
+
+.welcome-splash h1 {
+  font-size: 36px;
+  color: #0b2545;
+  margin-bottom: 8px;
+}
+
+.splash-lead {
+  color: #475569;
+  margin-bottom: 22px;
+  font-size: 16px;
+}
+
+.enter-btn {
+  background: #3E40AE;
+  color: #fff;
+  padding: 12px 26px;
+  border-radius: 999px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(62,64,174,0.18);
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+  animation: enter-btn-float 3.6s ease-in-out 120ms infinite both;
+}
+
+.enter-btn:hover,
+.enter-btn:focus {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 18px 36px rgba(62,64,174,0.22);
+  outline: none;
+}
+
+.enter-btn:active {
+  transform: translateY(-2px) scale(0.995);
+}
+
+@keyframes enter-btn-float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter-btn {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* ซ้าย: ขาวเต็มครึ่ง */
-.form-side{
-  background:var(--white);
-  width:100%; height:100%;
-  display:flex; flex-direction:column; justify-content:center;
-  padding: 0px 40px 190px 25px; 
-/* top , right , bottom , left */
-
+.form-side {
+  background: var(--white);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0px 40px 190px 25px;
 }
 
-/* ขวา: ม่วงเต็มครึ่ง */
-.art-side{
-  background:var(--primary);
-  width:100%; height:100%;
-  display:flex; align-items:center; justify-content:center;
-  color:#fff; padding:40px;
+.art-side {
+  background: var(--primary);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  padding: 40px;
 }
-.logo, .logo_signup {
+
+/* Slightly raise the phone illustration so it visually aligns with the form */
+.art-side .illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.art-side .phone img {
+  /* stronger transform + short slide animation for visible movement */
+  display: block;
+  margin: 0 auto;
+  max-width: 92%;
+  transform: translateY(-80px) translateX(-30px) scale(1);
+  transition: transform 260ms cubic-bezier(.2,.8,.2,1);
+  /* animate on initial render so user notices the shift, then float */
+  animation: login-art-slide 420ms ease both, art-float 4s ease-in-out 420ms infinite both;
+}
+
+.logo,
+.logo_signup {
   margin-top: 120px;
 }
 
-.logo img, .logo_signup img {
+.logo img,
+.logo_signup img {
   width: 192px;
-  height: 192px; /* กำหนดความสูงที่เท่ากัน */
+  height: 192px;
 }
 
 
 /* ตัวอย่างสไตล์ฟอร์มแบบเบา ๆ */
-.welcome-text h1, .welcome-text p {
+.welcome-text h1,
+.welcome-text p {
   margin-bottom: 3px;
 }
 
 .welcome-text h1 {
-    margin-left: 33px;
-    font-size: 31px;
-    font-weight: 600;
+  margin-left: 33px;
+  font-size: 31px;
+  font-weight: 600;
 }
 
 .welcome-text p {
-    margin-left: 35px;
-    font-size: 18px;
-    font-weight: 275;
-    color: #939292;
+  margin-left: 35px;
+  font-size: 18px;
+  font-weight: 275;
+  color: #939292;
 }
 
 #loginForm {
-    padding-left: 33px;
-    margin-top: 2px;
+  padding-left: 33px;
+  margin-top: 2px;
 
 }
 
@@ -91,114 +199,162 @@ h1 {
 
 
 .password-wrap {
-  position: relative; /* กำหนดให้เป็น parent ของปุ่ม */
-  width: 100%; /* ทำให้ครอบคลุมความกว้างของช่อง input */
+  position: relative;
+  width: 100%;
 }
 
 .input {
-  width: 85%; /* ให้ input ขยายเต็มพื้นที่ */
+  width: 85%;
   height: 56px;
   border-radius: 10px;
   border: 1.5px solid #ccc;
   background: #92CAFF;
-  padding: 0 14px; /* เพิ่มระยะ padding ข้างใน */
+  padding: 0 14px;
   font-size: 15px;
   margin-left: 9px;
 
 }
 
 label {
-  font-family: "Poppins" !important; /* ตั้งฟอนต์ */
-  font-size: 20px !important;                    /* ขนาด */
-  font-weight: 550;                   /* ความหนา */
-  color: #1E1E1E;                     /* สี (เทาอ่อน) */
-  opacity: 1;   
-  display: block; 
+  font-family: "Poppins" !important;
+  font-size: 20px !important;
+  font-weight: 550;
+  color: #1E1E1E;
+  opacity: 1;
+  display: block;
   margin-top: 0px;
-  margin-bottom: 4px !important;                    /* ให้ชัด ไม่จาง */
+  margin-bottom: 4px !important;
 }
 
 
 .input::placeholder {
-  font-family: "Poppins", sans-serif; /* ตั้งฟอนต์ */
-  font-size: 18px;                    /* ขนาด */
-  font-weight: 400;                   /* ความหนา */
-  color: #676767;                     /* สี (เทาอ่อน) */
-  opacity: 1;                         /* ให้ชัด ไม่จาง */
+  font-family: "Poppins", sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: #676767;
+  opacity: 1;
 }
 
-
-/* removed earlier misplaced .toggle-eye rule to avoid duplicate/conflict */
-
-
-
-
-.row-end{display:flex; justify-content:flex-end; margin-top:16px; margin-right:15%}
-.link{color:#4B50B7; text-decoration:none; font-size:13px}
-.btn{
-  margin-top:40px; width:85%; height:54px; border:0; cursor:pointer;
-  color:#fff; background:#3a3e99; border-radius:28px; font-weight:700;
+.row-end {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  margin-right: 15%
 }
-.note{
-    margin-top:20px;
-    margin-left: 25%;  
-    color:#939292;
-    font-size:16px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
+
+.link {
+  color: #4B50B7;
+  text-decoration: none;
+  font-size: 13px
 }
-.note a{
-    color:#343FBA; 
-    text-decoration:none; 
-    font-weight:600;
-    font-size:16px;
-    font-family: 'Inter', sans-serif;
+
+.btn {
+  margin-top: 40px;
+  width: 85%;
+  height: 54px;
+  border: 0;
+  cursor: pointer;
+  color: #fff;
+  background: #3a3e99;
+  border-radius: 28px;
+  font-weight: 700;
+}
+
+.note {
+  margin-top: 20px;
+  margin-left: 25%;
+  color: #939292;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+
+.note a {
+  color: #343FBA;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
 }
 
 /* มือถือ: ซ้อนเป็นสองแถว */
-@media (max-width: 900px){
-  .shell{
+@media (max-width: 900px) {
+  .shell {
     grid-template-columns: 100vw;
     grid-template-rows: auto auto;
-    height:auto;
+    height: auto;
   }
-  .art-side{order:-1; min-height:220px}
+
+  .art-side {
+    order: -1;
+    min-height: 220px
+  }
+
+  /* reset any upward nudge on small screens */
+  .art-side .phone img {
+    transform: none;
+    max-width: 100%;
+  }
+}
+
+@keyframes login-art-slide {
+  from {
+    transform: translateY(24px) translateX(0) scale(.99);
+    opacity: 0.0;
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-80px) translateX(-30px) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .art-side .phone img {
+    animation: none !important;
+    transition: none !important;
+    transform: translateY(-40px) translateX(-8px);
+  }
 }
 
 
-.form-side_signup{
-  background:var(--white);
-  width:100%; height:100%;
-  display:flex; flex-direction:column; justify-content:center;
-  padding: 0px 5px 190px 60px; 
-/* top , right , bottom , left */
-
+.form-side_signup {
+  background: var(--white);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0px 5px 190px 60px;
 }
 
 .logo_signup {
   display: flex;
-  justify-content: flex-end; /* ชิดขวา */
-  margin-right: 28px; /* เว้นระยะ 50px จากขอบขวา */
+  justify-content: flex-end;
+  margin-right: 28px;
 }
 
 .logo_signup img {
   width: 150px;
-  height: 150px; /* กำหนดความสูงที่เท่ากัน */
+  height: 150px;
 }
 
 /* สำหรับ Sign Up */
 .welcome-text_signup {
   display: flex;
-  flex-direction: column;   /* h1 อยู่เหนือ p */
-  align-items: flex-end;    /* ชิดขวา */
-  margin-left: auto;        /* ดันทั้ง block ไปขวาสุด */
-  max-width: 80%;           /* กำหนดความกว้างสูงสุดเป็น % */
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: auto;
+  max-width: 80%;
 }
 
 .welcome-text_signup h1 {
   font-size: 24px;
   font-weight: 600;
-  margin-right: 20%;        /* เว้นจากขอบขวาเป็น % */
+  margin-right: 20%;
   margin-bottom: 4px;
 }
 
@@ -206,72 +362,77 @@ label {
   font-size: 14px;
   font-weight: 275;
   color: #939292;
-  margin-right: 20%;        /* เว้นจากขอบขวาเป็น % */
-  white-space: nowrap;      /* ไม่ตัดบรรทัดเอง */
-  overflow: hidden;         /* ถ้ายาวเกิน กำจัดส่วนเกิน */
-  text-overflow: ellipsis;  /* ใช้ … ถ้ายาวเกินพื้นที่ */
+  margin-right: 20%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .form-side_signup #signupForm .input {
-    width: 85%; /* ให้ input ขยายเต็มพื้นที่ */
+  width: 85%;
   height: 46px;
   border-radius: 10px;
   border: 1.5px solid #ccc;
   background: #92CAFF;
-  padding: 0 14px; /* เพิ่มระยะ padding ข้างใน */
+  padding: 0 14px;
   font-size: 15px;
   margin-left: 8px;
 }
 
 
 .form-side_signup #signupForm .input::placeholder {
-  font-family: "Poppins", sans-serif; /* ตั้งฟอนต์ */
-  font-size: 14px;                    /* ขนาด */
-  font-weight: 400;                   /* ความหนา */
-  color: #676767;                     /* สี (เทาอ่อน) */
-  opacity: 1;                         /* ให้ชัด ไม่จาง */
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #676767;
+  opacity: 1;
 }
 
 .form-side_signup #signupForm label {
-  font-family: "Inter"; /* ตั้งฟอนต์ */
-  font-size: 17px;                    /* ขนาด */
-  font-weight: 550;                   /* ความหนา */
-  color: #1E1E1E;                     /* สี (เทาอ่อน) */
-  opacity: 1;   
-  display: block; 
+  font-family: "Inter";
+  font-size: 17px;
+  font-weight: 550;
+  color: #1E1E1E;
+  opacity: 1;
+  display: block;
   margin-top: 24px;
-  margin-bottom: 10px;                     /* ให้ชัด ไม่จาง */
+  margin-bottom: 10px;
 }
 
-.btn_signup{
-  margin-top:40px; 
+.btn_signup {
+  margin-top: 40px;
   margin-left: 1.15%;
-  width:85%; height:46px; border:0; cursor:pointer;
-  color:#fff; background:#3a3e99; border-radius:28px; font-weight:700;
+  width: 85%;
+  height: 46px;
+  border: 0;
+  cursor: pointer;
+  color: #fff;
+  background: #3a3e99;
+  border-radius: 28px;
+  font-weight: 700;
 }
 
-.note_signup{
-    margin-top:20px;
-    margin-left: 25%;  
-    color:#939292;
-    font-size:14px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-}
-.note_signup a{
-    color:#343FBA; 
-    text-decoration:none; 
-    font-weight:600;
-    font-size:14px;
-    font-family: 'Inter', sans-serif;
+.note_signup {
+  margin-top: 20px;
+  margin-left: 25%;
+  color: #939292;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
 }
 
-/* ===== ปุ่มแสดง/ซ่อนรหัสผ่าน ===== */
+.note_signup a {
+  color: #343FBA;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+}
+
+/*  ปุ่มแสดง/ซ่อนรหัสผ่าน  */
 .toggle-eye {
   position: absolute;
   top: 50%;
-  /* place the icon inside the visible input area without changing the input frame
-     input has width:85% and margin-left:9px; place eye near the right edge of that input */
   left: calc(9px + 85% - 48px);
   transform: translateY(-50%);
   width: 36px;
@@ -282,17 +443,17 @@ label {
   border: none;
   background: transparent;
   cursor: pointer;
-  z-index: 5; /* ensure it's above the input */
+  z-index: 5;
 }
 
-/* ===== SVG ไอคอนตา ===== */
+/*  SVG ไอคอนตา  */
 .toggle-eye svg {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
   display: block;
   object-fit: contain;
-  transform-origin: center center;   /* ตรึงจุดหมุนไว้ตรงกลาง */
+  transform-origin: center center;
   transition: transform 0.25s ease;
 }
 
@@ -303,5 +464,11 @@ label {
 
 /* ป้องกันไม่ให้ SVG หลุดกรอบเวลา zoom ออก */
 .toggle-eye {
-  overflow: hidden;             /* กันหลุดขอบ */
+  overflow: hidden;
+}
+
+@keyframes art-float {
+  0% { transform: translateY(-84px) translateX(-30px) translateZ(0); }
+  50% { transform: translateY(-70px) translateX(-30px) translateZ(0); }
+  100% { transform: translateY(-84px) translateX(-30px) translateZ(0); }
 }

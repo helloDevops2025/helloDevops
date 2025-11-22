@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 5s   # ดึง metrics ทุก 5 วินาที
+
+scrape_configs:
+  - job_name: 'hellodevops-backend'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets:
+          - 'backend:8080'   # ชื่อ service + port ของ backend

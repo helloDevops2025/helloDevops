@@ -83,16 +83,52 @@ function extractProducts(raw) {
 }
 
 function normalizeProduct(x) {
+  const rawCat = x.category;
+  const rawBrand = x.brand;
+
+  const catObj = rawCat && typeof rawCat === "object" ? rawCat : null;
+  const brObj = rawBrand && typeof rawBrand === "object" ? rawBrand : null;
+
+  const categoryName =
+    x.categoryName ??
+    x.category_name ??
+    (typeof rawCat === "string" ? rawCat : undefined) ??
+    catObj?.name ??
+    "";
+
+  const brandName =
+    x.brandName ??
+    x.brand_name ??
+    (typeof rawBrand === "string" ? rawBrand : undefined) ??
+    brObj?.name ??
+    "";
+
   return {
     id: x.id,
     pid: x.product_id ?? x.productId ?? x.code ?? x.sku ?? null,
     name: x.name ?? "-",
     price: Number(x.price ?? 0),
-    brand: x.brand?.name ?? x.brandName ?? "",
-    category: x.category?.name ?? x.categoryName ?? "",
+
+    categoryId:
+      x.categoryId ??
+      x.category_id ??
+      (typeof rawCat === "number" ? rawCat : undefined) ??
+      catObj?.id ??
+      null,
+    category: categoryName,
+
+    brandId:
+      x.brandId ??
+      x.brand_id ??
+      (typeof rawBrand === "number" ? rawBrand : undefined) ??
+      brObj?.id ??
+      null,
+    brand: brandName,
+
     inStock: x.in_stock ?? x.inStock ?? true,
   };
 }
+
 
 /* -------------------- Real API wrappers -------------------- */
 async function getJSON(url) {
@@ -230,6 +266,10 @@ export default function AdminPromotion() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [isNew, setIsNew] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null);
+  const [alertOpen, setAlertOpen] = useState(false);   // popup แจ้งผล Save
+  const [alertText, setAlertText] = useState("");
 
   // ===== Right: Product picker =====
   const [allProducts, setAllProducts] = useState([]);
@@ -239,6 +279,8 @@ export default function AdminPromotion() {
   const [filterBrand, setFilterBrand] = useState("");
   const [picked, setPicked] = useState(new Set());
 
+  const [masterCategories, setMasterCategories] = useState([]);
+  const [masterBrands, setMasterBrands] = useState([]);
   // Load initial data
   useEffect(() => {
     (async () => {
@@ -247,18 +289,19 @@ export default function AdminPromotion() {
           listPromotions(),
           listProducts(),
         ]);
+        console.log("products from API:", products);
         setPromotions(ps);
         setAllProducts(products);
         if (ps.length) {
           setSelectedId(ps[0].id);
         }
       } catch (e) {
-        setMsg(`⚠️ ${e.message || "Load error"}`);
+        setMsg(` ${e.message || "Load error"}`);
       }
     })();
   }, []);
 
-  // When selecting a promotion, load its details & linked products
+
   useEffect(() => {
     if (!selectedId) return;
     (async () => {
@@ -273,9 +316,10 @@ export default function AdminPromotion() {
         setAssigned(linked);
         setPicked(new Set());
       } catch (e) {
-        setMsg(`⚠️ ${e.message || "Load error"}`);
+        setMsg(` ${e.message || "Load error"}`);
       }
     })();
+
   }, [selectedId]);
 
   async function refreshPromotions() {
@@ -283,9 +327,38 @@ export default function AdminPromotion() {
       const ps = await listPromotions({ q: pQ, status: pStatus });
       setPromotions(ps);
     } catch (e) {
-      setMsg(`⚠️ ${e.message || "Load error"}`);
+      setMsg(` ${e.message || "Load error"}`);
     }
   }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const safeFetch = async (url) => {
+      try {
+        const r = await fetch(url, { headers: { Accept: "application/json" } });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch {
+        return null;
+      }
+    };
+
+    (async () => {
+      const [cats, brs] = await Promise.all([
+        safeFetch(`${API}/api/categories`),
+        safeFetch(`${API}/api/brands`),
+      ]);
+      if (cancelled) return;
+      if (Array.isArray(cats)) setMasterCategories(cats);
+      if (Array.isArray(brs)) setMasterBrands(brs);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   // New promotion
   function handleNewPromotion() {
@@ -298,20 +371,55 @@ export default function AdminPromotion() {
   }
 
   // Derived filters for products
-  const categories = useMemo(
-    () =>
-      Array.from(
-        new Set(allProducts.map((p) => p.category).filter(Boolean))
-      ).sort(),
-    [allProducts]
-  );
-  const brands = useMemo(
-    () =>
-      Array.from(
-        new Set(allProducts.map((p) => p.brand).filter(Boolean))
-      ).sort(),
-    [allProducts]
-  );
+  const categories = useMemo(() => {
+    if (masterCategories.length) {
+      // API /api/categories น่าจะเป็น { id, name }
+      return masterCategories
+        .filter((c) => c && c.id && c.name)
+        .map((c) => ({ id: c.id, name: c.name }));
+    }
+
+    // fallback จาก products
+    const map = new Map();
+    for (const p of allProducts) {
+      if (p.categoryId && p.category && !map.has(p.categoryId)) {
+        map.set(p.categoryId, { id: p.categoryId, name: p.category });
+      }
+    }
+    return Array.from(map.values());
+  }, [masterCategories, allProducts]);
+
+  const brands = useMemo(() => {
+    if (masterBrands.length) {
+      return masterBrands
+        .filter((b) => b && b.id && b.name)
+        .map((b) => ({ id: b.id, name: b.name }));
+    }
+
+    const map = new Map();
+    for (const p of allProducts) {
+      if (p.brandId && p.brand && !map.has(p.brandId)) {
+        map.set(p.brandId, { id: p.brandId, name: p.brand });
+      }
+    }
+    return Array.from(map.values());
+  }, [masterBrands, allProducts]);
+
+  // brand ที่ต้องใช้ตาม filterCat
+  const brandOptions = useMemo(() => {
+    if (!filterCat) return brands;
+
+    const set = new Set(
+      allProducts
+        .filter((p) => p.category === filterCat)
+        .map((p) => p.brand)
+        .filter(Boolean)
+    );
+
+    return brands.filter((b) => set.has(b.name));
+  }, [filterCat, brands, allProducts]);
+
+
 
   const assignedIds = useMemo(
     () => new Set(assigned.map((x) => x.id)),
@@ -320,6 +428,7 @@ export default function AdminPromotion() {
 
   const availableProducts = useMemo(() => {
     let list = allProducts.filter((p) => !assignedIds.has(p.id));
+
     if (prodQ.trim()) {
       const q = prodQ.trim().toLowerCase();
       list = list.filter(
@@ -328,10 +437,18 @@ export default function AdminPromotion() {
           String(p.pid || p.id).toLowerCase().includes(q)
       );
     }
-    if (filterCat) list = list.filter((p) => p.category === filterCat);
-    if (filterBrand) list = list.filter((p) => p.brand === filterBrand);
+
+    if (filterCat) {
+      list = list.filter((p) => p.category === filterCat);
+    }
+    if (filterBrand) {
+      list = list.filter((p) => p.brand === filterBrand);
+    }
+
     return list.slice(0, 200);
   }, [allProducts, assignedIds, prodQ, filterCat, filterBrand]);
+
+
 
   async function handleAttachPicked() {
     if (!current || !current.id || picked.size === 0) return;
@@ -341,23 +458,41 @@ export default function AdminPromotion() {
       const linked = await listProductsOfPromotion(current.id);
       setAssigned(linked);
       setPicked(new Set());
-      setMsg("✅ Attached products to promotion.");
+      setMsg("Attached products to promotion.");
     } catch (e) {
-      setMsg(`❌ Attach failed: ${e.message}`);
+      setMsg(`Attach failed: ${e.message}`);
     }
   }
 
-  async function handleDetachOne(productId) {
+  // กดปุ่ม Remove → แค่เปิดกล่องยืนยัน
+  function handleAskDetach(product) {
     if (!current || !current.id) return;
-    if (!confirm("Remove this product from the promotion?")) return;
+    setConfirmTarget(product);
+    setConfirmOpen(true);
+  }
+
+  // กด Confirm ใน modal → ลบจริง
+  async function handleConfirmDetach() {
+    if (!current || !current.id || !confirmTarget) return;
+
     try {
-      await detachProduct(current.id, productId);
-      setAssigned((prev) => prev.filter((x) => x.id !== productId));
-      setMsg("✅ Removed.");
+      await detachProduct(current.id, confirmTarget.id);
+      setAssigned(prev => prev.filter(x => x.id !== confirmTarget.id));
+      setMsg("Removed.");
     } catch (e) {
-      setMsg(`❌ Remove failed: ${e.message}`);
+      setMsg(` Remove failed: ${e.message}`);
+    } finally {
+      setConfirmOpen(false);
+      setConfirmTarget(null);
     }
   }
+
+  // กด Cancel / ปิด modal
+  function handleCancelDetach() {
+    setConfirmOpen(false);
+    setConfirmTarget(null);
+  }
+
 
   async function handleSavePromotion() {
     if (!current) return;
@@ -365,26 +500,35 @@ export default function AdminPromotion() {
     setMsg("");
     try {
       let saved;
+      let text = "";
+
       if (isNew || !current.id) {
         // CREATE
         saved = await createPromotion(current);
         setIsNew(false);
         setCurrent(saved);
         setSelectedId(saved.id);
-        setMsg("✅ Created promotion.");
+        text = "Promotion has been created successfully.";
       } else {
         // UPDATE
         saved = await updatePromotion(current.id, current);
         setCurrent(saved);
-        setMsg("✅ Saved promotion.");
+        text = "Promotion has been saved successfully.";
       }
+
       await refreshPromotions();
+
+      // แสดง popup แบบสวย ๆ
+      setAlertText(text);
+      setAlertOpen(true);
     } catch (e) {
-      setMsg(`❌ Save failed: ${e.message}`);
+      setMsg(`Save failed: ${e.message}`);
     } finally {
       setSaving(false);
     }
   }
+
+
 
   return (
     <div className="promo-page">
@@ -504,7 +648,7 @@ export default function AdminPromotion() {
                   />
                 </label>
 
-                <div className="row gap">
+                <div className="row gap row-type-scope-status">
                   <label className="flex">
                     <span>Type</span>
                     <select
@@ -518,11 +662,10 @@ export default function AdminPromotion() {
                       <option value="AMOUNT_OFF">AMOUNT_OFF</option>
                       <option value="BUY_X_GET_Y">BUY_X_GET_Y</option>
                       <option value="FIXED_PRICE">FIXED_PRICE</option>
-                      <option value="SHIPPING_DISCOUNT">
-                        SHIPPING_DISCOUNT
-                      </option>
+                      <option value="SHIPPING_DISCOUNT">SHIPPING_DISCOUNT</option>
                     </select>
                   </label>
+
                   <label className="flex">
                     <span>Scope</span>
                     <select
@@ -538,6 +681,7 @@ export default function AdminPromotion() {
                       <option value="BRAND">BRAND</option>
                     </select>
                   </label>
+
                   <label className="flex">
                     <span>Status</span>
                     <select
@@ -554,6 +698,8 @@ export default function AdminPromotion() {
                     </select>
                   </label>
                 </div>
+
+
 
                 {/* Dynamic fields by type */}
                 {current.promoType === "PERCENT_OFF" && (
@@ -726,8 +872,8 @@ export default function AdminPromotion() {
                         ? "Creating…"
                         : "Saving…"
                       : isNew
-                      ? "Create"
-                      : "Save"}
+                        ? "Create"
+                        : "Save"}
                   </button>
                 </div>
               </div>
@@ -762,12 +908,14 @@ export default function AdminPromotion() {
                     <div className="grow">
                       <div className="title">{p.name}</div>
                       <div className="sub">
-                        {p.brand} • {p.category}
+                        {p.brand && p.category
+                          ? `${p.brand} • ${p.category}`
+                          : p.brand || p.category || ""}
                       </div>
                     </div>
                     <button
                       className="btn ghost danger"
-                      onClick={() => handleDetachOne(p.id)}
+                      onClick={() => handleAskDetach(p)} 
                     >
                       Remove
                     </button>
@@ -796,11 +944,12 @@ export default function AdminPromotion() {
               >
                 <option value="">All categories</option>
                 {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                  <option key={c.id} value={c.name}>
+                    {c.name}
                   </option>
                 ))}
               </select>
+
               <select
                 className="inp"
                 value={filterBrand}
@@ -808,11 +957,14 @@ export default function AdminPromotion() {
               >
                 <option value="">All brands</option>
                 {brands.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
+                  <option key={b.id} value={b.name}>
+                    {b.name}
                   </option>
                 ))}
               </select>
+
+
+
             </div>
 
             <div className="picker">
@@ -865,6 +1017,54 @@ export default function AdminPromotion() {
           </div>
         </section>
       </div>
+      {confirmOpen && (
+        <div className="promo-confirm-overlay">
+          <div className="promo-confirm-dialog">
+            <h3>Please Confirm</h3>
+            <p>
+              This product will be removed from this promotion.
+              Are you sure you want to continue?
+            </p>
+
+            <div className="promo-confirm-actions">
+              <button
+                type="button"
+                className="promo-btn-cancel"
+                onClick={handleCancelDetach}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="promo-btn-confirm"
+                onClick={handleConfirmDetach}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {alertOpen && (
+        <div className="promo-confirm-overlay">
+          <div className="promo-confirm-dialog">
+            <h3>Success</h3>
+            <p>{alertText}</p>
+
+            <div className="promo-confirm-actions">
+              <button
+                type="button"
+                className="promo-btn-confirm"
+                onClick={() => setAlertOpen(false)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }

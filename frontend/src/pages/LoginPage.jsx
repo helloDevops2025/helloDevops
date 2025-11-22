@@ -3,14 +3,15 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import "./LoginPage.css";
 import { setAuth, isAuthed } from "../auth";
-import api from "../lib/api";               // ✅ ต้องมี import นี้!
+import api from "../lib/api";            
 
 export default function LoginPage() {
-  const [username, setUsername] = useState(""); // รองรับทั้ง email/username
+  const [username, setUsername] = useState(""); 
   const [password, setPassword] = useState("");
   const [pwdVisible, setPwdVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
+  const [entered, setEntered] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,30 +38,22 @@ export default function LoginPage() {
     e.preventDefault();
     setErr("");
     setSubmitting(true);
-
     try {
-      // --- ตรวจอินพุตให้ชัด ---
+      // ตรวจอินพุตให้ชัด
       const emailInput = username.trim();
       if (!emailInput) {
-        setErr("กรุณากรอกอีเมล");
+        setErr("Please enter your email");
+        setSubmitting(false);
         return;
       }
-      // อนุญาตให้พิมพ์แค่ชื่อได้ เช่น 'admin' จะเติม @gmail.com ให้
-      const email = emailInput.includes("@") ? emailInput : `${emailInput}@gmail.com`;
+      const payload = { email: emailInput, password };
 
-      if (!password) {
-        setErr("กรุณากรอกรหัสผ่าน");
-        return;
-      }
-
-      // --- ยิง API จริง ---
-      const payload = { email, password };
       const res = await api.post("api/auth/login", payload);
 
       // รองรับทั้งรูปแบบมี/ไม่มี token
       const token = res.data?.token || "dummy-token";
       const role  = res.data?.role  || res.data?.user?.role  || "USER";
-      const emailFromApi = res.data?.email || res.data?.user?.email || email;
+      const emailFromApi = res.data?.email || res.data?.user?.email || emailInput;
 
       setAuth({ token, role, user: { email: emailFromApi } });
 
@@ -76,20 +69,53 @@ export default function LoginPage() {
       // log ช่วยไล่ปัญหา (ดูใน Console)
       console.error("LOGIN ERROR:", err?.response?.status, err?.response?.data, err);
       const msg = err?.response?.status === 401
-        ? "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
+        ? "Incorrect username or password"
         : (typeof err?.response?.data === "string"
             ? err.response.data
-            : "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
+            : "Cannot connect to server");
       setErr(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
+  const enterSite = () => {
+    // Reveal the form; the scrolling/focus will run from the effect after render
+    setEntered(true);
+  };
+
+  useEffect(() => {
+    if (!entered) return;
+    const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const form = document.getElementById("loginForm");
+    if (form) {
+      try {
+        form.scrollIntoView({ behavior: prefersReduced ? "auto" : "smooth", block: "start" });
+        const el = form.querySelector("input#email");
+        if (el) el.focus();
+      } catch (e) {
+        window.scrollTo(0, form.offsetTop || 0);
+      }
+    }
+  }, [entered]);
+
   return (
-    <main className="shell">
-      {/* ซ้าย: ฟอร์ม */}
-      <section className="form-side">
+    <>
+      {!entered && (
+        <section className="welcome-splash" role="region" aria-label="Welcome">
+          <div className="welcome-inner">
+            <img src="/assets/logo.png" alt="Pure Mart" className="splash-logo" />
+            <h1>Welcome to Pure Mart</h1>
+            <p className="splash-lead">Fresh groceries and essentials delivered to your door.</p>
+            <button className="enter-btn" onClick={enterSite} aria-label="Enter site">Enter</button>
+          </div>
+        </section>
+      )}
+
+      {entered && (
+        <main className="shell">
+        {/* ซ้าย: ฟอร์ม */}
+        <section className="form-side">
         <div className="logo">
           <img src="/assets/logo.png" alt="Logo" />
         </div>
@@ -126,16 +152,14 @@ export default function LoginPage() {
             <button
               className="toggle-eye"
               type="button"
-              aria-label="แสดง/ซ่อนรหัสผ่าน"
+              aria-label="Show/Hide password"
               onClick={() => setPwdVisible((v) => !v)}
             >
               {pwdVisible ? <EyeOpen /> : <EyeClosed />}
             </button>
           </div>
 
-          <div className="row-end">
-            <a href="#" className="link">Forgot Password?</a>
-          </div>
+        
 
           {err && (
             <p style={{ color: "crimson", fontSize: 14, marginTop: 8 }}>
@@ -166,7 +190,9 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-      </aside>
-    </main>
+        </aside>
+        </main>
+      )}
+    </>
   );
 }

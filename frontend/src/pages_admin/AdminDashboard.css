@@ -2,109 +2,74 @@
 /* Scope ทั้งหน้าด้วย data-page เพื่อไม่ชนกับหน้าอื่น */
 .app[data-page="AdminDashboard"] .admin-dashboard {
   padding: 24px 28px;
-  color: #0f172a; /* slate-900 */
+  color: #0f172a;
+  /* slate-900 */
+}
+
+.no-print {
+
+}
+
+.only-print {
+  display: none;
 }
 
 /* Header */
 .app[data-page="AdminDashboard"] .admin-dashboard .header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .header h1 {
   font-size: 28px;
   font-weight: 800;
   margin: 0 0 4px 0;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .header .sub {
-  color: #64748b; /* slate-500 */
+  color: #64748b;
   margin: 0;
   font-size: 14px;
 }
 
-/* 1) จัดกึ่งกลางทุกอย่างในแถบปุ่ม */
 .app[data-page="AdminDashboard"] .admin-dashboard .header-actions {
   display: flex;
-  align-items: flex-end;
-  /* align-items: center; */
-  gap: 10px;
+  align-items: center;
+  gap: 14px;
 }
 
-/* 2) ปุ่มให้สูงเท่ากันทุกปุ่ม + ไม่ให้ padding เพิ่มความสูง */
+
 .app[data-page="AdminDashboard"] .admin-dashboard .btn {
   border: 1px solid #e2e8f0;
   background: #ffffff;
   border-radius: 10px;
-  height: 44px;           /* ความสูงคงที่ */
-  padding: 0 14px;        /* มีเฉพาะซ้าย/ขวา เพื่อไม่เพิ่มความสูง */
-  box-sizing: border-box; /* รวม padding/border ใน 44px */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  padding: 10px 14px;
   font-size: 14px;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.03);
-}
-.app[data-page="AdminDashboard"] .admin-dashboard .btn:hover { background: #f8fafc; }
-.app[data-page="AdminDashboard"] .admin-dashboard .btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
-.app[data-page="AdminDashboard"] .admin-dashboard .btn.ghost { background: transparent; }
-
-/* 3) กล่องปฏิทินให้เท่าปุ่ม */
-/* .app[data-page="AdminDashboard"] .admin-dashboard .daterange {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  line-height: 1.2;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  height: 44px;           
-  padding: 0 14px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
-  box-sizing: border-box;
-} */
-
-
-/* ปรับกล่องปฏิทินให้ขนาดเท่ากับปุ่ม Export CSV / Print */
-.app[data-page="AdminDashboard"] .admin-dashboard .daterange {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 10px;
-  height: 44px; /* ✅ ให้เท่ากับปุ่ม */
-  padding: 0 14px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  height: 36px;
 }
 
-.app[data-page="AdminDashboard"] .admin-dashboard .daterange label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: #334155;
-  font-weight: 600;
+.app[data-page="AdminDashboard"] .admin-dashboard .btn:hover {
+  background: #f8fafc;
 }
 
-.app[data-page="AdminDashboard"] .admin-dashboard .daterange input[type="date"] {
-  height: 30px;
-  padding: 0 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  background: #fff;
-  color: #0f172a;
-  outline: none;
-  min-width: 140px; /* ✅ เพิ่มให้ช่องมีขนาดเท่ากัน */
+.app[data-page="AdminDashboard"] .admin-dashboard .btn.primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
 }
 
-.app[data-page="AdminDashboard"] .admin-dashboard .daterange input[type="date"]:focus {
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 3px #93c5fd40;
+.app[data-page="AdminDashboard"] .admin-dashboard .btn.ghost {
+  background: transparent;
 }
-
 
 /* KPI Grid */
 .app[data-page="AdminDashboard"] .admin-dashboard .kpi-grid {
@@ -113,11 +78,13 @@
   gap: 14px;
   margin-bottom: 18px;
 }
+
 @media (max-width: 1200px) {
   .app[data-page="AdminDashboard"] .admin-dashboard .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
 @media (max-width: 640px) {
   .app[data-page="AdminDashboard"] .admin-dashboard .kpi-grid {
     grid-template-columns: 1fr;
@@ -137,20 +104,30 @@
   color: #64748b;
   margin-bottom: 6px;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .kpi .kpi-value {
   font-size: 28px;
   font-weight: 800;
   line-height: 1.1;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .kpi .kpi-note {
   margin-top: 6px;
   font-size: 12px;
   color: #94a3b8;
 }
 
-.app[data-page="AdminDashboard"] .admin-dashboard .kpi.success { border-color: #10b98122; }
-.app[data-page="AdminDashboard"] .admin-dashboard .kpi.warn { border-color: #f59e0b22; }
-.app[data-page="AdminDashboard"] .admin-dashboard .kpi.danger { border-color: #ef444422; }
+.app[data-page="AdminDashboard"] .admin-dashboard .kpi.success {
+  border-color: #10b98122;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .kpi.warn {
+  border-color: #f59e0b22;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .kpi.danger {
+  border-color: #ef444422;
+}
 
 /* Charts section */
 .app[data-page="AdminDashboard"] .admin-dashboard .charts {
@@ -159,51 +136,84 @@
   gap: 14px;
   margin-bottom: 18px;
 }
+
 @media (max-width: 1100px) {
   .app[data-page="AdminDashboard"] .admin-dashboard .charts {
     grid-template-columns: 1fr;
   }
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .card .card-head {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 8px;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .card h3 {
-  margin: 0; font-size: 16px; font-weight: 700;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
 }
-.app[data-page="AdminDashboard"] .admin-dashboard .mini-hint { color: #94a3b8; font-size: 12px; }
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mini-hint {
+  color: #94a3b8;
+  font-size: 12px;
+}
 
 /* Bar chart (pure CSS) */
 .app[data-page="AdminDashboard"] .admin-dashboard .bars {
-  display: grid; gap: 8px;
+  display: grid;
+  gap: 8px;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .bar-row {
   display: grid;
   grid-template-columns: 1fr 6fr 60px;
   align-items: center;
   gap: 10px;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .bar-label {
-  color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .bar-track {
-  height: 12px; background: #f1f5f9; border-radius: 999px; overflow: hidden;
+  height: 12px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .bar-fill {
   height: 100%;
   background: linear-gradient(90deg, #60a5fa, #2563eb);
   border-radius: 999px;
 }
-.app[data-page="AdminDashboard"] .admin-dashboard .bar-value { text-align: right; font-weight: 700; }
 
-/* Notes / Suggestion list */
-.app[data-page="AdminDashboard"] .admin-dashboard .notes .suggest {
-  margin: 8px 0 0; padding-left: 18px;
+.app[data-page="AdminDashboard"] .admin-dashboard .bar-value {
+  text-align: right;
+  font-weight: 700;
 }
+
+.app[data-page="AdminDashboard"] .admin-dashboard .notes .suggest {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
 .app[data-page="AdminDashboard"] .admin-dashboard .notes li {
   margin-bottom: 10px;
 }
-.app[data-page="AdminDashboard"] .admin-dashboard .muted { color: #94a3b8; font-size: 12px; margin-top: 2px; }
+
+.app[data-page="AdminDashboard"] .admin-dashboard .muted {
+  color: #94a3b8;
+  font-size: 12px;
+  margin-top: 2px;
+}
 
 /* Table */
 .app[data-page="AdminDashboard"] .admin-dashboard .table-wrap .search {
@@ -213,31 +223,424 @@
   padding: 0 12px;
   width: 240px;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .table {
   margin-top: 10px;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .thead,
 .app[data-page="AdminDashboard"] .admin-dashboard .trow {
   display: grid;
-  grid-template-columns: 3fr 1.2fr 1.4fr 1.2fr 1fr 1fr 1.2fr 1.4fr 1.6fr;
+  grid-template-columns: 3fr 1.2fr 1.4fr 1.2fr 1fr 1fr 1.2fr 1.4fr 1.6fr 0.8fr;
   gap: 10px;
   padding: 12px 10px;
 }
+
 .app[data-page="AdminDashboard"] .admin-dashboard .thead {
-  background: #f1f5f9; border-radius: 12px; font-weight: 700; color: #334155;
+  background: #f1f5f9;
+  border-radius: 12px;
+  font-weight: 700;
+  color: #334155;
 }
+
+.app[data-page="AdminDashboard"] .admin-dashboard .thead > div,
+.app[data-page="AdminDashboard"] .admin-dashboard .trow .cell {
+  text-align: center;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .trow .cell.name {
+  text-align: left;
+  justify-content: flex-start;
+}
+
+
+
+/* จัดหัวคอลัมน์ที่เป็นตัวเลขให้กลาง เหมือน .cell.num */
+.app[data-page="AdminDashboard"] .admin-dashboard .thead>div:nth-child(2),
+/* Product ID */
+.app[data-page="AdminDashboard"] .admin-dashboard .thead>div:nth-child(5),
+/* Price */
+.app[data-page="AdminDashboard"] .admin-dashboard .thead>div:nth-child(6),
+/* In Stock */
+.app[data-page="AdminDashboard"] .admin-dashboard .thead>div:nth-child(7),
+/* Sold (Week) */
+.app[data-page="AdminDashboard"] .admin-dashboard .thead>div:nth-child(9)
+
+/* Last Restocked */
+  {
+  background: #f1f5f9;
+  border-radius: 12px;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
 .app[data-page="AdminDashboard"] .admin-dashboard .trow {
   border-bottom: 1px dashed #e2e8f0;
+  min-height: 50px;
+  align-items: center;
 }
-.app[data-page="AdminDashboard"] .admin-dashboard .trow:last-child { border-bottom: 0; }
-.app[data-page="AdminDashboard"] .admin-dashboard .cell.num { text-align: right; }
-.app[data-page="AdminDashboard"] .admin-dashboard .cell.name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.app[data-page="AdminDashboard"] .admin-dashboard .trow:last-child {
+  border-bottom: 0;
+
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .cell.num {
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .cell.name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .app[data-page="AdminDashboard"] .admin-dashboard .pill {
-  display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
 }
-.app[data-page="AdminDashboard"] .admin-dashboard .pill.ok { background: #dcfce7; color: #14532d; }
-.app[data-page="AdminDashboard"] .admin-dashboard .pill.warn { background: #fef9c3; color: #713f12; }
-.app[data-page="AdminDashboard"] .admin-dashboard .pill.danger { background: #fee2e2; color: #7f1d1d; }
+
+.app[data-page="AdminDashboard"] .admin-dashboard .pill.ok {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .pill.warn {
+  background: #fef9c3;
+  color: #713f12;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .pill.danger {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
 
 /* utilities */
-.app[data-page="AdminDashboard"] .admin-dashboard .hide { display: none; }
+.app[data-page="AdminDashboard"] .admin-dashboard .hide {
+  display: none;
+}
+
+
+/* ========================================================== */
+/* Date range picker (header-actions) - รุ่นปรับขนาดเตี้ย   */
+/* ========================================================== */
+
+/* กล่องรวม From / To / Apply */
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .daterange {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 10px;
+  white-space: nowrap;
+
+}
+
+
+
+
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .dr-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: max-content;
+  
+}
+
+
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .dr-label span {
+  margin-bottom: 0;
+  font-weight: 500;
+  color: #475569;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .dr-label input[type="date"] {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: #0f172a;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  min-width: 130px;
+  height: 36px;
+  cursor: pointer;
+}
+
+
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .dr-sep {
+  color: #94a3b8;
+  font-weight: 500;
+  padding: 0 4px;
+  font-size: 13px;
+  user-select: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  line-height: 1;
+}
+
+
+.app[data-page="AdminDashboard"] .admin-dashboard .header-actions .btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline {
+  display: flex;
+  flex-direction: row;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+  align-items: flex-end;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  line-height: 1.1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option input[type="radio"] {
+  margin: 0;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option .label-text {
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+
+.app[data-page="AdminDashboard"] .admin-dashboard .header label {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .btn-edit-inline {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .btn-edit-inline:hover {
+  background: #1e40af;
+}
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline {
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  align-items: flex-end;
+}
+
+
+.app[data-page="AdminDashboard"] .admin-dashboard .mode-toggle.inline .radio-option .label-text {
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+
+
+@media (max-width: 900px) {
+  .app[data-page="AdminDashboard"] .admin-dashboard .header-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    height: 36px;
+  }
+
+  .app[data-page="AdminDashboard"] .admin-dashboard .header-actions .daterange {
+    width: 100%;
+    justify-content: center;
+    height: auto;
+  }
+
+}
+
+/* ================= PRINT LAYOUT ================== */
+@page {
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+
+/* ================= PRINT (Admin Dashboard) ================= */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .admin-dashboard,
+  .admin-dashboard * {
+    visibility: visible !important;
+  }
+
+  .admin-dashboard {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  header,
+  nav,
+  .topbar,
+  .navbar,
+  .header,
+  .app-header,
+  .layout-header,
+  [class*="header"],
+  [class*="topbar"],
+  [class*="navbar"] {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .sidebar,
+  .side-bar,
+  .app-sidebar,
+  .layout-sidebar,
+  .menu,
+  aside,
+  [class*="sidebar"] {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+  .only-print {
+    display: block !important;
+  }
+
+  .app[data-page="AdminDashboard"] .admin-dashboard {
+    padding: 0;
+  }
+
+  /* 4) KPI row  */
+  .app[data-page="AdminDashboard"] .admin-dashboard .kpi-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border: 1px solid #000;
+    margin: 8px 0 12px 0;
+  }
+  .app[data-page="AdminDashboard"] .admin-dashboard .kpi {
+    border-radius: 0;
+    box-shadow: none;
+    border-right: 1px solid #000;
+    padding: 8px 10px;
+  }
+  .app[data-page="AdminDashboard"] .admin-dashboard .kpi:last-child {
+    border-right: none;
+  }
+  .app[data-page="AdminDashboard"] .admin-dashboard .kpi .kpi-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  .app[data-page="AdminDashboard"] .admin-dashboard .kpi .kpi-value {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  /* 5) ตารางรายงานแบบ print-table */
+  .app[data-page="AdminDashboard"] .admin-dashboard .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    border: 1px solid #000;
+    font-size: 12px;
+  }
+
+  .app[data-page="AdminDashboard"] .admin-dashboard .print-table thead th {
+    background: #111827;
+    color: #fff;
+    font-size: 11px;
+    text-transform: uppercase;
+    padding: 6px 8px;
+    border-right: 1px solid #e5e7eb;
+    text-align: center;
+  }
+  .app[data-page="AdminDashboard"] .admin-dashboard .print-table thead th:last-child {
+    border-right: none;
+  }
+
+  .app[data-page="AdminDashboard"] .admin-dashboard .print-table tbody td {
+    padding: 6px 8px;
+    border-top: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    vertical-align: middle;
+    text-align: center;
+  }
+  .app[data-page="AdminDashboard"] .admin-dashboard .print-table tbody td:last-child {
+    border-right: none;
+  }
+  
+  .app[data-page="AdminDashboard"] .admin-dashboard .print-table td.num {
+    text-align: center;
+  }
+
+  .app[data-page="AdminDashboard"] .admin-dashboard .print-table td:first-child {
+    text-align: left;
+  }
+}
+
+
+

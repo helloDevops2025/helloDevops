@@ -8,7 +8,7 @@ export default function AdminEditProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // ── master data (fallback) ────────────────────────────────────────────────────
+  // ── master data (fallback) ────────────────────
   const fallbackCategories = [
     { id: 1, name: "Jasmine Rice" },
     { id: 2, name: "Canned Fish" },
@@ -26,7 +26,7 @@ export default function AdminEditProductPage() {
   const [categories, setCategories] = useState(fallbackCategories);
   const [brands, setBrands] = useState(fallbackBrands);
 
-  // ── form state ────────────────────────────────────────────────────────────────
+  // ── form state ─────────────────────────────
   const [form, setForm] = useState({
     productId: "",
     name: "",
@@ -39,12 +39,12 @@ export default function AdminEditProductPage() {
   });
   const [original, setOriginal] = useState(null);
 
-  // ── image state ───────────────────────────────────────────────────────────────
+  // ── image state ───────────────────────
   const [serverCoverUrl, setServerCoverUrl] = useState("");
   const [coverFile, setCoverFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
 
-  // ── refs ─────────────────────────────────────────────────────────────────────
+  // ── refs ─────────────────────────────────
   const dropzoneRef = useRef(null);
   const filePickerRef = useRef(null);
   const hintRef = useRef(null);
@@ -53,7 +53,7 @@ export default function AdminEditProductPage() {
   const priceRef = useRef(null);
   const qtyRef = useRef(null);
 
-  // ── ui state ─────────────────────────────────────────────────────────────────
+  // ── ui state ───────────────────────────
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -67,13 +67,65 @@ export default function AdminEditProductPage() {
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertLines, setAlertLines] = useState([]);
 
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmBusy, setDeleteConfirmBusy] = useState(false);
+
   const openAlert = (lines) => {
     const arr = Array.isArray(lines) ? lines : [String(lines || "")];
     setAlertLines(arr.filter(Boolean));
     setAlertOpen(true);
   };
+  
+  const performDeleteImage = async () => {
+    if (coverFile) {
+     
+      setCoverFile(null);
+      return;
+    }
 
-  // ── โหลดหมวด/ยี่ห้อ ─────────────────────────────────────────────────────────
+    if (serverCoverUrl) {
+      try {
+        let deleted = false;
+        const m = serverCoverUrl.match(/\/images\/(\d+)\/raw$/);
+        if (m && m[1]) {
+          const imageId = m[1];
+          const del = await fetch(
+            `${API_URL}/api/products/${encodeURIComponent(id)}/images/${imageId}`,
+            { method: "DELETE" }
+          );
+          if (del.ok) deleted = true;
+        }
+        if (!deleted) {
+          await fetch(
+            `${API_URL}/api/products/${encodeURIComponent(id)}/cover?mode=delete`,
+            { method: "DELETE" }
+          );
+        }
+      } catch {
+      
+      }
+      setServerCoverUrl("");
+    }
+  };
+
+  const openDeleteConfirm = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const onConfirmDeleteImage = async () => {
+    setDeleteConfirmBusy(true);
+    await performDeleteImage();
+    setDeleteConfirmBusy(false);
+    setDeleteConfirmOpen(false);
+  };
+
+  const onCancelDeleteImage = () => {
+    if (deleteConfirmBusy) return;
+    setDeleteConfirmOpen(false);
+  };
+
+
+  // ── โหลดหมวด/ยี่ห้อ ────────────────
   useEffect(() => {
     let cancelled = false;
     const safeFetch = async (url) => {
@@ -97,7 +149,7 @@ export default function AdminEditProductPage() {
     return () => { cancelled = true; };
   }, [API_URL]);
 
-  // ── โหลดสินค้า + รูป ─────────────────────────────────────────────────────────
+  // ── โหลดสินค้า + รูป ────────────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -144,7 +196,7 @@ export default function AdminEditProductPage() {
     return () => { cancelled = true; };
   }, [API_URL, id]);
 
-  // ── พรีวิวไฟล์ใหม่ ───────────────────────────────────────────────────────────
+  // ── พรีวิวไฟล์ใหม่ ──────────────
   useEffect(() => {
     if (!coverFile) {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -158,7 +210,7 @@ export default function AdminEditProductPage() {
 
   const displayImageUrl = previewUrl || serverCoverUrl;
 
-  // ── sync dropzone + ปุ่มลบรูป ────────────────────────────────────────────────
+  // ── sync dropzone + ปุ่มลบรูป ────────────────
   useEffect(() => {
     const dz = dropzoneRef.current;
     if (!dz) return;
@@ -180,39 +232,10 @@ export default function AdminEditProductPage() {
       btn.type = "button";
       btn.className = "cover-remove";
       btn.textContent = "×";
-      btn.addEventListener("click", async (e) => {
+      btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const ok = window.confirm("ภาพจะถูกลบออกจากสินค้า ต้องการลบหรือไม่?");
-        if (!ok) return;
 
-        if (coverFile) {
-          setCoverFile(null);
-        } else if (serverCoverUrl) {
-          try {
-            let deleted = false;
-            const m = serverCoverUrl.match(/\/images\/(\d+)\/raw$/);
-            if (m && m[1]) {
-              const imageId = m[1];
-              const del = await fetch(
-                `${API_URL}/api/products/${encodeURIComponent(id)}/images/${imageId}`,
-                { method: "DELETE" }
-              );
-              if (del.ok) deleted = true;
-            }
-            if (!deleted) {
-              await fetch(
-                `${API_URL}/api/products/${encodeURIComponent(id)}/cover?mode=delete`,
-                { method: "DELETE" }
-              );
-            }
-          } catch { }
-          setServerCoverUrl("");
-        }
-
-        dz.style.backgroundImage = "";
-        dz.classList.remove("cover", "has-image");
-        if (hintRef.current) hintRef.current.style.display = "";
-        removeRemoveBtn();
+        openDeleteConfirm();
       });
       dz.appendChild(btn);
     }
@@ -221,7 +244,7 @@ export default function AdminEditProductPage() {
     }
   }, [displayImageUrl, serverCoverUrl, API_URL, id, coverFile]);
 
-  // ── helpers ──────────────────────────────────────────────────────────────────
+  // ── helpers ────────────
   const toInt = (v) => {
     if (v === "" || v === null || v === undefined) return null;
     const n = Math.trunc(Number(String(v).replace(/[^\d-]/g, "")));
@@ -229,19 +252,19 @@ export default function AdminEditProductPage() {
   };
   const validateQuantity = (raw) => {
     if (raw === "" || raw === null || raw === undefined) {
-      return { ok: false, msg: "กรุณากรอกจำนวนสต็อก" };
+      return { ok: false, msg: "Please enter the stock quantity" };
     }
     const n = toInt(raw);
-    if (n === null || Number.isNaN(n)) return { ok: false, msg: "จำนวนต้องเป็นตัวเลขจำนวนเต็ม" };
-    if (n < 0) return { ok: false, msg: "ห้ามจำนวนติดลบ" };
-    if (n > 1000000) return { ok: false, msg: "ห้ามเกิน 1,000,000 ชิ้น" };
+    if (n === null || Number.isNaN(n)) return { ok: false, msg: "Stock quantity must be an integer" };
+    if (n < 0) return { ok: false, msg: "Stock quantity cannot be negative" };
+    if (n > 1000000) return { ok: false, msg: "Stock quantity must not exceed 1,000,000 units" };
     return { ok: true, msg: "" };
   };
   const digitsOnly = (s) => (s ?? "").toString().replace(/\D/g, "");
   const validateProductId = (raw) => {
     const v = digitsOnly(raw);
-    if (v.length === 0) return { ok: false, msg: "กรุณากรอกตัวเลข 1–5 หลัก" };
-    if (v.length > 5) return { ok: false, msg: "ห้ามเกิน 5 หลัก" };
+    if (v.length === 0) return { ok: false, msg: "Please enter a number with 1 to 5 digits" };
+    if (v.length > 5) return { ok: false, msg: "Max 5 digits" };
     return { ok: true, msg: "", value: v };
   };
   const normCode = (v) => {
@@ -249,7 +272,7 @@ export default function AdminEditProductPage() {
     return d.replace(/^0+/, "") || "0";
   };
 
-  // ── handlers ─────────────────────────────────────────────────────────────────
+  // ── handlers ─────────────────
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((s) => ({ ...s, [name]: type === "checkbox" ? checked : value }));
@@ -269,7 +292,7 @@ export default function AdminEditProductPage() {
     }
 
     if (name === "price") {
-      // เฉพาะตัวเลข+จุดทศนิยม, จำกัด 1 จุดทศนิยม, ไม่เกิน 10000
+   
       let cleaned = value.replace(/[^\d.]/g, "");
       const parts = cleaned.split(".");
       if (parts.length > 2) cleaned = parts[0] + "." + parts[1];
@@ -301,7 +324,7 @@ export default function AdminEditProductPage() {
     if (f && f.type.startsWith("image/")) setCoverFile(f);
   };
 
-  // ── Product Code ─────────────────────────────────────────────────────────────
+  // ── Product Code ─────
   const onProductIdChange = (e) => {
     const v = digitsOnly(e.target.value).slice(0, 5);
     setForm((s) => ({ ...s, productId: v }));
@@ -324,7 +347,7 @@ export default function AdminEditProductPage() {
     try {
       const dup = await clientCheckDuplicateProductId(pidRes.value);
       if (dup) {
-        setPidError("รหัสสินค้านี้ถูกใช้แล้ว");
+        setPidError("This product code has already been assigned");
         productIdRef.current?.focus();
         return;
       }
@@ -334,7 +357,7 @@ export default function AdminEditProductPage() {
     }
   };
 
-  // ── sync inStock จาก quantity ────────────────────────────────────────────────
+  // ── sync inStock จาก quantity
   useEffect(() => {
     const n = toInt(form.quantity);
     if (n === null) return;
@@ -342,14 +365,14 @@ export default function AdminEditProductPage() {
     if (form.inStock !== forced) {
       setForm((s) => ({ ...s, inStock: forced }));
     }
-  }, [form.quantity]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.quantity]); 
 
   const onCancel = (e) => {
     e.preventDefault();
     navigate("/admin/products");
   };
 
-  // ── เช็คซ้ำ productId ฝั่ง client (ยกเว้นตัวเอง) ────────────────────────────
+
   const clientCheckDuplicateProductId = async (pid) => {
     if (!pid) return false;
     const target = normCode(pid);
@@ -390,36 +413,35 @@ export default function AdminEditProductPage() {
     setMsg("");
     setNameError(""); setPriceError(""); setQtyError("");
 
-    if (checkingPid) return; // กันกดระหว่างเช็ค PID
+    if (checkingPid) return; 
 
-    // ✅ ตรวจรวมทุกช่องที่จำเป็น แล้ว alert ทีเดียว
     const missing = [];
     let firstFocus = null;
 
     // name
     if (!String(form.name || "").trim()) {
-      const msg = "กรุณากรอกชื่อสินค้า";
+      const msg = "Please enter the product name";
       setNameError(msg); missing.push(msg);
       firstFocus ||= nameRef.current;
     }
 
     // price
     if (form.price === "") {
-      const msg = "กรุณากรอกราคา";
+      const msg = "Please enter a price";
       setPriceError(msg); missing.push(msg);
       firstFocus ||= priceRef.current;
     } else {
       const nPrice = Number(form.price);
       if (!Number.isFinite(nPrice)) {
-        const msg = "ราคาต้องเป็นตัวเลขเท่านั้น";
+        const msg = "Price must be a numeric value only";
         setPriceError(msg); missing.push(msg);
         firstFocus ||= priceRef.current;
       } else if (nPrice <= 0) {
-        const msg = "ราคาต้องมากกว่า 0";
+        const msg = "Price must be greater than 0";
         setPriceError(msg); missing.push(msg);
         firstFocus ||= priceRef.current;
       } else if (nPrice > 10000) {
-        const msg = "ราคาห้ามเกิน 10,000";
+        const msg = "Price must not exceed 10,000";
         setPriceError(msg); missing.push(msg);
         firstFocus ||= priceRef.current;
       }
@@ -427,7 +449,7 @@ export default function AdminEditProductPage() {
 
     // quantity
     if (form.quantity === "") {
-      const msg = "กรุณากรอกจำนวนสต็อก";
+      const msg = "Please enter the stock quantity";
       setQtyError(msg); missing.push(msg);
       firstFocus ||= qtyRef.current;
     } else {
@@ -439,22 +461,14 @@ export default function AdminEditProductPage() {
     }
 
     // category / brand
-    if (!form.categoryId) missing.push("กรุณาเลือก Category");
-    if (!form.brandId) missing.push("กรุณาเลือก Brand");
-
-    // if (missing.length) {
-    //   window.alert("• " + missing.join("\n• "));
-    //   (firstFocus || nameRef.current || productIdRef.current)?.focus();
-    //   return;
-    // }
+    if (!form.categoryId) missing.push("Please select a category");
+    if (!form.brandId) missing.push("Please select a brand");
     if (missing.length) {
-      openAlert(missing); // ✅ ใช้ modal แทน alert เดิม
+      openAlert(missing); 
       (firstFocus || nameRef.current || productIdRef.current)?.focus();
       return;
     }
 
-
-    // validate + กันซ้ำ Product Code (เว้นถ้าไม่เปลี่ยน)
     const pidRes = validateProductId(form.productId);
     if (!pidRes.ok) {
       setPidError(pidRes.msg);
@@ -464,7 +478,7 @@ export default function AdminEditProductPage() {
     if (normCode(pidRes.value) !== normCode(original?.productId)) {
       const dup = await clientCheckDuplicateProductId(pidRes.value);
       if (dup) {
-        setPidError("รหัสสินค้านี้ถูกใช้แล้ว");
+        setPidError("This product code is already in use");
         productIdRef.current?.focus();
         return;
       }
@@ -513,11 +527,11 @@ export default function AdminEditProductPage() {
         });
         if (!upImg.ok) {
           const t = await upImg.text().catch(() => "");
-          setMsg(`อัปเดตสำเร็จ แต่รูปอัปโหลดไม่สำเร็จ: ${t || upImg.status}`);
+          setMsg(`Product added successfully, but image upload failed: ${t || upImg.status}`);
         }
       }
 
-      setMsg("บันทึกการแก้ไขสำเร็จ");
+      setMsg("Product added successfully");
       navigate("/admin/products");
     } catch (err) {
       setMsg(String(err?.message || err));
@@ -552,7 +566,7 @@ export default function AdminEditProductPage() {
                     inputMode="numeric"
                     pattern="\d{1,5}"
                     maxLength={5}
-                    placeholder="เช่น 00001 (ตัวเลขไม่เกิน 5 หลัก)"
+                    placeholder="For example: 00001 (up to 5 digits)"
                     value={form.productId}
                     onChange={onProductIdChange}
                     onBlur={onProductIdBlur}
@@ -644,7 +658,7 @@ export default function AdminEditProductPage() {
 
                   {/* Stock */}
                   <div className="field">
-                    <label>Stock (จำนวนคงเหลือ) *</label>
+                    <label>Stock *</label>
                     <input
                       name="quantity"
                       type="number"
@@ -743,7 +757,7 @@ export default function AdminEditProductPage() {
               left: 10,
               fontSize: 12,
               color: "rgba(102,102,102,0.2)",
-              zIndex: -1,            // ✅ ดันไปอยู่ “หลัง” layer อื่นทั้งหมด
+              zIndex: -1,            
               pointerEvents: "none",
             }}
           >
@@ -771,7 +785,7 @@ export default function AdminEditProductPage() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 style={{ margin: 0, fontSize: 18 }}>โปรดตรวจสอบ</h3>
+              <h3 style={{ margin: 0, fontSize: 18 }}>Please Confirm</h3>
               <ul style={{ margin: "10px 0 0 18px" }}>
                 {alertLines.map((l, i) => <li key={i}>{l}</li>)}
               </ul>
@@ -783,16 +797,77 @@ export default function AdminEditProductPage() {
                   onClick={() => setAlertOpen(false)}
                   style={{ padding: "8px 14px", borderRadius: 8 }}
                 >
-                  ตกลง
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {deleteConfirmOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,.45)",
+              display: "grid",
+              placeItems: "center",
+              zIndex: 9999,
+            }}
+            onClick={onCancelDeleteImage}
+          >
+            <div
+              style={{
+                width: "min(520px, 92vw)",
+                background: "#ffffff",
+                borderRadius: 16,
+                padding: "22px 24px",
+                boxShadow: "0 18px 45px rgba(15,23,42,.35)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
+                Please Confirm
+              </h3>
+              <p style={{ marginTop: 10, marginBottom: 0, color: "#4b5563", fontSize: 14 }}>
+                This image is about to be deleted. Are you sure you want to continue?
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 12,
+                  marginTop: 20,
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={onCancelDeleteImage}
+                  disabled={deleteConfirmBusy}
+                  style={{ minWidth: 96, borderRadius: 999 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={onConfirmDeleteImage}
+                  disabled={deleteConfirmBusy}
+                  style={{ minWidth: 110, borderRadius: 999 }}
+                >
+                  {deleteConfirmBusy ? "Deleting..." : "Confirm"}
                 </button>
               </div>
             </div>
           </div>
         )}
 
+
       </main>
     </div>
   );
 }
 
-// 

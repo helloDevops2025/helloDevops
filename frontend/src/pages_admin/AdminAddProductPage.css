@@ -141,13 +141,13 @@ h1 { margin: 24px; text-align: center; font-size: 28px; }
   border-radius: 16px;
   min-height: 320px;
   position: relative;
-  overflow: hidden;            /* ให้รูปถูกตัดตามมุมโค้งของกล่อง */
+  overflow: hidden;          
 }
 
-/* เมื่อใช้โหมด cover ให้รูปพื้นหลังพอดีกล่อง */
+
 .app[data-page="AdminAddProductPage"] .image-drop.cover {
-  background-size: cover;      /* สำคัญ: เติมเต็มกล่อง */
-  background-position: center; /* จัดกึ่งกลาง */
+  background-size: cover;     
+  background-position: center; 
   background-repeat: no-repeat;
 }
 
@@ -164,14 +164,14 @@ h1 { margin: 24px; text-align: center; font-size: 28px; }
   line-height: 26px;
 }
 
-/* พื้นที่ thumbnails เผื่ออนาคต (ซ่อนไว้เมื่อใช้ cover) */
+
 .app[data-page="AdminAddProductPage"] .thumbs { margin-top: 12px; display: none; }
 .app[data-page="AdminAddProductPage"] .image-drop.cover + .thumbs { display: none; }
 
-/* มีรูปแล้ว → ซ่อน ::before ทันที */
+
 .app[data-page="AdminAddProductPage"] .image-drop.has-image::before {
   display: none !important;
-  content: none !important;   /* กันบางเบราว์เซอร์ยังจองพื้นที่ */
+  content: none !important;  
 }
 
 /* ปุ่ม */

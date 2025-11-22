@@ -13,9 +13,10 @@ const MAX_ALLOWED = 1_000_000;
 const STEP = 0.01;
 const PAGE_SIZE = 9;
 
-/* ===== LocalStorage keys & cart helpers ===== */
+
 const LS_WISH = "pm_wishlist";
 const LS_CART = "pm_cart";
+
 const readCart = () => {
   try {
     const arr = JSON.parse(localStorage.getItem(LS_CART) || "[]");
@@ -29,7 +30,8 @@ const addItemToCart = ({ id, name, price, qty = 1, img }) => {
   const cart = readCart();
   const key = String(id ?? "");
   const i = cart.findIndex((x) => String(x.id) === key);
-  if (i >= 0) cart[i] = { ...cart[i], qty: Math.max(1, (cart[i].qty || 1) + qty) };
+  if (i >= 0)
+    cart[i] = { ...cart[i], qty: Math.max(1, (cart[i].qty || 1) + qty) };
   else
     cart.push({
       id: key,
@@ -41,11 +43,35 @@ const addItemToCart = ({ id, name, price, qty = 1, img }) => {
   saveCart(cart);
   const count = cart.reduce((s, it) => s + (Number(it.qty) || 0), 0);
   try {
-    window.dispatchEvent(new CustomEvent("pm_cart_updated", { detail: { count } }));
+    window.dispatchEvent(
+      new CustomEvent("pm_cart_updated", { detail: { count } })
+    );
   } catch {}
 };
 
-/* ===== Placeholder image ===== */
+
+const readWishIdsStr = () => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LS_WISH) || "[]");
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((x) =>
+        typeof x === "object" && x !== null
+          ? String(x.id ?? "")
+          : String(x ?? "")
+      )
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+
+const writeWishIdsStr = (ids) => {
+  const uniq = [...new Set(ids.map((v) => String(v)).filter(Boolean))];
+  localStorage.setItem(LS_WISH, JSON.stringify(uniq));
+};
+
+// Placeholder image
 const PLACEHOLDER_DATA =
   "data:image/svg+xml;utf8," +
   encodeURIComponent(`
@@ -56,7 +82,7 @@ const PLACEHOLDER_DATA =
       </g>
     </svg>`);
 
-/* ===== Price helpers ===== */
+// Price helpers
 const toCents = (val) => {
   if (val === "" || val === null || val === undefined) return null;
   const num = Number(val);
@@ -68,7 +94,7 @@ const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 const priceToCents = (priceBaht) =>
   Math.round((Number(priceBaht) + Number.EPSILON) * 100);
 
-/* ===== Image resolve ===== */
+// Image resolve
 const resolveImageUrl = (row) => {
   const id = row.id ?? row.productId ?? row.product_id;
   let u =
@@ -88,7 +114,7 @@ const resolveImageUrl = (row) => {
   return `${API_URL}/api/products/${encodeURIComponent(id)}/cover`;
 };
 
-/* ===== Stock helper (เหมือนหน้า Home) ===== */
+// Stock helper (เหมือนหน้า Home)
 const isOutOfStock = (p) => {
   if (!p) return false;
   const flag = p.inStock ?? p.in_stock;
@@ -99,13 +125,116 @@ const isOutOfStock = (p) => {
   return false;
 };
 
+// ===================== SEARCH HELPERS (tolerant + น้ำ → water) =====================
+
+// normalize เอาไว้เทียบภาษา/ตัวสะกดแบบทน accent + วรรณยุกต์
+const normalizeText = (s = "") =>
+  String(s)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "") // ตัดวรรณยุกต์/accents
+    .trim();
+
+// Levenshtein สำหรับ typo เล็ก ๆ เช่น "watar" → "water"
+const levenshtein = (a = "", b = "") => {
+  const A = normalizeText(a);
+  const B = normalizeText(b);
+  const m = A.length;
+  const n = B.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const v0 = new Array(n + 1).fill(0).map((_, i) => i);
+  const v1 = new Array(n + 1).fill(0);
+  for (let i = 0; i < m; i++) {
+    v1[0] = i + 1;
+    for (let j = 0; j < n; j++) {
+      const cost = A[i] === B[j] ? 0 : 1;
+      v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+    }
+    for (let k = 0; k <= n; k++) v0[k] = v1[k];
+  }
+  return v1[n];
+};
+
+// fuzzy match: ใช้กับแต่ละ field (name/brand/cat/code)
+const fuzzyMatch = (q = "", text = "") => {
+  if (!q) return false;
+  const A = normalizeText(q);
+  const B = normalizeText(text);
+  if (B.includes(A)) return true;
+
+  const tokens = B.split(/\s+/).filter(Boolean);
+  const qLen = A.length;
+  const maxDist = qLen <= 4 ? 1 : Math.max(1, Math.floor(qLen * 0.3));
+
+  for (const t of tokens) {
+    const dist = levenshtein(A, t);
+    if (dist <= maxDist) return true;
+  }
+  const distFull = levenshtein(A, B);
+  return distFull <= maxDist;
+};
+
+// ขยาย query: เช่น "น้ำ" → ["น้ำ","น้ำดื่ม","water","drinking water"]
+// เพิ่มการแมประดับหมวดหมู่ เช่น 'น้ำ' → เติมคำว่า 'beverage'/'เครื่องดื่ม'
+const expandQuery = (q = "") => {
+  const normQ = normalizeText(q);
+  const extra = [];
+
+  const namNorm = normalizeText("น้ำ");
+  if (namNorm && normQ.includes(namNorm)) {
+    // product-level synonyms
+    extra.push("น้ำดื่ม", "water", "drinking water");
+    // category-level keywords so category field can match
+    extra.push("beverage", "เครื่องดื่ม");
+  }
+
+  if (normQ.includes("water")) {
+    extra.push("น้ำ", "น้ํา", "น้ำดื่ม", "drinking water");
+    extra.push("beverage", "เครื่องดื่ม");
+  }
+
+
+  const neuNorm = normalizeText("เนื้อ");
+  if (neuNorm && normQ.includes(neuNorm)) {
+    extra.push("เนื้อสัตว์", "meat", "meats", "beef", "pork", "chicken");
+    extra.push("meats", "meat-products", "เนื้อ");
+  }
+
+
+
+  return [q, ...extra];
+};
+
+
+const matchProductWithQuery = (p, searchQ) => {
+  if (!searchQ) return true;
+
+  const name = String(p.name || "").trim();
+  const brand = String(p.brand || "").trim();
+  const cat = String(p.cat || "").trim();
+  const code = String(p.productCode || p.id || "").trim();
+
+  if (!name && !brand && !cat && !code) return false;
+
+  const fields = [name, brand, cat, code].filter(Boolean);
+  const variants = expandQuery(searchQ);
+
+  for (const v of variants) {
+    for (const f of fields) {
+      if (fuzzyMatch(v, f)) return true;
+    }
+  }
+  return false;
+};
+
 export default function ShopPage() {
   const [searchParams] = useSearchParams();
 
   const [PRODUCTS, setPRODUCTS] = useState([]);
   const [CATEGORIES, setCATEGORIES] = useState([]);
   const [BRANDS_MASTER, setBRANDS_MASTER] = useState([]);
-  const [PROMO_LIST, setPROMO_LIST] = useState([]); // รายชื่อโปรสำหรับ filter
+  const [PROMO_LIST, setPROMO_LIST] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState("");
 
@@ -143,12 +272,12 @@ export default function ShopPage() {
           for (const k of keys) if (obj && obj[k] != null) return obj[k];
         };
 
-        // 🔹 ดึงโปรโมชั่น ACTIVE ทั้งหมด
+
         const promos = await safeJson(
           `${API_URL}/api/promotions?status=ACTIVE`
         );
 
-        // map: productId -> [ชื่อโปรโมชั่น...]
+
         const promoMap = new Map();
         const promoLabelSet = new Set();
 
@@ -233,9 +362,7 @@ export default function ShopPage() {
         setBRANDS_MASTER(
           (brands || []).map((b) => ({ id: Number(b.id), name: clean(b.name) }))
         );
-        setPROMO_LIST(
-          [...promoLabelSet].sort((a, b) => a.localeCompare(b))
-        );
+        setPROMO_LIST([...promoLabelSet].sort((a, b) => a.localeCompare(b)));
       } catch (e) {
         setLoadErr(e.message || "Failed to load data");
       } finally {
@@ -282,6 +409,10 @@ export default function ShopPage() {
     return fromMaster.sort((a, b) => a.localeCompare(b));
   }, [PRODUCTS, BRANDS_MASTER]);
 
+
+  const searchQ = (searchParams.get("search") || "").trim();
+  const hasSearch = searchQ.length > 0;
+
   useEffect(() => {
     const catParam = searchParams.get("cat");
     if (catParam) {
@@ -306,7 +437,7 @@ export default function ShopPage() {
     setPage(1);
   };
 
-  /* ===== Price input state ===== */
+  // Price input state
   const [minValStr, setMinValStr] = useState("");
   const [maxValStr, setMaxValStr] = useState("");
   const [priceErr, setPriceErr] = useState("");
@@ -367,21 +498,7 @@ export default function ShopPage() {
     setPage(1);
   };
 
-  /* ===== Searching placeholders (not used now) ===== */
-  const hasSearch = false;
-  const searchQ = "";
-  const searchScope = "all";
-  const normalize = (s) =>
-    String(s ?? "")
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/\p{Diacritic}/gu, "")
-      .replace(/[^\w\s-]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  const fuzzyMatch = () => false;
-
-  /* ===== Filter, sort, paginate ===== */
+  // Filter, sort, paginate
   const filtered = useMemo(() => {
     const f = filters;
     const catSet = new Set([...f.cat].map(norm));
@@ -393,44 +510,8 @@ export default function ShopPage() {
       const pBrand = norm(p.brand);
       const pPromo = norm(p.promo);
 
-      if (hasSearch) {
-        const q = normalize(searchQ).replace(/^#/, "");
-        if (searchScope === "productid" || searchScope === "product_id") {
-          if (!String(p.productCode || p.id || "")
-            .toLowerCase()
-            .includes(q))
-            return false;
-        } else if (searchScope === "category") {
-          if (!normalize(p.cat || "").includes(q)) return false;
-        } else if (searchScope === "stock") {
-          const sq = q.replace(/\s+/g, "");
-          if (/(in|instock|available)/.test(sq)) {
-            if (!(p.stock && Number(p.stock) > 0)) return false;
-          } else if (/(out|outofstock|soldout)/.test(sq)) {
-            if (p.stock && Number(p.stock) > 0) return false;
-          } else {
-            return false;
-          }
-        } else {
-          const name = normalize(p.name || "");
-          const brand = normalize(p.brand || "");
-          const cat = normalize(p.cat || "");
-          const code = String(p.productCode || "").toLowerCase();
-          const terms = (normalize(searchQ) || "")
-            .split(" ")
-            .filter(Boolean);
-          const ok = terms.every((t) => {
-            if (name.includes(t) || code.includes(t) || brand.includes(t) || cat.includes(t))
-              return true;
-            if (fuzzyMatch(t, name)) return true;
-            if (brand && fuzzyMatch(t, brand)) return true;
-            if (cat && fuzzyMatch(t, cat)) return true;
-            if (code && fuzzyMatch(t, code)) return true;
-            return false;
-          });
-          if (!ok) return false;
-        }
-      }
+
+      if (hasSearch && !matchProductWithQuery(p, searchQ)) return false;
 
       if (catSet.size && !catSet.has(pCat)) return false;
       if (brandSet.size && !brandSet.has(pBrand)) return false;
@@ -443,7 +524,7 @@ export default function ShopPage() {
       }
       return true;
     });
-  }, [filters, PRODUCTS]);
+  }, [filters, PRODUCTS, hasSearch, searchQ]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -471,13 +552,9 @@ export default function ShopPage() {
       out.push({
         key: "price",
         label: `฿${
-          filters.priceMinC != null
-            ? fromCents(filters.priceMinC)
-            : "0.00"
+          filters.priceMinC != null ? fromCents(filters.priceMinC) : "0.00"
         }–${
-          filters.priceMaxC != null
-            ? fromCents(filters.priceMaxC)
-            : "∞"
+          filters.priceMaxC != null ? fromCents(filters.priceMaxC) : "∞"
         }`,
       });
     return out;
@@ -504,24 +581,21 @@ export default function ShopPage() {
   const noProductsDueToPrice =
     !loading && !loadErr && sorted.length === 0 && hasPriceFilter;
 
-  /* ===== Product card ===== */
+  // Product card
   const ProductCard = ({ p }) => {
     const nav = useNavigate();
-    const [wish, setWish] = useState(() => {
-      try {
-        return new Set(JSON.parse(localStorage.getItem(LS_WISH) || "[]"));
-      } catch {
-        return new Set();
-      }
-    });
-    useEffect(() => {
-      localStorage.setItem(LS_WISH, JSON.stringify([...wish]));
-    }, [wish]);
-
-    const liked = wish.has(p.id);
     const [src, setSrc] = useState(p.img);
     const [loaded, setLoaded] = useState(false);
     const [added, setAdded] = useState(false);
+
+    // ใช้ boolean liked + sync กับ localStorage แบบ global
+    const [liked, setLiked] = useState(false);
+
+    // init: อ่านว่าตัวนี้อยู่ใน wishlist ไหม
+    useEffect(() => {
+      const ids = readWishIdsStr();
+      setLiked(ids.includes(String(p.id)));
+    }, [p.id]);
 
     const to = `/detail/${encodeURIComponent(p.id)}`;
     const stop = (e) => e.stopPropagation();
@@ -544,6 +618,24 @@ export default function ShopPage() {
       });
       setAdded(true);
       setTimeout(() => setAdded(false), 900);
+    };
+
+    const toggleWish = (e) => {
+      stop(e);
+      const pid = String(p.id);
+      const ids = readWishIdsStr();
+      const idx = ids.indexOf(pid);
+      let next;
+      if (idx >= 0) {
+        // remove
+        next = [...ids.slice(0, idx), ...ids.slice(idx + 1)];
+        setLiked(false);
+      } else {
+        // add
+        next = [...ids, pid];
+        setLiked(true);
+      }
+      writeWishIdsStr(next);
     };
 
     return (
@@ -585,14 +677,7 @@ export default function ShopPage() {
             className={`p-wishline ${liked ? "on" : ""}`}
             type="button"
             aria-pressed={liked}
-            onClick={(e) => {
-              stop(e);
-              setWish((prev) => {
-                const n = new Set(prev);
-                n.has(p.id) ? n.delete(p.id) : n.add(p.id);
-                return n;
-              });
-            }}
+            onClick={toggleWish}
           >
             <svg
               width="18"
@@ -628,7 +713,7 @@ export default function ShopPage() {
     );
   };
 
-  /* ===== Checklist ===== */
+  // Checklist
   const CheckList = ({ list, setKey, selected }) => (
     <div className={`checklist ${setKey === "brand" ? "scroll" : ""}`}>
       {list.map((val, idx) => {
@@ -702,7 +787,13 @@ export default function ShopPage() {
 
             <div className="toolbar-row">
               <p className="result-count">
-                {loading ? "Loading…" : `${filtered.length} items found`}
+                {loading
+                  ? "Loading…"
+                  : `${filtered.length} items found${
+                      hasSearch && searchQ
+                        ? ` for "${searchQ}"`
+                        : ""
+                    }`}
               </p>
               <div className="sort-area">
                 <label className="sr-only" htmlFor="sort">

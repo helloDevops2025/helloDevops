@@ -16,7 +16,6 @@ const THB = (n) =>
     maximumFractionDigits: 0,
   });
 
-// ✅ 25 Jan 2025 • 01:45 PM
 const fDateTime = (iso) => {
   if (!iso) return "–";
   try {
@@ -55,7 +54,7 @@ const FALLBACK_IMG =
     </svg>`
   );
 
-/* ===== Order Card ===== */
+// Order Card
 function StatusRight({ status }) {
   const map = {
     completed: { text: "Order Completed", cls: "ok" },
@@ -96,25 +95,25 @@ function OrderCard({ o, onAgain, onView }) {
           {thumbs.length === 0
             ? Array.from({ length: 5 }).map((_, i) => <div className="hx-thumb" key={i} />)
             : thumbs.map((it, i) => (
-                <div className="hx-thumb" key={i}>
-                  <img
-                    src={it.thumb || FALLBACK_IMG}
-                    alt={it.name || `item-${i + 1}`}
-                    onError={(e) => {
-                      if (e.currentTarget.src !== FALLBACK_IMG)
-                        e.currentTarget.src = FALLBACK_IMG;
-                    }}
-                  />
-                </div>
-              ))}
+              <div className="hx-thumb" key={i}>
+                <img
+                  src={it.thumb || FALLBACK_IMG}
+                  alt={it.name || `item-${i + 1}`}
+                  onError={(e) => {
+                    if (e.currentTarget.src !== FALLBACK_IMG)
+                      e.currentTarget.src = FALLBACK_IMG;
+                  }}
+                />
+              </div>
+            ))}
         </div>
       </div>
 
       <footer className="hx-card__foot">
         <div className="hx-foot-left">
-          <div className="hx-qty">จำนวนทั้งหมด {qtySum} ชิ้น</div>
+          <div className="hx-qty">Total Items {qtySum}</div>
           <div className="hx-total">
-            รวม: <strong>{THB(o.total)}</strong>
+            Total: <strong>{THB(o.total)}</strong>
           </div>
         </div>
         <div className="hx-actions">
@@ -130,7 +129,7 @@ function OrderCard({ o, onAgain, onView }) {
   );
 }
 
-/* ===== Pagination ===== */
+// Pagination
 function Pager({ page, pages, onChange }) {
   if (pages <= 1) return null;
   const go = (n) => () => onChange(Math.min(Math.max(1, n), pages));
@@ -158,7 +157,7 @@ function Pager({ page, pages, onChange }) {
   );
 }
 
-/* ===== Page ===== */
+//  Page
 export default function HistoryPage() {
   const navigate = useNavigate();
 
@@ -179,25 +178,29 @@ export default function HistoryPage() {
     return "processing";
   };
 
-  const mapOrderDetail = (o) => {
-    const items = Array.isArray(o.orderItems)
-      ? o.orderItems.map((it) => {
-          const p = it.product || {};
-          const thumb =
-            p?.id !== undefined
-              ? `${API_BASE}/api/products/${encodeURIComponent(p.id)}/cover`
-              : "";
-          return {
-            name: p.name || it.productName || "",
-            qty: Number(it.quantity || 1),
-            price: Number(p.price ?? it.priceEach ?? 0),
-            thumb,
-            productId: p.id,
-          };
-        })
-      : [];
+    const mapOrderDetail = (o) => {
+        const items = Array.isArray(o.orderItems)
+            ? o.orderItems.map((it) => {
+                const p = it.product || {};
 
-    const total =
+                // 🔥 FIX รูปสินค้าใน Order History
+                const thumb = (() => {
+                    const raw = p.productId || p.id || "";
+                    const digitsOnly = String(raw).replace("#", "").replace(/^0+/, "");
+                    const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";
+                    return `${API_BASE}/products/${fileName}`;
+                })();
+
+                return {
+                    name: p.name || it.productName || "",
+                    qty: Number(it.quantity || 1),
+                    price: Number(p.price ?? it.priceEach ?? 0),
+                    thumb,
+                    productId: p.id,
+                };
+            })
+            : [];
+        const total =
       Number(o.totalAmount ?? 0) ||
       items.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
 
@@ -286,7 +289,7 @@ export default function HistoryPage() {
   const displayRows = filteredClient.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   useEffect(() => setPage(1), [tab, qDeb]);
 
-  /* ===== Buy again: SAVE TO pm_reorder (do not touch pm_cart) ===== */
+  // Buy again: SAVE TO pm_reorder (do not touch pm_cart)
   const handleBuyAgain = (order) => {
     const freshReorder = (order.items || []).map((it) => {
       const productId = String(it.productId ?? it.id ?? it.name);

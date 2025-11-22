@@ -69,11 +69,19 @@ const ProgressCard = ({ steps, cancelled }) => {
       <div className="card-title">Detail</div>
       <div className="progress">
         <div className="progress-line">
-          <span className={`line-fill ${cancelled ? "is-cancel" : ""}`} style={{ width: `${percent}%` }} />
+          <span
+            className={`line-fill ${cancelled ? "is-cancel" : ""}`}
+            style={{ width: `${percent}%` }}
+          />
         </div>
         <div className="steps">
           {steps.map((s, i) => (
-            <div key={i} className={`step ${s.done ? "done" : ""} ${cancelled ? "cancel" : ""}`}>
+            <div
+              key={i}
+              className={`step ${s.done ? "done" : ""} ${
+                cancelled ? "cancel" : ""
+              }`}
+            >
               <div className="dot" />
               <div className="step-label">
                 <strong>{s.label}</strong>
@@ -95,6 +103,7 @@ const OrderBox = ({ items }) => {
         <div className="order-head">
           <div>Item</div>
           <div>Unit Price</div>
+          <div>Discount</div>
           <div>Qty</div>
           <div>Total</div>
         </div>
@@ -108,12 +117,20 @@ const OrderBox = ({ items }) => {
       <div className="order-head">
         <div>Item</div>
         <div>Unit Price</div>
+        <div>Discount</div>
         <div>Qty</div>
         <div>Total</div>
       </div>
       <div id="orderBody">
         {items.map((it) => {
-          const subtotal = (it.price || 0) * (it.qty || 0);
+          const price = Number(it.price || 0);
+          const qty = Number(it.qty || 0);
+          const perUnitTotalDisc =
+            Number(it.totalPerUnitDiscount || it.perUnitDisc || 0) || 0;
+          const lineTotal =
+            Number(it.lineAfter ?? Math.max(0, (price - perUnitTotalDisc) * qty)) ||
+            0;
+
           return (
             <div key={it.id} className="order-row">
               <div className="product">
@@ -123,11 +140,12 @@ const OrderBox = ({ items }) => {
                   {it.desc && <p className="desc">{it.desc}</p>}
                 </div>
               </div>
-              <div className="price">{THB(it.price)}</div>
+              <div className="price">{THB(price)}</div>
+              <div className="discount">{THB(perUnitTotalDisc)}</div>
               <div className="qty">
-                <span className="pill">{it.qty}</span>
+                <span className="pill">{qty}</span>
               </div>
-              <div className="subtotal">{THB(subtotal)}</div>
+              <div className="subtotal">{THB(lineTotal)}</div>
             </div>
           );
         })}
@@ -141,21 +159,15 @@ function normalizeStatus(s) {
   return String(s || "").trim().toUpperCase();
 }
 
-/**
- * แปลงสถานะจากฐานข้อมูลให้เป็น steps ที่หน้า User ใช้
- * นโยบายเหมือน Admin:
- * - ถ้า CANCELLED → ไม่ติ๊กขั้นใด ๆ และติดป้าย "Cancelled" ทุกขั้น
- * - คำนิยามขั้น: PREPARING → READY_TO_SHIP → SHIPPING → DELIVERED
- */
 function buildStepsFromStatus(rawStatus) {
   const st = normalizeStatus(rawStatus);
 
   // โครงตามลำดับเดียวกับ Admin
   const base = [
-    { label: "Preparing",     sub: "",           done: false },
-    { label: "Ready to Ship", sub: "",           done: false },
-    { label: "Shipping",      sub: "Processing", done: false },
-    { label: "Delivered",     sub: "Pending",    done: false },
+    { label: "Preparing", sub: "", done: false },
+    { label: "Ready to Ship", sub: "", done: false },
+    { label: "Shipping", sub: "Processing", done: false },
+    { label: "Delivered", sub: "Pending", done: false },
   ];
 
   // ยกเลิก = ไม่ติ๊ก และปัก "Cancelled" ทุกขั้น
@@ -219,6 +231,9 @@ export default function TrackingUserPage() {
     cart: [],
     shippingFee: 0,
     tax: 0,
+    // ✅ ฟิลด์ใหม่: ดึงจาก backend เพื่อให้รู้ส่วนลด +ยอดหลังลด
+    discountTotal: 0,
+    grandTotal: 0,
     status: "PENDING",
   });
 
@@ -230,10 +245,14 @@ export default function TrackingUserPage() {
       setLoading(true);
       setErr("");
       try {
-        const res = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}`, {
-          headers: { Accept: "application/json" },
-        });
-        if (!res.ok) throw new Error("ไม่พบออเดอร์หรือเซิร์ฟเวอร์ไม่ตอบสนอง");
+        const res = await fetch(
+          `${API_BASE}/api/orders/${encodeURIComponent(orderId)}`,
+          {
+            headers: { Accept: "application/json" },
+          }
+        );
+        if (!res.ok)
+          throw new Error("ไม่พบออเดอร์หรือเซิร์ฟเวอร์ไม่ตอบสนอง");
 
         const data = await res.json();
 
@@ -243,28 +262,53 @@ export default function TrackingUserPage() {
           ? data.orderItems.map((it) => {
               const p = it.product || {};
               const pid = p.id ?? it.productIdFk ?? it.productId;
+
+              // 👇 ดึงส่วนลดต่อชิ้นจากหลายชื่อ field
+              const discountPerUnit = Number(
+                it.discountPerUnit ??
+                  it.discount_per_unit ??
+                  it.discount_each ??
+                  it.discountEach ??
+                  it.discountAmount ??
+                  it.discount ??
+                  0
+              );
+
               return {
                 id: String(pid ?? Math.random()),
                 name: p.name || it.productName || "-",
                 desc: p.description || "",
                 price: Number(p.price ?? it.priceEach ?? 0),
                 qty: Number(it.quantity || 1),
-                img:
-                  pid !== undefined
-                    ? `${API_BASE}/api/products/${encodeURIComponent(pid)}/cover`
-                    : "/assets/products/placeholder.jpg",
+                  img: (() => {
+                      // productId จริง เช่น "#00003" → "003"
+                      const raw = p.productId || p.id || "";
+                      const digitsOnly = String(raw).replace("#", "").replace(/^0+/, "");  // ตัด # และ 0 หน้า
+                      const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";   // → 003.jpg
+                      return `${API_BASE}/products/${fileName}`;
+                  })(),
               };
             })
           : [];
 
         const mapped = {
           orderId: String(data.id ?? data.orderCode ?? orderId),
-          createdAt: data.createdAt || data.updatedAt || new Date().toISOString(),
-          address: addrText ? { name: data.customerName || "-", text: addrText } : null,
+          createdAt:
+            data.createdAt || data.updatedAt || new Date().toISOString(),
+          address: addrText
+            ? { name: data.customerName || "-", text: addrText }
+            : null,
           cart: mappedItems,
           shippingFee: Number(data.shippingFee ?? data.shipping_fee ?? 0),
           tax: Number(data.taxTotal ?? data.tax_total ?? 0),
-          status: normalizeStatus(data.orderStatus ?? data.status ?? "PENDING"),
+          // ✅ ดึงส่วนลด + ยอดหลังลด จาก backend
+          discountTotal: Number(
+            data.discountTotal ?? data.discount_total ?? 0
+          ),
+          grandTotal: Number(data.grandTotal ?? data.grand_total ?? 0),
+          status: normalizeStatus(
+            data.orderStatus ?? data.status ?? "PENDING"
+          ),
         };
 
         if (!aborted) setOrder(mapped);
@@ -281,16 +325,70 @@ export default function TrackingUserPage() {
     };
   }, [orderId]);
 
+  // ✅ enrich cart เพื่อใช้ส่วนลดต่อชิ้น/บรรทัด
+  const enrichedCart = useMemo(() => {
+    const raw = Array.isArray(order.cart) ? order.cart : [];
+
+    return raw.map((it) => {
+      const price = Number(it.price || 0);
+      const qty = Number(it.qty || 0);
+      const perUnitDisc =
+        Number(
+          it.discountPerUnit ??
+            it.discount_per_unit ??
+            it.discount_each ??
+            it.discountEach ??
+            it.discountAmount ??
+            it.discount ??
+            0
+        ) || 0;
+
+      const lineBefore = price * qty;
+      const lineAfter = Math.max(0, (price - perUnitDisc) * qty);
+
+      return {
+        ...it,
+        price,
+        qty,
+        perUnitDisc,
+        totalPerUnitDiscount: perUnitDisc,
+        lineBefore,
+        lineAfter,
+      };
+    });
+  }, [order.cart]);
+
+  // ✅ ใช้ grandTotal / discountTotal จาก backend เป็นหลัก
   const totals = useMemo(() => {
+    const cart = enrichedCart || [];
     let subtotal = 0,
       items = 0;
-    for (const it of order.cart || []) {
-      subtotal += (it.price || 0) * (it.qty || 0);
+
+    for (const it of cart) {
+      const line = it.lineAfter ?? (it.price || 0) * (it.qty || 0);
+      subtotal += line;
       items += it.qty || 0;
     }
-    const total = subtotal + (order.shippingFee || 0) + (order.tax || 0);
-    return { subtotal, items, total };
-  }, [order]);
+
+    const discount = Number(order.discountTotal || 0);
+    const shipping = Number(order.shippingFee || 0);
+    const tax = Number(order.tax || 0);
+
+    // ถ้ามี grandTotal จาก DB ให้ใช้เลย (ราคา "หลังลด")
+    let total = Number(order.grandTotal || 0);
+    if (!total) {
+      // backup: subtotal + shipping + tax (ถือว่า discountTotal หักแล้วที่ subtotal)
+      total = subtotal + shipping + tax;
+    }
+
+    return { subtotal, items, discount, shipping, tax, total };
+  }, [
+    enrichedCart,
+    order.discountTotal,
+    order.shippingFee,
+    order.tax,
+    order.grandTotal,
+  ]);
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSrc, setPreviewSrc] = useState("");
@@ -302,7 +400,7 @@ export default function TrackingUserPage() {
   ];
 
   const openPreview = () => {
-    const items = order.cart || [];
+    const items = enrichedCart || [];
     if (!items.length) return alert("No items to preview");
 
     const styles = Array.from(
@@ -314,7 +412,15 @@ export default function TrackingUserPage() {
 
     const rows = items
       .map((it, idx) => {
-        const subtotal = (it.price || 0) * (it.qty || 0);
+        const price = Number(it.price || 0);
+        const qty = Number(it.qty || 0);
+        const perUnitTotalDisc =
+          Number(it.totalPerUnitDiscount || it.perUnitDisc || 0) || 0;
+        const lineTotal =
+          Number(
+            it.lineAfter ?? Math.max(0, (price - perUnitTotalDisc) * qty)
+          ) || 0;
+        const discDisplay = THB(perUnitTotalDisc);
         return `
           <tr>
             <td class="idx" style="width:40px">${idx + 1}</td>
@@ -322,9 +428,12 @@ export default function TrackingUserPage() {
               <div style="font-weight:700;color:#0b2545">${it.name}</div>
               ${it.desc ? `<div class="item-desc">${it.desc}</div>` : ""}
             </td>
-            <td class="price" style="width:120px">${THB(it.price)}</td>
-            <td class="qty" style="width:80px;text-align:center">${it.qty}</td>
-            <td class="total" style="width:140px">${THB(subtotal)}</td>
+            <td class="price" style="width:120px">${THB(price)}</td>
+            <td class="discount" style="width:120px;text-align:center">${discDisplay}</td>
+            <td class="qty" style="width:80px;text-align:center">${qty}</td>
+            <td class="total" style="width:140px;text-align:right">${THB(
+              lineTotal
+            )}</td>
           </tr>
         `;
       })
@@ -334,10 +443,13 @@ export default function TrackingUserPage() {
     const shippingText = order.address ? order.address.text : "-";
     const paymentMethod = order.paymentMethod || "-";
 
-    const shippingFee = order.shippingFee || 0;
-    the
-    const tax = order.tax || 0;
+    // ✅ ใช้ totals ที่คำนวณจาก grandTotal / discountTotal แล้ว
+    const shippingFee = totals.shipping;
+    const tax = totals.tax;
+    const discount = totals.discount || 0;
     const grandTotal = totals.total;
+    const discountDisplay =
+      Number(discount || 0) === 0 ? THB(0) : `-${THB(discount)}`;
 
     const html = `
       <html>
@@ -371,7 +483,9 @@ export default function TrackingUserPage() {
 
             <section style="margin-bottom:12px">
               <strong>Ship to</strong>
-              <div style="color:#444;margin-top:6px">${order.address?.name || "-"}</div>
+              <div style="color:#444;margin-top:6px">${
+                order.address?.name || "-"
+              }</div>
               <div style="color:#666;margin-top:6px">${shippingText}</div>
             </section>
 
@@ -381,6 +495,7 @@ export default function TrackingUserPage() {
                   <th style="width:40px">#</th>
                   <th>Item</th>
                   <th style="width:120px;text-align:right">Unit Price</th>
+                  <th style="width:120px;text-align:center">Discount</th>
                   <th style="width:80px;text-align:center">Qty</th>
                   <th style="width:140px;text-align:right">Total</th>
                 </tr>
@@ -392,10 +507,22 @@ export default function TrackingUserPage() {
 
             <div class="totals-wrap">
               <div class="totals-card">
-                <div class="row"><div class="muted">Subtotal</div><div>${THB(totals.subtotal)}</div></div>
-                <div class="row"><div class="muted">Shipping Fee</div><div>${THB(shippingFee)}</div></div>
-                <div class="row"><div class="muted">Tax / VAT</div><div>${THB(tax)}</div></div>
-                <div class="grand">Grand Total&nbsp;&nbsp;${THB(grandTotal)}</div>
+                <div class="row"><div class="muted">Subtotal</div><div>${THB(
+                  totals.subtotal
+                )}</div></div>
+                <div class="row">
+                  <div class="muted">Discount</div>
+                  <div style="color:#0b2545">${discountDisplay}</div>
+                </div>
+                <div class="row"><div class="muted">Shipping Fee</div><div>${THB(
+                  shippingFee
+                )}</div></div>
+                <div class="row"><div class="muted">Tax / VAT</div><div>${THB(
+                  tax
+                )}</div></div>
+                <div class="grand">Grand Total&nbsp;&nbsp;${THB(
+                  grandTotal
+                )}</div>
               </div>
             </div>
 
@@ -418,7 +545,9 @@ export default function TrackingUserPage() {
       iframe.contentWindow.print();
     } catch (e) {
       console.error(e);
-      alert("ไม่สามารถเปิดหน้าพรีวิวการพิมพ์ได้ — กรุณาอนุญาตป๊อปอัพหรือลองอีกครั้ง");
+      alert(
+        "ไม่สามารถเปิดหน้าพรีวิวการพิมพ์ได้ — กรุณาอนุญาตป๊อปอัพหรือลองอีกครั้ง"
+      );
     }
   };
 
@@ -442,7 +571,11 @@ export default function TrackingUserPage() {
         <Header />
         <main className="container tracking">
           <div style={{ padding: 24, color: "#c00" }}>Error: {err}</div>
-          <Link to="/history" className="btn-primary" style={{ marginTop: 12 }}>
+          <Link
+            to="/history"
+            className="btn-primary"
+            style={{ marginTop: 12 }}
+          >
             กลับไปหน้า History
           </Link>
         </main>
@@ -451,7 +584,7 @@ export default function TrackingUserPage() {
     );
   }
 
-  // ✅ แปลงสถานะจริงจาก Admin เพื่อสร้างขั้นตอน + ธงยกเลิก
+  // แปลงสถานะจริงจาก Admin เพื่อสร้างขั้นตอน + ธงยกเลิก
   const { steps, cancelled } = buildStepsFromStatus(order.status);
 
   return (
@@ -501,7 +634,11 @@ export default function TrackingUserPage() {
           </div>
 
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <button type="button" className="print-btn" onClick={openPreview}>
+            <button
+              type="button"
+              className="print-btn"
+              onClick={openPreview}
+            >
               Print Order Receipt
             </button>
           </div>
@@ -520,19 +657,68 @@ export default function TrackingUserPage() {
         {/* แสดงขั้นตอนที่แมปจากสถานะจริง + ธงยกเลิก */}
         <ProgressCard steps={steps} cancelled={cancelled} />
 
-        <OrderBox items={order.cart} />
+        <OrderBox items={enrichedCart} />
 
+        {/* Summary ด้านล่างพร้อม breakdown */}
         <section className="card" style={{ padding: 16, marginTop: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div>Grand Total ({totals.items} items)</div>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>
-              {THB(totals.total)}
+          <div style={{ maxWidth: 420, marginLeft: "auto" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 6,
+              }}
+            >
+              <div className="muted">Subtotal</div>
+              <div>{THB(totals.subtotal)}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 6,
+              }}
+            >
+              <div className="muted">Shipping Fee</div>
+              <div>{THB(totals.shipping)}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 6,
+              }}
+            >
+              <div className="muted">Tax / VAT</div>
+              <div>{THB(totals.tax)}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
+              <div className="muted">Discount</div>
+              <div style={{ color: "#0b2545" }}>
+                {Number(totals.discount || 0) === 0
+                  ? THB(0)
+                  : `-${THB(totals.discount)}`}
+              </div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginTop: 6,
+              }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 700 }}>
+                Grand Total ({totals.items} items)
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 900 }}>
+                {THB(totals.total)}
+              </div>
             </div>
           </div>
         </section>

@@ -9,7 +9,7 @@ const isAbs = (u) => /^https?:\/\//i.test(String(u || ""));
 const join = (base, path) =>
   base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
 
-/* ===== Currency ===== */
+//  Currency
 const formatTHB = (n) => {
   const v = Number(n ?? 0);
   try {
@@ -19,7 +19,7 @@ const formatTHB = (n) => {
   }
 };
 
-/*  Cart (localStorage) helpers  */
+//  Cart (localStorage) helpers
 const LS_CART = "pm_cart";
 const readCart = () => {
   try {
@@ -49,10 +49,10 @@ const addItemToCart = ({ id, name, price, qty = 1, img }) => {
   const count = cart.reduce((s, it) => s + (Number(it.qty) || 0), 0);
   try {
     window.dispatchEvent(new CustomEvent("pm_cart_updated", { detail: { count } }));
-  } catch {}
+  } catch { }
 };
 
-/* ===== Image resolvers ===== */
+// Image resolvers
 const resolveCoverUrl = (p) => {
   const raw =
     p?.coverImageUrl ||
@@ -76,7 +76,7 @@ const resolveCoverUrl = (p) => {
 const CAT_IMAGE_FALLBACKS = {
   "Dried Foods": "/assets/user/cat-dried-food.jpg",
   Meats: "/assets/user/cat-meat.jpg",
-  "Frozen Foods": "/assets/user/cat-frozen.jpg",
+  "Frozen Foods": "/assets/user/cat-frozen-food.jpg",
   "Fruits & Vegetables": "/assets/user/cat-fruits-veg.jpg",
   Beverage: "/assets/user/cat-beverage.jpg",
 };
@@ -89,8 +89,8 @@ const resolveCategoryImage = (cat) => {
   return encodeURI(fePath);
 };
 
-/* ===== Stock helper ===== */
-/** ถือว่า out of stock ถ้า inStock/in_stock เป็น false หรือ quantity <= 0 */
+// Stock helper 
+// ถือว่า out of stock ถ้า inStock/in_stock เป็น false หรือ quantity <= 0 
 const isOutOfStock = (p) => {
   if (!p) return false;
   const flag = p.inStock ?? p.in_stock;
@@ -101,7 +101,6 @@ const isOutOfStock = (p) => {
   return false;
 };
 
-/* ===== 🔥 Promotion helpers (ใช้ร่วมกันทั้ง BestSellers + AllProducts) ===== */
 
 // เช็คว่าโปร active ตาม status + วันที่หรือยัง
 const isPromoActive = (promo) => {
@@ -190,7 +189,7 @@ async function fetchPromotionMap() {
   }
 }
 
-/* ===== Floating add-to-cart button (no useCart) ===== */
+// Floating add-to-cart button (no useCart)
 function ProductMiniCard({ id, name, price, img, disabled = false }) {
   const [added, setAdded] = useState(false);
 
@@ -210,8 +209,8 @@ function ProductMiniCard({ id, name, price, img, disabled = false }) {
   const label = disabled
     ? "Out of stock"
     : added
-    ? "Added ✓"
-    : "Add to cart";
+      ? "Added ✓"
+      : "Add to cart";
 
   return (
     <button
@@ -234,7 +233,7 @@ function ProductMiniCard({ id, name, price, img, disabled = false }) {
   );
 }
 
-/* ===== Best Sellers ===== */
+// Best Sellers
 function BestSellersSection() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -287,7 +286,7 @@ function BestSellersSection() {
           )
           .slice(0, 8);
 
-        // 🔥 เติมข้อมูล promotion ลงไป
+        // เติมข้อมูล promotion ลงไป
         const promoMap = await fetchPromotionMap();
         const withPromo = best.map((p) => {
           const id = p.id ?? p.productId ?? p.product_id;
@@ -331,7 +330,7 @@ function BestSellersSection() {
       )}
 
       {!loading && err && (
-        <div className="error">Therefore, the goods can be loaded: {err}</div>
+        <div className="error">Failed to load best sellers: {err}</div>
       )}
 
       {!loading && !err && (
@@ -347,12 +346,12 @@ function BestSellersSection() {
             return (
               <Link
                 key={id}
-                className="product"
+                className="product reveal"
                 to={`/detail/${encodeURIComponent(id)}`}
                 aria-label={name}
               >
                 <div className="product__thumb">
-                  {/* 🔥 badge โปรโมชั่น */}
+                  {/* badge โปรโมชั่น */}
                   {promoLabel && (
                     <span className="product__promo-badge">{promoLabel}</span>
                   )}
@@ -388,7 +387,7 @@ function BestSellersSection() {
   );
 }
 
-/* ===== Categories ===== */
+// Categories
 function CategoriesSection() {
   const [cats, setCats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -420,10 +419,10 @@ function CategoriesSection() {
   }, []);
 
   return (
-    <section id="categories" className="category">
+    <section id="categories" className="category section-fade-in">
       <div className="category__inner">
         <div className="category__head">
-          <h3>Browse by Category</h3>
+          <h3 className="reveal">Browse by Category</h3>
           <span className="category__underline" aria-hidden="true"></span>
         </div>
 
@@ -438,7 +437,7 @@ function CategoriesSection() {
         )}
 
         {!loading && err && (
-          <div className="error">โหลดหมวดหมู่ไม่สำเร็จ: {err}</div>
+          <div className="error">Failed to load categories: {err}</div>
         )}
 
         {!loading && !err && (
@@ -450,7 +449,7 @@ function CategoriesSection() {
                 <a
                   key={cat.id ?? name}
                   href={`/shop?cat=${encodeURIComponent(name)}`}
-                  className="category-card"
+                  className="category-card reveal"
                   aria-label={name}
                 >
                   <img
@@ -476,7 +475,7 @@ function CategoriesSection() {
   );
 }
 
-/* ===== Adjust title clamp in a list ===== */
+// Adjust title clamp in a list
 function useClampTitlesInList(listRef, deps = []) {
   useEffect(() => {
     const el = listRef?.current;
@@ -502,7 +501,7 @@ function useClampTitlesInList(listRef, deps = []) {
   }, deps);
 }
 
-/* ===== All products ===== */
+// All products
 function AllProductsSection({ listRef }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -523,7 +522,7 @@ function AllProductsSection({ listRef }) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
 
-        // 🔥 เติม promo map ให้ All Products
+        // เติม promo map ให้ All Products
         const promoMap = await fetchPromotionMap();
         const withPromo = list.map((p) => {
           const id = p.id ?? p.productId ?? p.product_id;
@@ -544,9 +543,9 @@ function AllProductsSection({ listRef }) {
   }, []);
 
   return (
-    <section className="all-products" aria-labelledby="all-title">
+    <section className="all-products section-fade-in" aria-labelledby="all-title">
       <div className="ap-head">
-        <h3 id="all-title">All Products</h3>
+        <h3 id="all-title" className="reveal">All Products</h3>
       </div>
       <span className="ap-underline" aria-hidden="true"></span>
 
@@ -565,7 +564,7 @@ function AllProductsSection({ listRef }) {
       )}
 
       {!loading && err && (
-        <div className="error">โหลด All Products ไม่สำเร็จ: {err}</div>
+        <div className="error">Failed to load products: {err}</div>
       )}
 
       {!loading && !err && (
@@ -581,12 +580,12 @@ function AllProductsSection({ listRef }) {
             return (
               <Link
                 key={id}
-                className="product"
+                className="product reveal"
                 to={`/detail/${encodeURIComponent(id)}`}
                 aria-label={name}
               >
                 <div className="product__thumb">
-                  {/* 🔥 badge โปรแกรมที่นี่ด้วย */}
+                  {/*  */}
                   {promoLabel && (
                     <span className="product__promo-badge">{promoLabel}</span>
                   )}
@@ -623,7 +622,7 @@ function AllProductsSection({ listRef }) {
   );
 }
 
-/* ===== PAGE ===== */
+// PAGE
 export default function HomePage() {
   const allProductsRef = useRef(null);
   const { hash } = useLocation();
@@ -635,6 +634,32 @@ export default function HomePage() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [hash]);
 
+  useEffect(() => {
+    // initialize IntersectionObserver to toggle .is-visible on sections
+    const sections = Array.from(document.querySelectorAll('.section-fade-in'));
+    if (!sections.length) return;
+
+    if (!('IntersectionObserver' in window)) {
+      sections.forEach((s) => s.classList.add('is-visible'));
+      return;
+    }
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            obs.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+    );
+
+    sections.forEach((s) => obs.observe(s));
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <>
       <div className="pm-topbar"></div>
@@ -642,7 +667,7 @@ export default function HomePage() {
       <main className="home">
         <div className="container">
           {/* Hero banner */}
-          <section className="hero-banner hero-banner--main" aria-label="Main banner">
+          <section className="hero-banner hero-banner--main section-fade-in" aria-label="Main banner">
             <img
               className="hero-img hero-img--focus-right"
               src="/assets/user/image48.png"
@@ -650,13 +675,13 @@ export default function HomePage() {
               loading="lazy"
             />
             <div className="hero-content">
-              <h1>Pure & Fresh for Every Meal</h1>
-              <p className="hero-sub">Find your favorites — fast.</p>
+              <h1 className="reveal">Pure & Fresh for Every Meal</h1>
+              <p className="hero-sub reveal">Find your favorites — fast.</p>
               <div className="hero-ctas">
-                <Link to="/shop?best=1" className="hero-btn">
+                <Link to="/shop?best=1" className="hero-btn reveal">
                   Shop Best Sellers
                 </Link>
-                <a href="#categories" className="hero-btn hero-btn--ghost">
+                <a href="#categories" className="hero-btn hero-btn--ghost reveal">
                   Browse Categories
                 </a>
               </div>
@@ -665,9 +690,8 @@ export default function HomePage() {
 
           <BestSellersSection />
 
-          {/* Promo banner */}
           <section
-            className="hero-banner hero-banner--promo"
+            className="hero-banner hero-banner--promo section-fade-in"
             aria-label="Promotional banner"
           >
             <img
@@ -677,18 +701,18 @@ export default function HomePage() {
               loading="lazy"
             />
             <div className="hero-content">
-              <h1>Fresh picks — 25% off</h1>
-              <p className="hero-sub">
+              <h1 className="reveal">Fresh picks — 25% off</h1>
+              <p className="hero-sub reveal">
                 Seasonal produce & pantry essentials. Limited time only.
               </p>
               <div className="hero-ctas">
-                <Link to="/shop" className="hero-btn">
+                <Link to="/shop" className="hero-btn reveal">
                   Shop the Sale
                 </Link>
               </div>
             </div>
           </section>
-
+          
           <CategoriesSection />
           <AllProductsSection listRef={allProductsRef} />
         </div>

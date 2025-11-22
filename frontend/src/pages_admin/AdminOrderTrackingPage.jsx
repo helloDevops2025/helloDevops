@@ -44,14 +44,13 @@ export default function AdminOrderTrackingPage() {
         if (!res.ok) throw new Error("โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ");
         const data = await res.json();
 
-        // รองรับ key ที่ต่างกัน (orderItems/items)
+  
         const rawItems = Array.isArray(data.orderItems)
           ? data.orderItems
           : Array.isArray(data.items)
           ? data.items
           : [];
 
-        // ✅ เก็บทั้ง productDbId (เลขจริง) และ productCode (#00001)
         const items = rawItems.map((it) => {
           const productDbId =
             it.product_id_fk ?? it.productIdFk ?? it?.product?.id ?? it.productIdNumeric;
@@ -139,10 +138,27 @@ export default function AdminOrderTrackingPage() {
   }
 
   // helper: สร้าง URL รูป cover ต่อ item
-  const coverOf = (it) =>
-    it?.productDbId
-      ? `${API_URL}/api/products/${encodeURIComponent(it.productDbId)}/cover`
-      : "/assets/products/p1.png";
+    const coverOf = (it) => {
+        // productCode เช่น "#00003"
+        const raw =
+            it?.productCode ||
+            it?.product_id ||
+            it?.product?.product_id ||
+            it?.productDbId ||
+            "";
+
+        // แปลงให้เป็นเลขล้วน เช่น "#00003" → "3"
+        let digits = String(raw).replace("#", "").replace(/^0+/, "");
+
+        // ถ้าไม่มีค่าจริง
+        if (!digits || isNaN(digits)) return "/assets/products/p1.png";
+
+        // เติม 0 ให้ครบ 3 หลัก → "003"
+        const filename = digits.toString().padStart(3, "0") + ".jpg";
+
+        return `${API_URL}/products/${filename}`;
+    };
+
 
   return (
     <div className="admin-order-tracking">
