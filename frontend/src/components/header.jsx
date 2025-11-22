@@ -4,6 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 import { Link, useNavigate } from "react-router-dom";
 import { getEmail, isAuthed, logout } from "../auth"; // ✅ ใช้ helper เดียวกับฝั่งแอดมิน
 import "./header.css";
+import { useLocation } from "react-router-dom";
 
 const Header = () => {
   const [accOpen, setAccOpen] = useState(false);
