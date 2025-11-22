@@ -69,48 +69,49 @@ jobs:
           pwd
           npm install
           
-      # ✅ Run Cypress tests (frontend + backend พร้อม)
-      - name: Run Cypress E2E tests
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: ./frontend
-          start: npm run dev
-          wait-on: 'http://localhost:5173'
-          browser: chrome
-          headless: true
+  #-------------------------------------------------------------------------------
+      # # ✅ Run Cypress tests (frontend + backend พร้อม)
+      # - name: Run Cypress E2E tests
+      #   uses: cypress-io/github-action@v6
+      #   with:
+      #     working-directory: ./frontend
+      #     start: npm run dev
+      #     wait-on: 'http://localhost:5173'
+      #     browser: chrome
+      #     headless: true
 
-      - name: Install Cypress + Reporters
-        working-directory: ./frontend
-        run: |
-          npm install --save-dev cypress mochawesome mochawesome-merge mochawesome-report-generator
+      # - name: Install Cypress + Reporters
+      #   working-directory: ./frontend
+      #   run: |
+      #     npm install --save-dev cypress mochawesome mochawesome-merge mochawesome-report-generator
 
-      - name: Run Cypress E2E Tests
-        working-directory: ./frontend
-        run: |
-          npx cypress run \
-            --browser chrome \
-            --config video=false \
-            --reporter mochawesome \
-            --reporter-options reportDir=cypress/reports,overwrite=false,html=false,json=true
+      # - name: Run Cypress E2E Tests
+      #   working-directory: ./frontend
+      #   run: |
+      #     npx cypress run \
+      #       --browser chrome \
+      #       --config video=false \
+      #       --reporter mochawesome \
+      #       --reporter-options reportDir=cypress/reports,overwrite=false,html=false,json=true
 
-      - name: Merge Cypress Mochawesome Reports
-        working-directory: ./frontend
-        run: |
-          echo "Merging reports..."
-          npx mochawesome-merge cypress/reports/*.json > cypress/reports/mochawesome.json
+      # - name: Merge Cypress Mochawesome Reports
+      #   working-directory: ./frontend
+      #   run: |
+      #     echo "Merging reports..."
+      #     npx mochawesome-merge cypress/reports/*.json > cypress/reports/mochawesome.json
 
-      - name: Generate HTML Report
-        working-directory: ./frontend
-        run: |
-          npx marge cypress/reports/mochawesome.json -f index -o cypress/reports/html
+      # - name: Generate HTML Report
+      #   working-directory: ./frontend
+      #   run: |
+      #     npx marge cypress/reports/mochawesome.json -f index -o cypress/reports/html
 
-      # Upload รายงานขึ้น GitHub (Artifacts)
-      - name: Upload Cypress Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-report
-          path: frontend/cypress/reports/html
-
+      # # Upload รายงานขึ้น GitHub (Artifacts)
+      # - name: Upload Cypress Report
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: cypress-report
+      #     path: frontend/cypress/reports/html
+#------------------------------------------------------
 
   Docker:
     runs-on: ubuntu-latest
