@@ -42,15 +42,19 @@ describe('E2E-Signup-101: Sign Up Page', () => {
   });
 
   it('S3: รหัสผ่านสั้นเกินไป (<6) → แสดง error', () => {
-    cy.get('#email').type('short@puremart.com');
-    cy.get('#phone').type('0892222222');
-    cy.get('#password').type('12345');
-    cy.get('#confirm-password').type('12345');
+  cy.visit('/signup', { seedAuth: false });   // << คำสั่งสำคัญที่สุด
 
-    cy.get('#submitBtn').click();
+  cy.get('#email').type('short@puremart.com');
+  cy.get('#phone').should('not.be.disabled').type('0892222222');
 
-    cy.contains('Password must be at least 6 characters.').should('be.visible');
-  });
+  cy.get('#password').type('12345');           // สั้นเกินไป
+  cy.get('#confirm-password').type('12345');
+
+  cy.get('#submitBtn').click();
+
+  cy.contains('Password must be at least 6 characters.').should('be.visible');
+});
+
 
   it('S4: เบอร์โทรไม่ถูกต้อง → แสดง error', () => {
     cy.get('#email').type('phonebad@puremart.com');
