@@ -4,8 +4,8 @@ import { isAuthed } from "../auth";
 import "./DetailPage.css";
 import Footer from "./../components/Footer.jsx";
 
-
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+/* Config & helpers */
+const API_URL = import.meta.env.VITE_API_URL ;
 
 /*  Storage keys */
 const LS_WISHLIST = "pm_wishlist";
@@ -288,13 +288,26 @@ export default function DetailPage() {
           ? brands.find((b) => b.id === p.brandId)?.name || ""
           : "";
 
-        let imgUrl = `${API_URL}/api/products/${encodeURIComponent(
-          p.id ?? id
-        )}/cover`;
-        if (Array.isArray(imgs) && imgs.length) {
-          const cover = imgs.find((x) => x.isCover) || imgs[0];
-          if (cover?.imageUrl) imgUrl = cover.imageUrl;
-        }
+          // let imgUrl = `${API_URL}/api/products/${encodeURIComponent(
+          //     p.id ?? id
+          // )}/cover`;
+          //
+          // if (Array.isArray(imgs) && imgs.length) {
+          //     const cover = imgs.find((x) => x.isCover) || imgs[0];
+          //
+          //     // ❗อย่าใช้ cover.imageUrl เพราะ backend ส่ง path ผิด
+          //     // imgUrl = cover.imageUrl;   <-- ลบ/คอมเมนต์ทิ้ง
+          // }
+
+          // --- FIX: รูป product map กับไฟล์จริงใน server ---
+
+          // productId เช่น "#00003" → "003"
+          const raw = p.productId || "";
+          const digitsOnly = raw.replace("#", "").replace(/^0+/, ""); // "3"
+          const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";
+
+          // API_URL ต้องไม่มี `/api` ต่อท้ายใน .env
+          let imgUrl = `${API_URL}/products/${fileName}`;
 
         // promo ของสินค้าหลัก
         const selfPid = p.id ?? p.productId ?? p.product_id ?? id;
@@ -374,26 +387,34 @@ export default function DetailPage() {
             if (pickList.length >= 4) break;
           }
 
-          // โหลด wishlist ปัจจุบัน เพื่อเช็คว่า related ตัวไหนอยู่ใน wl แล้ว
-          const wlList = list; // ใช้ list ที่โหลดไว้ด้านบน
+    // โหลด wishlist ปัจจุบันเพื่อเช็คว่าตัวไหนอยู่ใน wl แล้ว
+      const wlList = list;
 
-          const rel = pickList.map((x) => {
-            const rid = x.id ?? x.productId ?? x.product_id;
-            const promoNames = promoMap.get(rid) || [];
-            const promoLabel = promoNames.length ? promoNames[0] : "";
+      const rel = pickList.map((x) => {
+        const rid = x.id ?? x.productId ?? x.product_id;
 
-            return {
-              id: rid,
-              title: x.name,
-              price: Number(x.price) || 0,
-              cover: `${API_URL}/api/products/${encodeURIComponent(rid)}/cover`,
-              promo: promoLabel,
-              // สถานะ wishlist สำหรับการ์ด RELATED
-              inWish: inWL(wlList, rid),
-            };
-          });
+        // --- เพิ่ม promo label จาก develop branch ---
+        const promoNames = promoMap.get(rid) || [];
+        const promoLabel = promoNames.length ? promoNames[0] : "";
 
-          setRelated(rel);
+        // --- logic cover ของ deployment-test branch ---
+        const raw = x.productId || "";
+        const digitsOnly = raw.replace("#", "").replace(/^0+/, "");
+        const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";
+
+        return {
+          id: rid,
+          title: x.name,
+          price: Number(x.price) || 0,
+          // ใช้ API cover แบบเลือกได้ ถ้า backend รองรับ
+          cover: `${API_URL}/api/products/${encodeURIComponent(rid)}/cover`, 
+          fallbackCover: `${API_URL}/products/${fileName}`, // เผื่อ fallback
+          promo: promoLabel,
+          inWish: inWL(wlList, rid),
+        };
+      });
+
+            setRelated(rel);
         }
       } catch (e) {
         setErr(e.message || "โหลดข้อมูลไม่สำเร็จ");

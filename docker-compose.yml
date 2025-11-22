@@ -50,14 +50,15 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # ให้ FE เรียกผ่าน proxy ตลอด (production-friendly)
-        VITE_API_URL: /api
+        MODE: development
     container_name: frontend
     restart: unless-stopped
     ports:
       - "5173:80"
     depends_on:
       - backend
+    environment:
+      - VITE_API_URL=http://127.0.0.1:8080
 
   prometheus:
     image: prom/prometheus:latest

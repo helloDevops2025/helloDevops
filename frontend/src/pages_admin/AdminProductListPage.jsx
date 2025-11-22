@@ -7,11 +7,13 @@ export default function AdminProductListPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [pendingProduct, setPendingProduct] = useState(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+  const API_URL = import.meta.env.VITE_API_URL;
+
   console.log("[AdminProductList] API_URL =", API_URL);
 
   // ---------- fetch ----------

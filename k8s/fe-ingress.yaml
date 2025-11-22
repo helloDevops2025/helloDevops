@@ -1,10 +1,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: app-ingress
-  namespace: hellodevops-app
+  name: fe-ingress
+  namespace: hellodevopss-app
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-staging
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx
   tls:
@@ -15,17 +15,10 @@ spec:
     - host: hellodevops.muict.app
       http:
         paths:
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: backend
-                port:
-                  number: 8080
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: frontend-service
+                name: hellodevops-frontend-service
                 port:
-                  number: 443
+                  number: 80

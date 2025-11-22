@@ -4,8 +4,8 @@ import "./HistoryPage.css";
 import Footer from "./../components/Footer.jsx";
 import "./breadcrumb.css";
 
-/*  Config & Utils  */
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+/* ===== Config & Utils ===== */
+const API_BASE = import.meta.env.VITE_API_URL ;
 const CART_KEY = "pm_cart";
 const REORDER_KEY = "pm_reorder";
 
@@ -178,25 +178,29 @@ export default function HistoryPage() {
     return "processing";
   };
 
-  const mapOrderDetail = (o) => {
-    const items = Array.isArray(o.orderItems)
-      ? o.orderItems.map((it) => {
-        const p = it.product || {};
-        const thumb =
-          p?.id !== undefined
-            ? `${API_BASE}/api/products/${encodeURIComponent(p.id)}/cover`
-            : "";
-        return {
-          name: p.name || it.productName || "",
-          qty: Number(it.quantity || 1),
-          price: Number(p.price ?? it.priceEach ?? 0),
-          thumb,
-          productId: p.id,
-        };
-      })
-      : [];
+    const mapOrderDetail = (o) => {
+        const items = Array.isArray(o.orderItems)
+            ? o.orderItems.map((it) => {
+                const p = it.product || {};
 
-    const total =
+                // 🔥 FIX รูปสินค้าใน Order History
+                const thumb = (() => {
+                    const raw = p.productId || p.id || "";
+                    const digitsOnly = String(raw).replace("#", "").replace(/^0+/, "");
+                    const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";
+                    return `${API_BASE}/products/${fileName}`;
+                })();
+
+                return {
+                    name: p.name || it.productName || "",
+                    qty: Number(it.quantity || 1),
+                    price: Number(p.price ?? it.priceEach ?? 0),
+                    thumb,
+                    productId: p.id,
+                };
+            })
+            : [];
+        const total =
       Number(o.totalAmount ?? 0) ||
       items.reduce((s, it) => s + (it.qty || 0) * (it.price || 0), 0);
 

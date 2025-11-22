@@ -253,31 +253,31 @@ export default function TrackingUserPage() {
           ? data.orderItems.map((it) => {
             const p = it.product || {};
             const pid = p.id ?? it.productIdFk ?? it.productId;
+              const discountPerUnit = Number(
+                it.discountPerUnit ??
+                  it.discount_per_unit ??
+                  it.discount_each ??
+                  it.discountEach ??
+                  it.discountAmount ??
+                  it.discount ??
+                  0
+              );
 
-            const discountPerUnit = Number(
-              it.discountPerUnit ??
-              it.discount_per_unit ??
-              it.discount_each ??
-              it.discountEach ??
-              it.discountAmount ??
-              it.discount ??
-              0
-            );
-            return {
-              id: String(pid ?? Math.random()),
-              name: p.name || it.productName || "-",
-              desc: p.description || "",
-              price: Number(p.price ?? it.priceEach ?? 0),
-              qty: Number(it.quantity || 1),
-              discountPerUnit: isNaN(discountPerUnit) ? 0 : discountPerUnit,
-              img:
-                pid !== undefined
-                  ? `${API_BASE}/api/products/${encodeURIComponent(
-                    pid
-                  )}/cover`
-                  : "/assets/products/placeholder.jpg",
-            };
-          })
+              return {
+                id: String(pid ?? Math.random()),
+                name: p.name || it.productName || "-",
+                desc: p.description || "",
+                price: Number(p.price ?? it.priceEach ?? 0),
+                qty: Number(it.quantity || 1),
+                  img: (() => {
+                      // productId จริง เช่น "#00003" → "003"
+                      const raw = p.productId || p.id || "";
+                      const digitsOnly = String(raw).replace("#", "").replace(/^0+/, "");  // ตัด # และ 0 หน้า
+                      const fileName = digitsOnly.toString().padStart(3, "0") + ".jpg";   // → 003.jpg
+                      return `${API_BASE}/products/${fileName}`;
+                  })(),
+              };
+            })
           : [];
 
         const mapped = {
