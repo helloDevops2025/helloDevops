@@ -149,52 +149,48 @@ export default function AdminEditProductPage() {
     return () => { cancelled = true; };
   }, [API_URL]);
 
-  // ── โหลดสินค้า + รูป ────────────────
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setMsg("");
-      try {
-        const r = await fetch(`${API_URL}/api/products/${encodeURIComponent(id)}`, {
-          headers: { Accept: "application/json" },
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        if (cancelled) return;
+    // ── โหลดสินค้า + รูป ────────────────
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            setLoading(true);
+            setMsg("");
+            try {
+                const r = await fetch(`${API_URL}/api/products/${encodeURIComponent(id)}`, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const data = await r.json();
+                if (cancelled) return;
 
-        setOriginal(data);
-        setForm((f) => ({
-          ...f,
-          productId: data.productId ?? "",
-          name: data.name ?? "",
-          description: data.description ?? "",
-          price: data.price ?? "",
-          quantity: Number.isFinite(Number(data.quantity)) ? Number(data.quantity) : "",
-          categoryId: data.categoryId ?? "",
-          brandId: data.brandId ?? "",
-          inStock: typeof data.inStock === "boolean" ? data.inStock : true,
-        }));
+                setOriginal(data);
+                setForm((f) => ({
+                    ...f,
+                    productId: data.productId ?? "",
+                    name: data.name ?? "",
+                    description: data.description ?? "",
+                    price: data.price ?? "",
+                    quantity: Number.isFinite(Number(data.quantity)) ? Number(data.quantity) : "",
+                    categoryId: data.categoryId ?? "",
+                    brandId: data.brandId ?? "",
+                    inStock: typeof data.inStock === "boolean" ? data.inStock : true,
+                }));
 
-        try {
-          const imgRes = await fetch(
-            `${API_URL}/api/products/${encodeURIComponent(id)}/images`,
-            { headers: { Accept: "application/json" } }
-          );
-          if (imgRes.ok) {
-            const imgs = await imgRes.json();
-            const cover = imgs.find((x) => x.isCover) || imgs[0];
-            if (cover?.imageUrl) setServerCoverUrl(cover.imageUrl);
-          }
-        } catch { }
-      } catch (e) {
-        setMsg(`โหลดข้อมูลไม่สำเร็จ: ${e.message}`);
-      } finally {
-        setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [API_URL, id]);
+                // ✅ SHOW IMAGE from productId (same method as DetailPage)
+                const raw = data.productId || data.id || "";
+                const digits = String(raw).replace("#", "").replace(/^0+/, "");
+                const fileName = digits.padStart(3, "0") + ".jpg";
+                setServerCoverUrl(`${API_URL}/products/${fileName}`);
+
+            } catch (e) {
+                setMsg(`โหลดข้อมูลไม่สำเร็จ: ${e.message}`);
+            } finally {
+                setLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [API_URL, id]);
+
 
   // ── พรีวิวไฟล์ใหม่ ──────────────
   useEffect(() => {
