@@ -1,37 +1,38 @@
-// src/pages_admin/AdminOrderListPage.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./AdminOrderListPage.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-
 function computeTotal(x = {}) {
   const subtotal = Number(x.subtotal ?? x.subTotal ?? 0);
   const ship = Number(x.shipping_fee ?? x.shippingFee ?? x.shippingCost ?? 0);
   const disc = Number(x.discount_total ?? x.discountTotal ?? 0);
   const tax = Number(x.tax_total ?? x.taxTotal ?? 0);
-  const grand = Number(x.grand_total ?? x.grandTotal ?? x.totalAmount ?? x.total ?? 0);
+  const grand = Number(
+    x.grand_total ?? x.grandTotal ?? x.totalAmount ?? x.total ?? 0
+  );
 
   if (grand) return grand;
   return subtotal + ship + tax - disc;
 }
-
 
 function fmtDateTime(isoLike) {
   if (!isoLike) return "–";
   try {
     const d = new Date(isoLike);
 
-    const datePart = new Intl.DateTimeFormat(
-      "en-GB-u-ca-gregory",
-      { day: "2-digit", month: "short", year: "numeric" }
-    ).format(d);
+    const datePart = new Intl.DateTimeFormat("en-GB-u-ca-gregory", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(d);
 
-    const timePart = new Intl.DateTimeFormat(
-      "en-US-u-ca-gregory",
-      { hour: "2-digit", minute: "2-digit", hour12: true }
-    ).format(d);
+    const timePart = new Intl.DateTimeFormat("en-US-u-ca-gregory", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(d);
 
     return `${datePart} • ${timePart}`;
   } catch {
@@ -57,10 +58,9 @@ function normalizeOrder(o) {
     shippingAddress: o.shippingAddress ?? o.shipping_address ?? "-",
     orderStatus: o.orderStatus ?? o.order_status ?? "PENDING",
     totalAmount: computeTotal(o),
-    orderedAt, 
+    orderedAt,
   };
 }
-
 
 function extractList(raw) {
   if (Array.isArray(raw)) return raw;
@@ -72,8 +72,12 @@ export default function AdminOrderListPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [confirmOrder, setConfirmOrder] = useState(null); 
-  const [showSuccess, setShowSuccess] = useState(false);  
+  const [confirmOrder, setConfirmOrder] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // 🔍 state สำหรับ search
+  const [searchField, setSearchField] = useState("orderCode");
+  const [searchText, setSearchText] = useState("");
 
   // ------- โหลดออเดอร์ทั้งหมด (กัน cache + รองรับหลาย payload) -------
   async function fetchOrders() {
@@ -81,16 +85,13 @@ export default function AdminOrderListPage() {
     setErr("");
     try {
       const res = await fetch(
-        `${API_URL}/api/orders?ts=${Date.now()}`, 
+        `${API_URL}/api/orders?ts=${Date.now()}`,
         { headers: { Accept: "application/json" }, cache: "no-store" }
       );
       if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้");
 
-
       const raw = await res.json();
       const list = extractList(raw);
-
-   
       const normalized = list.map(normalizeOrder);
 
       setItems(Array.isArray(normalized) ? normalized : []);
@@ -105,6 +106,51 @@ export default function AdminOrderListPage() {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // ---------- helpers ----------
+  const showOrderCode = (code) => {
+    if (!code) return "-";
+    return String(code).startsWith("#") ? code : `#${code}`;
+  };
+  const getKey = (p) => p.id ?? p.orderCode;
+  const getEditPath = (p) => `/admin/orders/${encodeURIComponent(p.id)}`;
+
+  // ---------- DELETE ----------
+  async function handleConfirmDelete() {
+    if (!confirmOrder) return;
+    try {
+      const res = await fetch(`${API_URL}/api/orders/${confirmOrder.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("ลบคำสั่งซื้อไม่สำเร็จ");
+
+      setConfirmOrder(null);
+      setShowSuccess(true);
+
+      await fetchOrders();
+    } catch (error) {
+      alert("" + error.message);
+    }
+  }
+
+  // ---------- filter list ตาม search ----------
+  const normalizedQuery = searchText.trim().toLowerCase();
+
+  const filteredItems = items.filter((o) => {
+    if (!normalizedQuery) return true;
+
+    let value = "";
+
+    if (searchField === "orderCode") {
+      value = o.orderCode ?? "";
+    } else if (searchField === "customerName") {
+      value = o.customerName ?? "";
+    } else if (searchField === "orderStatus") {
+      value = o.orderStatus ?? "";
+    }
+
+    return String(value).toLowerCase().includes(normalizedQuery);
+  });
 
   // ---------- pagination ----------
   useEffect(() => {
@@ -180,33 +226,7 @@ export default function AdminOrderListPage() {
     }
 
     initTablePager({ container: ".table-card", rowsPerPage: 10, windowSize: 3 });
-  }, [items]);
-
-  // ---------- helpers ----------
-  const showOrderCode = (code) => {
-    if (!code) return "-";
-    return String(code).startsWith("#") ? code : `#${code}`;
-  };
-  const getKey = (p) => p.id ?? p.orderCode;
-  const getEditPath = (p) => `/admin/orders/${encodeURIComponent(p.id)}`;
-
-  // ---------- DELETE ----------
-    async function handleConfirmDelete() {
-        if (!confirmOrder) return;
-        try {
-            const res = await fetch(`${API_URL}/api/orders/${confirmOrder.id}`, {
-                method: "DELETE",
-            });
-            if (!res.ok) throw new Error("Failed to delete the order.");
-
-            setConfirmOrder(null);
-            setShowSuccess(true);
-            await fetchOrders();
-        } catch (error) {
-            alert("❌ " + (error.message || "Failed to delete the order."));
-        }
-    }
-
+  }, [items, searchField, searchText]);
 
   return (
     <div className="app" data-page="AdminProductListPage">
@@ -218,15 +238,23 @@ export default function AdminOrderListPage() {
             <div className="action-bar">
               <div className="search">
                 <i className="fa-solid fa-magnifying-glass" />
-                <select defaultValue="orderCode" aria-label="Search by">
+                <select
+                  aria-label="Search by"
+                  value={searchField}
+                  onChange={(e) => setSearchField(e.target.value)}
+                >
                   <option value="orderCode">Order Code</option>
                   <option value="customerName">Customer</option>
                   <option value="orderStatus">Status</option>
                 </select>
-                <input type="text" placeholder="Search Here" />
+                <input
+                  type="text"
+                  placeholder="Search Here"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                />
               </div>
 
-              {/* ปุ่มรีเฟรช แบบ manual กรณีอยากกดดูของใหม่ทันที */}
               <button className="btn" onClick={fetchOrders} title="Reload">
                 Reload
               </button>
@@ -236,7 +264,6 @@ export default function AdminOrderListPage() {
           <div className="table-card">
             <div className="table-header">
               <div>Order Code</div>
-              {/*  เพิ่มคอลัมน์ Ordered At ระหว่าง Order Code และ Customer Name */}
               <div>Ordered At</div>
               <div>Customer Name</div>
               <div>Phone</div>
@@ -253,12 +280,15 @@ export default function AdminOrderListPage() {
             )}
 
             {!loading && err && (
-              <div className="table-row" style={{ display: "grid", color: "#c00" }}>
+              <div
+                className="table-row"
+                style={{ display: "grid", color: "#c00" }}
+              >
                 <div style={{ gridColumn: "1 / -1" }}>Error: {err}</div>
               </div>
             )}
 
-            {!loading && !err && items.length === 0 && (
+            {!loading && !err && filteredItems.length === 0 && (
               <div className="table-row" style={{ display: "grid" }}>
                 <div style={{ gridColumn: "1 / -1" }}>No orders found.</div>
               </div>
@@ -266,8 +296,8 @@ export default function AdminOrderListPage() {
 
             {!loading &&
               !err &&
-              items.length > 0 &&
-              items.map((p) => (
+              filteredItems.length > 0 &&
+              filteredItems.map((p) => (
                 <div
                   className="table-row"
                   key={getKey(p)}
@@ -276,7 +306,6 @@ export default function AdminOrderListPage() {
                   data-status={p.orderStatus}
                 >
                   <div>{showOrderCode(p.orderCode)}</div>
-                  {/* คอลัมน์ใหม่: แสดงวัน-เวลาแบบ ค.ศ. + AM/PM */}
                   <div title={p.orderedAt || ""}>{fmtDateTime(p.orderedAt)}</div>
                   <div>{p.customerName ?? "-"}</div>
                   <div>{p.customerPhone ?? "-"}</div>
@@ -285,7 +314,6 @@ export default function AdminOrderListPage() {
                   <div>{p.orderStatus ?? "-"}</div>
 
                   <div className="act">
-                    {/*  ปุ่ม Edit ไปหน้า Detail */}
                     <Link
                       to={getEditPath(p)}
                       aria-label="Edit order"
@@ -327,35 +355,36 @@ export default function AdminOrderListPage() {
         </div>
       </main>
 
-      {/* ✅ Popup ยืนยันการลบ */}
-        {confirmOrder && (
-            <div className="modal-overlay">
-                <div className="modal">
-                    <h3>Are you sure you want to delete this order?</h3>
-                    <p>Order: {showOrderCode(confirmOrder.orderCode)}</p>
-                    <div className="modal-buttons">
-                        <button className="btn-cancel" onClick={() => setConfirmOrder(null)}>
-                            Cancel
-                        </button>
-                        <button className="btn-confirm" onClick={handleConfirmDelete}>
-                            Confirm
-                        </button>
-                    </div>
-                </div>
+      {confirmOrder && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Are you sure you want to delete this order?</h3>
+            <p>Order: {showOrderCode(confirmOrder.orderCode)}</p>
+            <div className="modal-buttons">
+              <button
+                className="btn-cancel"
+                onClick={() => setConfirmOrder(null)}
+              >
+                Cancel
+              </button>
+              <button className="btn-confirm" onClick={handleConfirmDelete}>
+                Delete
+              </button>
             </div>
-        )}
+          </div>
+        </div>
+      )}
 
-        {/* ✅ Popup ลบสำเร็จ */}
-        {showSuccess && (
-            <div className="modal-overlay">
-                <div className="modal">
-                    <h3>Order has been successfully deleted.</h3>
-                    <button className="btn-ok" onClick={() => setShowSuccess(false)}>
-                        OK
-                    </button>
-                </div>
-            </div>
-        )}
+      {showSuccess && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>ลบรายการสั่งซื้อนี้แล้ว</h3>
+            <button className="btn-ok" onClick={() => setShowSuccess(false)}>
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
