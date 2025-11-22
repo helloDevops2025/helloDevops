@@ -29,7 +29,7 @@ services:
 
   backend:
     build:
-      context: ../helloDevops-backend  
+      context: ../helloDevops-backend
       dockerfile: Dockerfile
     container_name: backend
     restart: unless-stopped
