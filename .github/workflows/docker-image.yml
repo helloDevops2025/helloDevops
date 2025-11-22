@@ -88,18 +88,12 @@ jobs:
       - name: Run Cypress E2E Tests
         working-directory: ./frontend
         run: |
-          npx cypress run \
+           npx cypress run \
             --browser chrome \
-            --spec "cypress/e2e/History.e2e.cy.js,\
-          cypress/e2e/OrderList.cy.js,\
-          cypress/e2e/OrderTracking.cy.js,\
-          cypress/e2e/ProductAdd.cy.js,\
-          cypress/e2e/ProductList.cy.js,\
-          cypress/e2e/Promotion.cy.js,\
-          cypress/e2e/Signup.cy.js,\
-          cypress/e2e/WishList.e2e.cy.js" \
+            --config video=false \
             --reporter mochawesome \
             --reporter-options reportDir=cypress/reports,overwrite=false,html=false,json=true
+
 
 
       - name: Merge Cypress Mochawesome Reports
